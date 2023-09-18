@@ -1,6 +1,6 @@
 #include "Application.h"
 
-namespace Indy
+namespace Engine
 {
 	Application::Application()
 	{

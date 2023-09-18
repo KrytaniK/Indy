@@ -2,7 +2,8 @@
 
 // For use by applications created using this engine
 
-#include "Indy/Application.h"
+#include "Engine/Application.h"
+#include "Engine/Log.h"
 
 // ----- Entry Point -----
-#include "Indy/EntryPoint.h"
+#include "Engine/EntryPoint.h"

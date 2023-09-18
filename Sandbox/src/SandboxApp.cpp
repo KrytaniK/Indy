@@ -1,13 +1,13 @@
-#include <Indy.h>
+#include <Engine.h>
 
-class Sandbox : public Indy::Application
+class Sandbox : public Engine::Application
 {
 public:
 	Sandbox() {};
 	~Sandbox() {};
 };
 
-Indy::Application* Indy::CreateApplication()
+Engine::Application* Engine::CreateApplication()
 {
 	return new Sandbox();
 }

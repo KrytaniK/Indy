@@ -2,9 +2,9 @@
 
 #include "Core.h"
 
-namespace Indy
+namespace Engine
 {
-	class INDY_API Application
+	class ENGINE_API Application
 	{
 	public:
 		Application();
