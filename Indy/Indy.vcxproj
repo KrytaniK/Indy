@@ -146,15 +146,16 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="src\Engine\EventSystem\Events.h" />
     <ClInclude Include="src\Engine.h" />
-    <ClInclude Include="src\Engine\Application.h" />
-    <ClInclude Include="src\Engine\Core.h" />
-    <ClInclude Include="src\Engine\EntryPoint.h" />
-    <ClInclude Include="src\Engine\Log.h" />
+    <ClInclude Include="src\Engine\Core\Application.h" />
+    <ClInclude Include="src\Engine\Core\Core.h" />
+    <ClInclude Include="src\Engine\Core\Main.h" />
+    <ClInclude Include="src\Engine\Core\Log.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\Engine\Application.cpp" />
-    <ClCompile Include="src\Engine\Log.cpp" />
+    <ClCompile Include="src\Engine\Core\Application.cpp" />
+    <ClCompile Include="src\Engine\Core\Log.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

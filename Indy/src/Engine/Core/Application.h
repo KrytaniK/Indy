@@ -10,7 +10,7 @@ namespace Engine
 		Application();
 		virtual ~Application();
 
-		void Run();
+		virtual void Run();
 	};
 
 	// Defined in client.
