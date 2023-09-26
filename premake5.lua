@@ -26,11 +26,11 @@ project "Indy"
 
 	includedirs
 	{
-		"%{prj.name}/vendor/spdlog/include"
+		"%{prj.name}/lib/spdlog/include"
 	}
 
 	filter "system:windows"
-		cppdialect "C++17"
+		cppdialect "C++20"
 		staticruntime "On"
 		systemversion "latest"
 
@@ -73,7 +73,7 @@ project "Sandbox"
 
 	includedirs
 	{
-		"Indy/vendor/spdlog/include",
+		"Indy/lib/spdlog/include",
 		"Indy/src"
 	}
 
