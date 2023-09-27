@@ -32,6 +32,8 @@ project "Sandbox"
 			"ENGINE_PLATFORM_WINDOWS"
 		}
 
+		includedirs "%{IncludeDirs.GLFW}"
+
 	filter "configurations:Debug"
 		defines { "ENGINE_DEBUG" }
         runtime "Debug"

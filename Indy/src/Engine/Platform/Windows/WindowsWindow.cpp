@@ -1,4 +1,6 @@
 #include "WindowsWindow.h"
+#include "WindowsEvents.h"
+
 #include "Engine/Core/Log.h"
 
 namespace Engine
@@ -10,6 +12,8 @@ namespace Engine
 
 	WindowsWindow::WindowsWindow(const WindowSpec& spec)
 	{
+		this->BindApplicationEvents();
+
 		// Initialize GLFW
 		int b_success = glfwInit();
 
@@ -35,25 +39,31 @@ namespace Engine
 		// GLFW Event Callbacks
 		glfwSetWindowCloseCallback(m_GLFW_Window, [](GLFWwindow* window)
 		{
-			glfwSetWindowShouldClose(window, GLFW_TRUE);
+			WindowCloseEvent event{ window };
+			Events::Dispatch<WindowCloseEvent>(event);
 		});
 	}
 
 	WindowsWindow::~WindowsWindow()
 	{
-		glfwDestroyWindow(m_GLFW_Window);
+		for (EventHandle& handle : m_eventHandles)
+		{
+			Events::UnBind(handle);
+		}
+
+		if (m_GLFW_Window)
+			glfwDestroyWindow(m_GLFW_Window);
 
 		glfwTerminate();
 	}
 
+	void WindowsWindow::BindApplicationEvents()
+	{
+		Events::Bind<WindowCloseEvent>([](const WindowCloseEvent& event) { glfwDestroyWindow(event.window); });
+	}
+
 	void WindowsWindow::onUpdate()
 	{
-		if (glfwWindowShouldClose(m_GLFW_Window))
-		{
-			glfwDestroyWindow(m_GLFW_Window);
-			return;
-		}
-
 		glClear(GL_COLOR_BUFFER_BIT);
 		glfwSwapBuffers(m_GLFW_Window);
 		glfwPollEvents();

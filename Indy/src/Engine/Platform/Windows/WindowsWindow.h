@@ -19,6 +19,9 @@ namespace Engine
 			unsigned int GetHeight() const override { return m_WindowSpec.height; };
 
 		private:
+			void BindApplicationEvents();
+			std::vector<EventHandle> m_eventHandles;
+
 			GLFWwindow* m_GLFW_Window;
 
 			WindowSpec m_WindowSpec;

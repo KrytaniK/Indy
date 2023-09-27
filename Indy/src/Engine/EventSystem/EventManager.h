@@ -48,10 +48,9 @@ public:
 		return sI_EventContainer<T_Event_Type>.addCallback([instance, callback](T_Event_Type event) { (instance->*callback)(event); });
 	}
 
-	template<typename T_Event_Type>
 	bool RemoveEventListener(EventHandle& handle)
 	{
-		return sI_EventContainer<T_Event_Type>.removeCallback(handle);
+		return handle.container->removeCallback(handle);
 	}
 
 	template<typename T_Event_Type>
