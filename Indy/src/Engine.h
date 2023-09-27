@@ -12,4 +12,4 @@
 #include "Engine/EventSystem/Events.h"
 
 // ----- Entry Point -----
-#include "Engine/Core/Main.h"
+#include "Engine/Core/EntryPoint.h"

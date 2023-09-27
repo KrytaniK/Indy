@@ -15,7 +15,7 @@
 template<typename T_Event_Type>
 struct EventContainer
 {
-	using EventCallback_Fn = std::function<void(T_Event_Type&)>;
+	using EventCallback_Fn = std::function<void(const T_Event_Type&)>;
 
 	std::vector<EventCallback_Fn> callbacks;
 	std::vector<uint32_t> free_callbacks;

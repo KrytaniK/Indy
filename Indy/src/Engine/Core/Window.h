@@ -1,7 +1,8 @@
 #pragma once
 
 #include "Core.h"
-#include <string>
+#include <iostream>
+#include <memory>
 
 namespace Engine
 {
@@ -9,14 +10,13 @@ namespace Engine
 	{
 		std::string title;
 		unsigned int width, height;
-		bool b_Minimized, b_Maximized, b_VSyncEnabled;
 
 		WindowSpec(const std::string& Title = "Indy Engine", unsigned int Width = 1280, unsigned int Height = 720)
-			: title(Title), width(Width), height(Height), b_Minimized(false), b_Maximized(false), b_VSyncEnabled(true) {};
+			: title(Title), width(Width), height(Height) {};
 	};
 
 	// Abstract representation of a desktop window | To be inherited for platform specific window creation
-	class Window
+	class ENGINE_API Window
 	{
 	public:
 		virtual ~Window() = default;
@@ -26,9 +26,6 @@ namespace Engine
 		virtual uint32_t GetWidth() const = 0;
 		virtual uint32_t GetHeight() const = 0;
 
-	private:
-		Window() {}; // Disable Default Constructor
-
-		virtual Window* Create(WindowSpec& spec = WindowSpec()) = 0;
+		static std::unique_ptr<Window> Create(const WindowSpec& spec = WindowSpec());
 	};
 }

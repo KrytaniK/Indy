@@ -1,24 +1,22 @@
-#include <Engine.h>
+#include "SandboxApp.h"
 
 namespace Engine
 {
-	class Sandbox : public Application
+	Application* CreateApplication()
 	{
-	public:
-		Sandbox() {};
+		return new Sandbox();
+	}
 
-		~Sandbox() {};
-
-		virtual void Run() override;
-	};
+	Sandbox::Sandbox() {};
+	Sandbox::~Sandbox() {};
 
 	void Sandbox::Run()
 	{
 		INDY_CORE_TRACE("Sandbox Start!");
-	}
-
-	Application* CreateApplication()
-	{
-		return new Sandbox();
+		while (m_IsRunning)
+		{
+			m_Window->onUpdate();
+		}
+		INDY_CORE_TRACE("Sandbox End!");
 	}
 }

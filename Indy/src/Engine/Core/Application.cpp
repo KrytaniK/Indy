@@ -7,6 +7,8 @@ namespace Engine
 	Application::Application()
 	{
 		Log::Init();
+
+		m_Window = std::unique_ptr<Window>(Window::Create());
 	}
 
 	Application::~Application()
@@ -16,10 +18,12 @@ namespace Engine
 
 	void Application::Run()
 	{
-		while (true)
+		INDY_CORE_INFO("App Running!");
+		while (m_IsRunning)
 		{
-
+			m_Window->onUpdate();
 		}
+		INDY_CORE_INFO("App Stopping!");
 	}
 }
 
