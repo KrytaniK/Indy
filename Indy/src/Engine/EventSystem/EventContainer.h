@@ -34,7 +34,6 @@ struct EventContainer : EventContainerBase
 	// Removes an event, given an EventHandle. Returns true if the operation was successful
 	bool removeCallback(const EventHandle& handle) override
 	{
-		INDY_CORE_TRACE("Removing Callback!");
 		if (callbacks[handle.event_id] == nullptr)
 		{
 			free_callbacks.emplace_back(handle.event_id);

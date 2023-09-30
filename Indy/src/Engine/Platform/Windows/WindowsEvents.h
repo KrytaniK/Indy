@@ -6,33 +6,61 @@
 
 namespace Engine
 {
-
-	enum WindowEvents {
-		Close = 0, Resize, Focus, LoseFocus, Move
-	};
+	// Window Events
 
 	struct WindowCloseEvent
 	{
 		GLFWwindow* window;
+		bool b_AppShouldTerminate;
 	};
 
 	struct WindowResizeEvent
 	{
-
+		GLFWwindow* window;
+		int width, height;
 	};
 	
 	struct WindowFocusEvent
 	{
-
+		GLFWwindow* window;
 	};
 
 	struct WindowLoseFocusEvent
 	{
-
+		GLFWwindow* window;
 	};
 
 	struct WindowMoveEvent
 	{
+		GLFWwindow* window;
+		int xpos, ypos;
+	};
 
+	// General Input Events
+	struct ScrollEvent
+	{
+		GLFWwindow* window;
+		double xoffset, yoffset;
+	};
+
+	// Mouse Events
+
+	struct MouseMoveEvent
+	{
+		GLFWwindow* window;
+		double xpos, ypos;
+	};
+
+	struct MouseButtonEvent
+	{
+		GLFWwindow* window;
+		int button, action, mods;
+	};
+
+	// Keyboard Events
+	struct KeyboardEvent
+	{
+		GLFWwindow* window;
+		int key, scancode, action, mods;
 	};
 }

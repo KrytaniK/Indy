@@ -2,6 +2,12 @@
 
 #include "Log.h"
 
+#include "Engine/EventSystem/Events.h";
+
+#ifdef ENGINE_PLATFORM_WINDOWS
+	#include "Engine/Platform/Windows/WindowsEvents.h"
+#endif
+
 namespace Engine
 {
 	Application::Application()
@@ -9,6 +15,10 @@ namespace Engine
 		Log::Init();
 
 		m_Window = std::unique_ptr<Window>(Window::Create());
+		
+		// Terminate our application if the window closes
+		Events::Bind<WindowCloseEvent>([this](const WindowCloseEvent& event) 
+			{ if (event.b_AppShouldTerminate) TerminateApp(); });
 	}
 
 	Application::~Application()
@@ -18,12 +28,15 @@ namespace Engine
 
 	void Application::Run()
 	{
-		INDY_CORE_INFO("App Running!");
 		while (m_IsRunning)
 		{
 			m_Window->onUpdate();
 		}
-		INDY_CORE_INFO("App Stopping!");
+	}
+
+	void Application::TerminateApp()
+	{
+		m_IsRunning = false;
 	}
 }
 

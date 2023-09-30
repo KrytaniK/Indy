@@ -12,6 +12,7 @@ namespace Engine
 		virtual ~Application();
 
 		virtual void Run();
+		virtual void TerminateApp();
 
 	protected:
 		std::unique_ptr<Window> m_Window;
