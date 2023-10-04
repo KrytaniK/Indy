@@ -2,6 +2,11 @@
 
 #include "Core.h"
 #include "Window.h"
+#include "Engine/Layers/Layer.h"
+
+#include "Engine/Layers/WindowLayer.h"
+
+#include <vector>
 
 namespace Engine
 {
@@ -9,14 +14,18 @@ namespace Engine
 	{
 	public:
 		Application();
+
+	public:
 		virtual ~Application();
 
 		virtual void Run();
 		virtual void TerminateApp();
 
-	protected:
-		std::unique_ptr<Window> m_Window;
+	private:
+		std::vector<Layer*> m_LayerStack;
+		WindowLayer* m_WindowLayer;
 
+	protected:
 		bool m_IsRunning = true;
 	};
 

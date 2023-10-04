@@ -44,15 +44,18 @@ project "Indy"
 
 	filter "configurations:Debug"
 		defines { "ENGINE_DEBUG" }
+		buildoptions "/MDd"
 		runtime "Debug"
 		symbols "On"
 
 	filter "configurations:Release"
 		defines { "ENGINE_RELEASE" }
+		buildoptions "/MD"
 		runtime "Release"
 		optimize "On"
 
 	filter "configurations:Dist"
 		defines { "ENGINE_DIST" }
+		buildoptions "/MD"
 		runtime "Release"
 		optimize "On"

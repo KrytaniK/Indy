@@ -2,65 +2,56 @@
 
 #include "Engine/EventSystem/Events.h"
 
-#include <GLFW/glfw3.h>
+struct GLFWwindow;
 
 namespace Engine
 {
 	// Window Events
-
-	struct WindowCloseEvent
+	struct GLFW_Event : Events::Event 
 	{
 		GLFWwindow* window;
+	};
+	
+	struct WindowCloseEvent : GLFW_Event
+	{
 		bool b_AppShouldTerminate;
 	};
 
-	struct WindowResizeEvent
+	struct WindowResizeEvent : GLFW_Event
 	{
-		GLFWwindow* window;
 		int width, height;
 	};
 	
-	struct WindowFocusEvent
-	{
-		GLFWwindow* window;
-	};
+	struct WindowFocusEvent : GLFW_Event {};
 
-	struct WindowLoseFocusEvent
-	{
-		GLFWwindow* window;
-	};
+	struct WindowLoseFocusEvent : GLFW_Event {};
 
-	struct WindowMoveEvent
+	struct WindowMoveEvent : GLFW_Event
 	{
-		GLFWwindow* window;
 		int xpos, ypos;
 	};
 
 	// General Input Events
-	struct ScrollEvent
+	struct ScrollEvent : GLFW_Event
 	{
-		GLFWwindow* window;
 		double xoffset, yoffset;
 	};
 
 	// Mouse Events
 
-	struct MouseMoveEvent
+	struct MouseMoveEvent : GLFW_Event
 	{
-		GLFWwindow* window;
 		double xpos, ypos;
 	};
 
-	struct MouseButtonEvent
+	struct MouseButtonEvent : GLFW_Event
 	{
-		GLFWwindow* window;
 		int button, action, mods;
 	};
 
 	// Keyboard Events
-	struct KeyboardEvent
+	struct KeyboardEvent : GLFW_Event
 	{
-		GLFWwindow* window;
 		int key, scancode, action, mods;
 	};
 }

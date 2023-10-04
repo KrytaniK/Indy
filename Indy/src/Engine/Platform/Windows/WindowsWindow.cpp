@@ -1,6 +1,9 @@
 #include "WindowsWindow.h"
 
 #include "Engine/Core/Log.h"
+#include "Engine/Layers/LayerEventContext.h"
+
+#include <GLFW/glfw3.h>
 
 namespace Engine
 {
@@ -11,7 +14,40 @@ namespace Engine
 
 	WindowsWindow::WindowsWindow(const WindowSpec& spec)
 	{
-		this->BindApplicationEvents();
+		// NOTE :: GLFW Initialization should probably be done it its own scope, rather than within the window.
+		/*	Stripping the GLFW-specific code to its own namespace (such as a GraphicsAPI), would clean this up a lot.
+			struct GLFW_Spec
+			{
+				GraphicsAPI graphicsAPI; // This is specific, and defined per use case. The idea is that this is interchangable.
+				WindowSpec& windowSpec;
+				std::function<void(*)> errorCallback;
+
+				// Window Callbacks
+				GLFWwindowclosefun windowCloseCallback;
+				GLFWwindowsizefun windowResizeCallback;
+				GLFWscrollfun windowScrollCallback;
+				GLFWwindowfocusfun windowFocusCallback;
+				GLFWwindowposfun windowMoveCallback;
+
+				// Keyboard Callbacks
+				GLFWkeyfun keyboardCallback;
+
+				// Mouse Callbacks
+				GLFWcursorposfun mouseMoveCallback;
+				GLFWmousebuttonfun mouseButtonCallback;
+			}
+
+			GLFW_Spec glfwSpec;
+
+			m_GLFW_Window = GLFW_Init(glfwSpec);
+		*/
+
+		// It's also worth noting that the GLAD web service is down. Last known commit was on April 4, 2023
+		/*
+			To use GLAD, it is now required to clone the repo from https://github.com/Dav1dde/glad/tree/glad2
+			- See Reddit Thread: https://www.reddit.com/r/opengl/comments/n2wo8y/glad_generator_seems_to_be_down/
+			- Python is required to execute the CL args.
+		*/
 
 		// Initialize GLFW
 		int b_success = glfwInit();
@@ -25,7 +61,7 @@ namespace Engine
 		glfwSetErrorCallback(GLFWErrorCallback);
 
 		// Create GLFW Window
-		// An ifdef could be used to set glfwWindowHints for use with openGL.
+		// Set glfwWindowHints if using openGL.
 		m_GLFW_Window = glfwCreateWindow((int)spec.width, (int)spec.height, spec.title.c_str(), NULL, NULL);
 
 		if (!m_GLFW_Window)
@@ -35,23 +71,42 @@ namespace Engine
 
 		glfwMakeContextCurrent(m_GLFW_Window);
 
+		// ---------------------------
 		// GLFW Window Event Callbacks
+		// ---------------------------
+
+		using Events::EventType;
+
 		glfwSetWindowCloseCallback(m_GLFW_Window, [](GLFWwindow* window)
 		{
-			WindowCloseEvent event{ window, true };
-			Events::Dispatch<WindowCloseEvent>(event);
+			WindowCloseEvent windowCloseEvent;
+			windowCloseEvent.window = window;
+			windowCloseEvent.type = EventType::WindowClose;
+			windowCloseEvent.b_AppShouldTerminate = true;
+
+			Events::Dispatch<LayerEventContext>(windowCloseEvent);
 		});
 
+		#ifdef THING
 		glfwSetWindowSizeCallback(m_GLFW_Window, [](GLFWwindow* window, int width, int height)
 		{
-			WindowResizeEvent event{ window, width, height };
-			Events::Dispatch<WindowResizeEvent>(event);
+			WindowResizeEvent event;
+			event.type = EventType::WindowResize;
+			event.window = window;
+			event.width = width;
+			event.height = heigth;
+
+			Events::Dispatch<LayerEventContext>(event);
 		});
 
 		glfwSetScrollCallback(m_GLFW_Window, [](GLFWwindow* window, double xoffset, double yoffset) 
 		{
-			ScrollEvent event{ window, xoffset, yoffset };
-			Events::Dispatch<ScrollEvent>(event);
+			ScrollEvent event;
+			event.type = EventType::Scroll;
+			event.window = window;
+			event.xoffset = xoffset;
+			event.yoffset = yoffset;
+			Events::Dispatch<LayerEventContext>(event);
 		});
 
 		glfwSetWindowFocusCallback(m_GLFW_Window, [](GLFWwindow* window, int focused)
@@ -60,14 +115,20 @@ namespace Engine
 			{
 				case GLFW_TRUE:
 				{
-					WindowFocusEvent focusEvent{ window };
-					Events::Dispatch<WindowFocusEvent>(focusEvent);
+					WindowFocusEvent focusEvent;
+					focusEvent.type = EventType::WindowFocus;
+					focusEvent.window = window;
+
+					Events::Dispatch<LayerEventContext>(focusEvent);
 					break;
 				}
 				default:
 				{
-					WindowLoseFocusEvent loseFocusEvent{ window };
-					Events::Dispatch<WindowLoseFocusEvent>(loseFocusEvent);
+					WindowLoseFocusEvent loseFocusEvent;
+					focusEvent.type = EventType::WindowLoseFocus;
+					focusEvent.window = window;
+
+					Events::Dispatch<LayerEventContext>(loseFocusEvent);
 					break;
 				}
 			}
@@ -75,70 +136,61 @@ namespace Engine
 
 		glfwSetWindowPosCallback(m_GLFW_Window, [](GLFWwindow* window, int xpos, int ypos) 
 		{
-			WindowMoveEvent event{window, xpos, ypos};
-			Events::Dispatch<WindowMoveEvent>(event);
+			WindowMoveEvent event;
+			event.type = EventType::WindowMove;
+			event.window = window;
+			event.xpos = xpos;
+			event.ypos = ypos;
+
+			Events::Dispatch<LayerEventContext>(event);
 		});
 
 		// GLFW Mouse Input Event Callbacks
 		glfwSetCursorPosCallback(m_GLFW_Window, [](GLFWwindow* window, double xpos, double ypos)
 		{
-			MouseMoveEvent event{window, xpos, ypos};
-			Events::Dispatch<MouseMoveEvent>(event);
+			MouseMoveEvent event;
+			event.type = EventType::MouseMove;
+			event.window = window;
+			event.xpos = xpos;
+			event.ypos = ypos;
+
+			Events::Dispatch<LayerEventContext>(event);
 		});
 
 		glfwSetMouseButtonCallback(m_GLFW_Window, [](GLFWwindow* window, int button, int action, int mods) 
 		{
-			MouseButtonEvent event{ window, button, action, mods };
-			Events::Dispatch<MouseButtonEvent>(event);
+			MouseButtonEvent event;
+			event.type = EventType::MouseButton;
+			event.window = window;
+			event.button = button;
+			event.action = action;
+			event.mods = mods;
+
+			Events::Dispatch<LayerEventContext>(event);
 		});
 
 		// GLFW Keyboard Input Events
 		glfwSetKeyCallback(m_GLFW_Window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 		{
-			KeyboardEvent event{window, key, scancode, action, mods};
-			Events::Dispatch<KeyboardEvent>(event);
-		});
+			KeyboardEvent event{ EventType::Keyboard, window, key, scancode, action, mods };
+			event.type = EventType::Keyboard;
+			event.window = window;
+			event.key = key;
+			event.scancode = scancode;
+			event.action = action;
+			event.mods = mods;
 
+			Events::Dispatch<LayerEventContext>(event);
+		});
+		#endif
 	}
 
 	WindowsWindow::~WindowsWindow()
 	{
-		for (EventHandle& handle : m_eventHandles)
-		{
-			Events::UnBind(handle);
-		}
-
 		if (m_GLFW_Window)
 			glfwDestroyWindow(m_GLFW_Window);
 
 		glfwTerminate();
-	}
-
-	void WindowsWindow::BindApplicationEvents()
-	{
-		// Window Related Callbacks
-		m_eventHandles.emplace_back(Events::Bind<WindowCloseEvent>(this, &WindowsWindow::onWindowClose));
-		m_eventHandles.emplace_back(Events::Bind<WindowResizeEvent>(this, &WindowsWindow::onWindowResize));
-		m_eventHandles.emplace_back(Events::Bind<WindowMoveEvent>(this, &WindowsWindow::onWindowMove));
-		m_eventHandles.emplace_back(Events::Bind<WindowFocusEvent>(this, &WindowsWindow::onWindowFocus));
-		m_eventHandles.emplace_back(Events::Bind<WindowLoseFocusEvent>(this, &WindowsWindow::onWindowLoseFocus));
-
-		/*	Note:
-				Input related events will later be passed on some sort of input handler class. The window class should not be responsible for input.
-		*/
-
-		// General Input Callbacks
-		m_eventHandles.emplace_back(Events::Bind<ScrollEvent>([](const ScrollEvent& event) { INDY_CORE_TRACE("[Scroll Event]: xOffset: {0}, yOffset: {1}", event.xoffset, event.yoffset); }));
-
-		// Keyboard Input Callbacks
-		m_eventHandles.emplace_back(Events::Bind<KeyboardEvent>([](const KeyboardEvent& event) { INDY_CORE_TRACE("[Key Event]: key: {0}, scancode: {1}, action: {2}, mods: {3}", event.key, event.scancode, event.action, event.mods); }));
-
-		// Mouse Input Callbacks
-		m_eventHandles.emplace_back(Events::Bind<MouseMoveEvent>([](const MouseMoveEvent& event) { INDY_CORE_TRACE("[Mouse Move Event]: x: {0}, y: {1}", event.xpos, event.ypos); }));
-		m_eventHandles.emplace_back(Events::Bind<MouseButtonEvent>([](const MouseButtonEvent& event) 
-		{ 
-			INDY_CORE_TRACE("[Mouse Button Event]: Button: {0}, Action: {1}, Mods: {2}", event.button, event.action, event.mods); 
-		}));
 	}
 
 	void WindowsWindow::onUpdate()
@@ -147,35 +199,4 @@ namespace Engine
 		glfwSwapBuffers(m_GLFW_Window);
 		glfwPollEvents();
 	}
-
-	//  -------------
-	//  Event Handles
-	//  -------------
-
-	void WindowsWindow::onWindowClose(const WindowCloseEvent& event) 
-	{
-		INDY_CORE_WARN("[Window Close Event]: Closing...");
-		glfwDestroyWindow(event.window);
-	};
-
-	void WindowsWindow::onWindowResize(const WindowResizeEvent& event)
-	{
-		INDY_CORE_TRACE("[Window Resize Event]: newWidth: {0}, newHeight: {1}", event.width, event.height);
-		//glfwSetWindowSize(event.window, event.width, event.height);
-	};
-
-	void WindowsWindow::onWindowMove(const WindowMoveEvent& event)
-	{
-		INDY_CORE_TRACE("[Window Move Event]: newX: {0}, newY: {1}", event.xpos, event.ypos);
-	};
-
-	void WindowsWindow::onWindowFocus(const WindowFocusEvent& event)
-	{
-		INDY_CORE_WARN("[Window Focus Event]");
-	};
-
-	void WindowsWindow::onWindowLoseFocus(const WindowLoseFocusEvent& event)
-	{
-		INDY_CORE_WARN("[Window Lose Focus Event]");
-	};
 }

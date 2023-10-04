@@ -9,7 +9,5 @@ namespace Engine
 	public:
 		Sandbox();
 		~Sandbox();
-
-		virtual void Run() override;
 	};
 }
