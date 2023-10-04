@@ -20,6 +20,7 @@ namespace Engine
 
 		virtual void Run();
 		virtual void TerminateApp();
+		virtual void onEvent(Events::Event& event);
 
 	private:
 		std::vector<Layer*> m_LayerStack;

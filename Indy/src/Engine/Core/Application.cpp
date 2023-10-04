@@ -17,16 +17,7 @@ namespace Engine
 		Log::Init();
 
 		INDY_CORE_TRACE("Binding Application Event Handles...");
-		Events::Bind<LayerEventContext>([this](Events::Event& event) 
-		{
-			if (event.type != Events::EventType::ApplicationShutdown) return;
-
-			event.StopPropagation(); // Shutdown event should not propagate (maybe) (shouldn't for now)
-
-			INDY_CORE_WARN("Application Shutting Down");
-
-			this->TerminateApp();
-		});
+		Events::Bind<Application, LayerEventContext>(this, &Application::onEvent);
 
 		m_LayerStack.emplace_back(new WindowLayer()); // Move to std::unique_ptr. Manually creating objects is dangerous.
 	}
@@ -38,6 +29,21 @@ namespace Engine
 		{
 			delete *it;
 		}
+	}
+
+	void Application::onEvent(Events::Event& event)
+	{
+		if (event.type != Events::EventType::ApplicationShutdown) return;
+
+		/* It's likely that other layers need to shut down before the application terminates.
+			Because of this, it would be better to have this event propagate from the top of the
+			layer stack, downward to this "layer".
+		*/ 
+		event.StopPropagation(); // Shutdown event should not propagate (maybe) (shouldn't for now)
+
+		INDY_CORE_WARN("Application Shutting Down");
+
+		this->TerminateApp();
 	}
 
 	void Application::Run()

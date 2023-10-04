@@ -36,19 +36,10 @@ namespace Engine
 
 	void WindowLayer::onEvent(Events::Event& event)
 	{
-		INDY_CORE_INFO("[Window Layer] Event Received!");
 		if (event.type == Events::EventType::ApplicationUpdate)
 		{
 			this->onUpdate();
 			return;
-		}
-
-		if (event.type == Events::EventType::WindowClose)
-		{
-			Events::Event event;
-			event.type = Events::EventType::ApplicationShutdown;
-
-			Events::Dispatch<LayerEventContext>(event);
 		}
 	}
 }

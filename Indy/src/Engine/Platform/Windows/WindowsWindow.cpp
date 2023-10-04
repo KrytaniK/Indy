@@ -79,12 +79,14 @@ namespace Engine
 
 		glfwSetWindowCloseCallback(m_GLFW_Window, [](GLFWwindow* window)
 		{
-			WindowCloseEvent windowCloseEvent;
-			windowCloseEvent.window = window;
-			windowCloseEvent.type = EventType::WindowClose;
-			windowCloseEvent.b_AppShouldTerminate = true;
+			WindowCloseEvent event;
+			event.window = window;
 
-			Events::Dispatch<LayerEventContext>(windowCloseEvent);
+			// If the window closed was the only window open (Always for now),
+			//	the application should terminate. 
+			event.IsTerminal(true);
+
+			Events::Dispatch<LayerEventContext>(event);
 		});
 
 		#ifdef THING
