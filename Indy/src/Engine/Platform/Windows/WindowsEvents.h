@@ -12,10 +12,7 @@ namespace Engine
 		GLFWwindow* window;
 	};
 	
-	struct WindowCloseEvent : GLFW_Event
-	{
-		bool b_AppShouldTerminate;
-	};
+	struct WindowCloseEvent : GLFW_Event {};
 
 	struct WindowResizeEvent : GLFW_Event
 	{

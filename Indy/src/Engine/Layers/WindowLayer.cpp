@@ -1,6 +1,9 @@
 #include "WindowLayer.h"
 
 #include "LayerEventContext.h"
+#include "Engine/Platform/Windows/WindowsEvents.h"
+
+#include <GLFW/glfw3.h>
 
 namespace Engine
 {
@@ -17,6 +20,7 @@ namespace Engine
 
 	void WindowLayer::onAttach()
 	{
+		
 		// Connect this layer through the event system.
 		m_EventHandle = Events::Bind<WindowLayer, LayerEventContext>(this, &WindowLayer::onEvent);
 
@@ -34,12 +38,10 @@ namespace Engine
 		m_Window->onUpdate();
 	}
 
-	void WindowLayer::onEvent(Events::Event& event)
+	void WindowLayer::onEvent(Events::Event& event) // Generic Event Handle
 	{
-		if (event.type == Events::EventType::ApplicationUpdate)
-		{
-			this->onUpdate();
-			return;
-		}
+		if (event.IsTerminal()) return; // cleanup code handled by destructor
+
+		this->onUpdate();
 	}
 }

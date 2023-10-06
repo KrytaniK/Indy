@@ -2,6 +2,7 @@
 
 #include "Layer.h"
 #include "Engine/EventSystem/Events.h"
+#include "Engine/Platform/Windows/WindowsEvents.h"
 
 #include "Engine/Core/Window.h"
 

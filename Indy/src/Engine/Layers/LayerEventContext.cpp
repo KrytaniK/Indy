@@ -1,9 +1,5 @@
 #include "LayerEventContext.h"
 
-/*
-	To Do: Fix Callback Adding and Removal
-*/
-
 namespace Engine
 {
 	// Adds an event callback to the "layer" context, effectively attaching a layer.
@@ -46,22 +42,33 @@ namespace Engine
 
 	void LayerEventContext::dispatch(Events::Event& event)
 	{
-		auto _iterator_begin = event.Bubbles() ? m_Callbacks.end() : m_Callbacks.begin();
-		auto _iterator_end = event.Bubbles() ? m_Callbacks.begin() : m_Callbacks.end();
-
-		// Dispatch Events from the lowest layer upward (Application -> Window)
-		for (auto &it = _iterator_begin; it != _iterator_end; it++)
+		if (event.Bubbles())
 		{
-			if (!event.Propagates()) return;
+			auto _iterator = m_Callbacks.rbegin();
+			auto _iterator_end = m_Callbacks.rend();
 
-			EventCallbackFunc callback = *it;
-
-			if (callback == nullptr)
+			for (_iterator; _iterator != _iterator_end; _iterator++)
 			{
-				continue;
-			}
+				if (!event.Propagates()) return;
 
-			callback(event);
+				EventCallbackFunc callback = *_iterator;
+				if (callback == nullptr) continue;
+				else callback(event);
+			}
+		} 
+		else
+		{
+			auto _iterator = m_Callbacks.begin();
+			auto _iterator_end = m_Callbacks.end();
+
+			for (_iterator; _iterator != _iterator_end; _iterator++)
+			{
+				if (!event.Propagates()) return;
+
+				EventCallbackFunc callback = *_iterator;
+				if (callback == nullptr) continue;
+				else callback(event);
+			}
 		}
 	}
 }

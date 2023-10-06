@@ -75,46 +75,43 @@ namespace Engine
 		// GLFW Window Event Callbacks
 		// ---------------------------
 
-		using Events::EventType;
-
 		glfwSetWindowCloseCallback(m_GLFW_Window, [](GLFWwindow* window)
 		{
+			// Create a WindowCloseEvent
 			WindowCloseEvent event;
 			event.window = window;
+			event.IsTerminal(true); // Terminal events bubble by default
 
-			// If the window closed was the only window open (Always for now),
-			//	the application should terminate. 
-			event.IsTerminal(true);
-
+			// Dispatch that event into the layer stack, set to bubble.
 			Events::Dispatch<LayerEventContext>(event);
 		});
 
 		#ifdef THING
 		glfwSetWindowSizeCallback(m_GLFW_Window, [](GLFWwindow* window, int width, int height)
-		{
-			WindowResizeEvent event;
-			event.type = EventType::WindowResize;
-			event.window = window;
-			event.width = width;
-			event.height = heigth;
+			{
+				WindowResizeEvent event;
+				event.type = EventType::WindowResize;
+				event.window = window;
+				event.width = width;
+				event.height = heigth;
 
-			Events::Dispatch<LayerEventContext>(event);
-		});
+				Events::Dispatch<LayerEventContext>(event);
+			});
 
-		glfwSetScrollCallback(m_GLFW_Window, [](GLFWwindow* window, double xoffset, double yoffset) 
-		{
-			ScrollEvent event;
-			event.type = EventType::Scroll;
-			event.window = window;
-			event.xoffset = xoffset;
-			event.yoffset = yoffset;
-			Events::Dispatch<LayerEventContext>(event);
-		});
+		glfwSetScrollCallback(m_GLFW_Window, [](GLFWwindow* window, double xoffset, double yoffset)
+			{
+				ScrollEvent event;
+				event.type = EventType::Scroll;
+				event.window = window;
+				event.xoffset = xoffset;
+				event.yoffset = yoffset;
+				Events::Dispatch<LayerEventContext>(event);
+			});
 
 		glfwSetWindowFocusCallback(m_GLFW_Window, [](GLFWwindow* window, int focused)
-		{
-			switch (focused)
 			{
+				switch (focused)
+				{
 				case GLFW_TRUE:
 				{
 					WindowFocusEvent focusEvent;
@@ -133,57 +130,57 @@ namespace Engine
 					Events::Dispatch<LayerEventContext>(loseFocusEvent);
 					break;
 				}
-			}
-		});
+				}
+			});
 
-		glfwSetWindowPosCallback(m_GLFW_Window, [](GLFWwindow* window, int xpos, int ypos) 
-		{
-			WindowMoveEvent event;
-			event.type = EventType::WindowMove;
-			event.window = window;
-			event.xpos = xpos;
-			event.ypos = ypos;
+		glfwSetWindowPosCallback(m_GLFW_Window, [](GLFWwindow* window, int xpos, int ypos)
+			{
+				WindowMoveEvent event;
+				event.type = EventType::WindowMove;
+				event.window = window;
+				event.xpos = xpos;
+				event.ypos = ypos;
 
-			Events::Dispatch<LayerEventContext>(event);
-		});
+				Events::Dispatch<LayerEventContext>(event);
+			});
 
 		// GLFW Mouse Input Event Callbacks
 		glfwSetCursorPosCallback(m_GLFW_Window, [](GLFWwindow* window, double xpos, double ypos)
-		{
-			MouseMoveEvent event;
-			event.type = EventType::MouseMove;
-			event.window = window;
-			event.xpos = xpos;
-			event.ypos = ypos;
+			{
+				MouseMoveEvent event;
+				event.type = EventType::MouseMove;
+				event.window = window;
+				event.xpos = xpos;
+				event.ypos = ypos;
 
-			Events::Dispatch<LayerEventContext>(event);
-		});
+				Events::Dispatch<LayerEventContext>(event);
+			});
 
-		glfwSetMouseButtonCallback(m_GLFW_Window, [](GLFWwindow* window, int button, int action, int mods) 
-		{
-			MouseButtonEvent event;
-			event.type = EventType::MouseButton;
-			event.window = window;
-			event.button = button;
-			event.action = action;
-			event.mods = mods;
+		glfwSetMouseButtonCallback(m_GLFW_Window, [](GLFWwindow* window, int button, int action, int mods)
+			{
+				MouseButtonEvent event;
+				event.type = EventType::MouseButton;
+				event.window = window;
+				event.button = button;
+				event.action = action;
+				event.mods = mods;
 
-			Events::Dispatch<LayerEventContext>(event);
-		});
+				Events::Dispatch<LayerEventContext>(event);
+			});
 
 		// GLFW Keyboard Input Events
 		glfwSetKeyCallback(m_GLFW_Window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
-		{
-			KeyboardEvent event{ EventType::Keyboard, window, key, scancode, action, mods };
-			event.type = EventType::Keyboard;
-			event.window = window;
-			event.key = key;
-			event.scancode = scancode;
-			event.action = action;
-			event.mods = mods;
+			{
+				KeyboardEvent event{ EventType::Keyboard, window, key, scancode, action, mods };
+				event.type = EventType::Keyboard;
+				event.window = window;
+				event.key = key;
+				event.scancode = scancode;
+				event.action = action;
+				event.mods = mods;
 
-			Events::Dispatch<LayerEventContext>(event);
-		});
+				Events::Dispatch<LayerEventContext>(event);
+			});
 		#endif
 	}
 

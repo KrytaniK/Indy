@@ -5,45 +5,36 @@
 
 namespace Engine::Events {
 
-
-	/*
-		This is just me, but I absolutely hate event types as an enum. There has to be a cleaner,
-		safer, less tedious approach. As the application grows, so too will this enum, and I shiver
-		at the thought. FIND SOMETHING BETTER!
-	*/
-
-	enum EventType
-	{
-		ApplicationUpdate = 0,
-	};
-
 	struct Event
 	{
 		// Returns a boolean representation of whether this event should "bubble".
 		bool Bubbles() { return this->b_Bubbles; };
-		// Sets the internal "bubbles" value for this event.
-		void PreventBubbling(bool bubbles) { 
-			if (this->b_Terminal) return; // Terminal events MUST bubble.
 
-			this->b_Bubbles = bubbles; 
-		}
+		// Sets the internal "bubbles" value for this event.
+		bool Bubbles(bool bubbles) 
+		{ 
+			this->b_Bubbles = bubbles;
+			return bubbles;
+		};
 
 		// Returns a boolean representation of whether this event should propagate.
 		// Returns true by default.
 		bool Propagates() { return this->b_Propagates; };
+
 		// Sets the internal propagation value for this event to false.
 		void StopPropagation() { this->b_Propagates = false; };
 
 		// Returns a boolean representation of whether this event is considered
 		// "terminal". For most cases, this should ONLY be used for triggering
 		// application shutdown behavior.
-		bool Terminal() { return this->b_Terminal; };
+		bool IsTerminal() { return this->b_Terminal; };
 
 		// Setter for internal event "terminal" boolean. For most cases, this should 
 		// ONLY be used for events that trigger application shutdown behavior.
-		void IsTerminal(bool isTerminal) { 
+		bool IsTerminal(bool isTerminal) { 
 			this->b_Terminal = isTerminal;
 			this->b_Bubbles = true;
+			return isTerminal;
 		};
 
 	private:
@@ -95,7 +86,5 @@ namespace Engine::Events {
 			virtual bool removeCallback(const EventHandle& handle) = 0;
 			virtual void dispatch(Event& event) = 0;
 	};
-
-
 }
 

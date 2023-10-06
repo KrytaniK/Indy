@@ -16,6 +16,7 @@ namespace Engine
 		virtual Events::EventHandle addCallback(const EventCallbackFunc& callback) override;
 
 		virtual bool removeCallback(const Events::EventHandle& handle) override;
+
 		virtual void dispatch(Events::Event& event) override;
 	};
 }
