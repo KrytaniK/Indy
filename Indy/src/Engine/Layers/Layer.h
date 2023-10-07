@@ -14,11 +14,10 @@ namespace Engine
 	private:
 		virtual void onAttach() = 0;
 		virtual void onDetach() = 0;
-		
-		virtual void onUpdate() = 0;
 
 	protected:
-		virtual void onEvent(Events::Event& event) = 0;
+		virtual void onUpdate(Event& event) = 0;
+		virtual void onEvent(Event& event) = 0;
 
 	};
 }

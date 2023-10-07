@@ -18,13 +18,11 @@ namespace Engine
 		virtual void onAttach() override;
 		virtual void onDetach() override;
 
-		virtual void onEvent(Events::Event& event) override;
-
-		virtual void onUpdate() override;
-
+	protected:
+		virtual void onUpdate(Event& event) override;
+		virtual void onEvent(Event& event) override;
 
 	private:
-		Events::EventHandle m_EventHandle;
 		std::unique_ptr<Window> m_Window;
 	};
 }

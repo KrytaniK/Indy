@@ -1,6 +1,5 @@
 #include "WindowLayer.h"
 
-#include "LayerEventContext.h"
 #include "Engine/Platform/Windows/WindowsEvents.h"
 
 #include <GLFW/glfw3.h>
@@ -20,9 +19,9 @@ namespace Engine
 
 	void WindowLayer::onAttach()
 	{
-		
-		// Connect this layer through the event system.
-		m_EventHandle = Events::Bind<WindowLayer, LayerEventContext>(this, &WindowLayer::onEvent);
+		// Bind Event Handles
+		Events::Bind<WindowLayer>("LayerContext", "LayerEvent", this, &WindowLayer::onEvent);
+		Events::Bind<WindowLayer>("LayerContext", "AppUpdate", this, &WindowLayer::onUpdate);
 
 		// Create the window
 		m_Window = std::unique_ptr<Window>(Window::Create());
@@ -30,18 +29,21 @@ namespace Engine
 
 	void WindowLayer::onDetach()
 	{
-		Events::UnBind<LayerEventContext>(m_EventHandle);
+		
 	}
 
-	void WindowLayer::onUpdate()
+	void WindowLayer::onUpdate(Event& event)
 	{
+		// Deal with any event data
+
+		// Update GLFWwindow
 		m_Window->onUpdate();
 	}
 
-	void WindowLayer::onEvent(Events::Event& event) // Generic Event Handle
+	void WindowLayer::onEvent(Event& event)
 	{
-		if (event.IsTerminal()) return; // cleanup code handled by destructor
-
-		this->onUpdate();
+		// Cast event data to needed type
+		// handle event data if cast succeeds
+		// stop event propagation if needed
 	}
 }

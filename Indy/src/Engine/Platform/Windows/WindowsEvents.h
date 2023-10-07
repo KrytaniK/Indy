@@ -7,7 +7,7 @@ struct GLFWwindow;
 namespace Engine
 {
 	// Window Events
-	struct GLFW_Event : Events::Event 
+	struct GLFW_Event
 	{
 		GLFWwindow* window;
 	};

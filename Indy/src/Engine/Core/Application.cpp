@@ -3,7 +3,6 @@
 #include "Log.h"
 
 #include "Engine/EventSystem/Events.h"
-#include "Engine/Layers/LayerEventContext.h"
 
 #ifdef ENGINE_PLATFORM_WINDOWS
 	#include "Engine/Platform/Windows/WindowsEvents.h"
@@ -16,8 +15,11 @@ namespace Engine
 		// Initialize Core and Client Loggers
 		Log::Init();
 
-		Events::Bind<Application, LayerEventContext>(this, &Application::onEvent);
+		// Bind Application "Layer" events
+		Events::Bind<Application>("LayerContext", "LayerEvent", this, &Application::onEvent);
+		Events::Bind<Application>("LayerContext", "AppClose", this, &Application::onApplicationTerminate);
 
+		// Initialize Application Layers
 		m_LayerStack.emplace_back(new WindowLayer()); // Move to std::unique_ptr. Manually creating objects is dangerous.
 	}
 
@@ -30,29 +32,31 @@ namespace Engine
 		}
 	}
 
-	void Application::onEvent(Events::Event& event)
+	void Application::onEvent(Event& event)
 	{
-		if (!event.IsTerminal())
-			return;
-
-		this->TerminateApp();
+		// Cast event data to needed type
+		// handle event data if cast succeeds
+		// stop event propagation if needed (This method should technically be the "last" stop for an event)
 	}
 
 	void Application::Run()
 	{
 		// Create application update event
-		Events::Event updateEvent;
-		updateEvent.Bubbles(false);
+		//	*update events should not hold data.
+		Event updateEvent{"LayerContext","AppUpdate"};
 
-		while (m_IsRunning)
+		while (!m_ShouldTerminate)
 		{
-			Events::Dispatch<LayerEventContext>(updateEvent);
+			// Dispatch the update event every frame
+			Events::Dispatch(updateEvent);
 		}
 	}
 
-	void Application::TerminateApp()
+	void Application::onApplicationTerminate(Event& event)
 	{
-		m_IsRunning = false;
+		// Handle event data if needed
+
+		// Set termination flag
+		m_ShouldTerminate = true;
 	}
 }
-

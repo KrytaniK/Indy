@@ -19,15 +19,14 @@ namespace Engine
 		virtual ~Application();
 
 		virtual void Run();
-		virtual void TerminateApp();
-		virtual void onEvent(Events::Event& event);
+		virtual void onEvent(Event& event);
+		virtual void onApplicationTerminate(Event& event);
 
 	private:
 		std::vector<Layer*> m_LayerStack;
-		WindowLayer* m_WindowLayer;
 
 	protected:
-		bool m_IsRunning = true;
+		bool m_ShouldTerminate = false;
 	};
 
 	// Defined in client.
