@@ -2,6 +2,8 @@
 
 #include "Engine/Core/Log.h"
 
+// GLFW
+#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 namespace Engine
@@ -13,8 +15,10 @@ namespace Engine
 
 	WindowsWindow::WindowsWindow(const WindowSpec& spec)
 	{
-
+		// ---------------
 		// Initialize GLFW
+		// ---------------
+
 		int b_success = glfwInit();
 
 		if (!b_success)
@@ -22,19 +26,20 @@ namespace Engine
 			INDY_CORE_CRITICAL("Could not initialize GLFW!");
 		}
 
-		// GLFW Error Callback
 		glfwSetErrorCallback(GLFWErrorCallback);
 
-		// Create GLFW Window
-		// Set glfwWindowHints if using openGL.
-		m_GLFW_Window = glfwCreateWindow((int)spec.width, (int)spec.height, spec.title.c_str(), NULL, NULL);
+		// ---------------
+		// Window Creation
+		// ---------------
+
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // Don't create an openGL context.
+		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // Temporary | Disable window resize.
+		m_GLFW_Window = glfwCreateWindow((int)spec.width, (int)spec.height, spec.title.c_str(), NULL, NULL); // Create GLFW Window
 
 		if (!m_GLFW_Window)
 		{
 			INDY_CORE_CRITICAL("Window creation failed");
 		}
-
-		glfwMakeContextCurrent(m_GLFW_Window);
 
 		// ---------------------------
 		// GLFW Window Event Callbacks
@@ -86,7 +91,10 @@ namespace Engine
 				Events::Dispatch(event);
 			});
 
-		// GLFW Mouse Input Event Callbacks
+		// --------------------------
+		// GLFW Mouse Event Callbacks
+		// --------------------------
+
 		glfwSetCursorPosCallback(m_GLFW_Window, [](GLFWwindow* window, double xpos, double ypos)
 			{
 				Event event{ "LayerContext","MouseMove" };
@@ -99,16 +107,27 @@ namespace Engine
 				Events::Dispatch(event);
 			});
 
-		// GLFW Keyboard Input Events
+		// -----------------------------
+		// GLFW Keyboard Event Callbacks
+		// -----------------------------
+
 		glfwSetKeyCallback(m_GLFW_Window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 			{
 				Event event{ "LayerContext","Keyboard" };
 				Events::Dispatch(event);
 			});
+
+		// ---------------------
+		// Vulkan Initialization <-- This is temporary, will be moved.
+		// ---------------------
+
+		this->InitVulkan();
 	}
 
 	WindowsWindow::~WindowsWindow()
 	{
+		vkDestroyInstance(m_VulkanInstance, nullptr); // Temp, will be moved
+		
 		if (m_GLFW_Window)
 			glfwDestroyWindow(m_GLFW_Window);
 
@@ -117,8 +136,39 @@ namespace Engine
 
 	void WindowsWindow::onUpdate()
 	{
-		glClear(GL_COLOR_BUFFER_BIT);
-		glfwSwapBuffers(m_GLFW_Window);
 		glfwPollEvents();
+	}
+
+	void WindowsWindow::InitVulkan()
+	{
+		// App Info
+		VkApplicationInfo appInfo{};
+		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+		appInfo.pApplicationName = "Hello Triangle";
+		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+		appInfo.pEngineName = "Indy Engine";
+		appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+		appInfo.apiVersion = VK_API_VERSION_1_0;
+
+		// Instance Creation Info
+		VkInstanceCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+		createInfo.pApplicationInfo = &appInfo;
+
+		// Getting Platform Specific Extensions
+		uint32_t glfwExtensionCount = 0;
+		const char** glfwExtensions;
+
+		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+		createInfo.enabledExtensionCount = glfwExtensionCount;
+		createInfo.ppEnabledExtensionNames = glfwExtensions;
+
+		// global validation layers
+		createInfo.enabledLayerCount = 0;
+
+		if (vkCreateInstance(&createInfo, nullptr, &m_VulkanInstance) != VK_SUCCESS) {
+			INDY_CORE_ERROR("failed to create instance!");
+		}
 	}
 }

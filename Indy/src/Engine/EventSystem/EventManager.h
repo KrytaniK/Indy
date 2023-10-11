@@ -60,7 +60,6 @@ namespace Engine
 
 		void DispatchEvent(Event& event)
 		{
-			INDY_CORE_TRACE("[Event] Context: {0}, Type: {1}", event.context, event.type);
 			if (event.bubbles)
 			{
 				auto _itstart = m_ContextMap[event.context][event.type].rbegin();

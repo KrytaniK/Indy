@@ -17,13 +17,20 @@ project "Indy"
 	{
 		"src",
 		"%{IncludeDirs.spdlog}",
-		"%{IncludeDirs.GLFW}"
+		"%{IncludeDirs.GLFW}",
+		"%{IncludeDirs.Vulkan}",
+	}
+
+	libdirs
+	{
+		"%{prj.directory}/lib/VulkanSDK/1.3.261.1/Lib"
 	}
 
 	links
 	{
 		"GLFW",
-		"opengl32.lib"
+		"opengl32.lib",
+		"vulkan-1.lib"
 	}
 
 	filter "system:windows"
