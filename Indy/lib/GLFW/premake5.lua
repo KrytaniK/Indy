@@ -31,10 +31,10 @@ files
 
 }
 filter "system:linux"
-    pic "On"
+    pic "on"
 
     systemversion "latest"
-    staticruntime "On"
+    staticruntime "on"
 
     files
     {
@@ -58,11 +58,7 @@ filter "system:linux"
 
 filter "system:windows"
     systemversion "latest"
-    staticruntime "On"
-    
-    -- buildoptions{
-    --     "/MT"
-    -- }
+    staticruntime "on"
 
     files
     {
@@ -88,12 +84,12 @@ filter "system:windows"
 
 filter "configurations:Debug"
     runtime "Debug"
-    symbols "On"
+    symbols "on"
 
 filter "configurations:Release"
     runtime "Release"
-    optimize "On"
+    optimize "on"
 
 filter "configurations:Dist"
     runtime "Release"
-    optimize "On"
+    optimize "on"

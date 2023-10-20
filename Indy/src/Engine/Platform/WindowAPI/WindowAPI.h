@@ -2,7 +2,6 @@
 
 #include "Engine/Core/Window.h"
 
-#include <GLFW/glfw3.h>
 #include <memory>
 
 namespace Engine

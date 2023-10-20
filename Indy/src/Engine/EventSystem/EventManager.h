@@ -40,7 +40,7 @@ namespace Engine
 		// This currently doesn't account for empty regions in the vector. To remedy this, a struct should be used that holds both
 		//	the event callbacks and the indexes to those free regions, so that we can more easily manage event listeners.
 
-		int AddEventListener(const std::string& context, const std::string& eventType, const std::function<void(Event&)>& eventCallbackFunc)
+		size_t AddEventListener(const std::string& context, const std::string& eventType, const std::function<void(Event&)>& eventCallbackFunc)
 		{
 			std::vector<std::function<void(Event&)>>& callbacks = m_ContextMap[context][eventType];
 

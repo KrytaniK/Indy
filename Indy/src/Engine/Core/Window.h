@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Core.h"
 #include <iostream>
 #include <memory>
 
@@ -16,7 +15,7 @@ namespace Engine
 	};
 
 	// Abstract representation of a desktop window | To be inherited for platform specific window creation
-	class ENGINE_API Window
+	class  Window
 	{
 	public:
 		virtual ~Window() = default;

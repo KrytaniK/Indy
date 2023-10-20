@@ -2,12 +2,11 @@
 
 // See https://github.com/gabime/spdlog for intended use of spdlog.
 
-#include "Core.h"
 #include "spdlog\spdlog.h"
 
 namespace Engine
 {
-	class ENGINE_API Log
+	class  Log
 	{
 	public:
 		static void Init();

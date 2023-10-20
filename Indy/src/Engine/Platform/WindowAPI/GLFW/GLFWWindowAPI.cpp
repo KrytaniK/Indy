@@ -1,9 +1,5 @@
 #include "GLFWWindowAPI.h"
 
-#include "Engine/Core/Log.h"
-#include "Engine/EventSystem/Events.h"
-#include "Engine/Platform/RendererAPI/RendererAPI.h"
-
 namespace Engine
 {
 	static void GLFWErrorCallback(int error, const char* description)

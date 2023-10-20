@@ -20,5 +20,9 @@ namespace Engine
 		default:
 			return std::make_unique<VulkanAPI>();
 		}
+
+		INDY_CORE_CRITICAL("Render API Not Recognized!");
+
+		return nullptr;
 	}
 }
