@@ -2,12 +2,7 @@
 
 #include "Engine/Core/Window.h"
 #include "Engine/EventSystem/Events.h"
-#include "WindowsEvents.h"
-
-// Vulkan (Temp)
-#include <vulkan/vulkan.h>
-
-struct GLFWwindow;
+#include "Engine/Platform/WindowAPI/WindowAPI.h"
 
 namespace Engine
 {
@@ -15,7 +10,7 @@ namespace Engine
 	{
 		public:
 			WindowsWindow(const WindowSpec& spec);
-			virtual ~WindowsWindow();
+			virtual ~WindowsWindow() {};
 
 			void onUpdate() override;
 
@@ -23,12 +18,7 @@ namespace Engine
 			unsigned int GetHeight() const override { return m_WindowSpec.height; };
 
 		private:
-
-			void InitVulkan(); // This will be moved to a Renderer class/API in the future.
-			VkInstance m_VulkanInstance;
-
-			GLFWwindow* m_GLFW_Window;
-
+			std::unique_ptr<WindowAPI> m_WindowAPI;
 			WindowSpec m_WindowSpec;
 	};
 }

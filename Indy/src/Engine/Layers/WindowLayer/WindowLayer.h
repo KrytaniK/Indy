@@ -1,8 +1,6 @@
 #pragma once
 
-#include "Layer.h"
-#include "Engine/EventSystem/Events.h"
-#include "Engine/Platform/Windows/WindowsEvents.h"
+#include "../Layer.h"
 
 #include "Engine/Core/Window.h"
 

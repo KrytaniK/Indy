@@ -11,9 +11,5 @@
 // Event System
 #include "Engine/EventSystem/Events.h" 
 
-#ifdef ENGINE_PLATFORM_WINDOWS
-	#include "Engine/Platform/Windows/WindowsEvents.h"
-#endif
-
 // ----- Entry Point -----
 #include "Engine/Core/EntryPoint.h"

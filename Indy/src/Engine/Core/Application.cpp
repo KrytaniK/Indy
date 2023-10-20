@@ -4,9 +4,17 @@
 
 #include "Engine/EventSystem/Events.h"
 
-#ifdef ENGINE_PLATFORM_WINDOWS
-	#include "Engine/Platform/Windows/WindowsEvents.h"
-#endif
+#include "Engine/Platform/WindowAPI/WindowAPI.h"
+#include "Engine/Platform/RendererAPI/RendererAPI.h"
+
+#include "Engine/Layers/WindowLayer/WindowLayer.h"
+#include "Engine/Layers/RenderLayer/RenderLayer.h"
+
+// To Do:
+/*
+	- Move layer stack into its own class. There is some functionality that
+		needs to be included that std::vector does not support on its own.
+*/
 
 namespace Engine
 {
@@ -19,8 +27,13 @@ namespace Engine
 		Events::Bind<Application>("LayerContext", "LayerEvent", this, &Application::onEvent);
 		Events::Bind<Application>("LayerContext", "AppClose", this, &Application::onApplicationTerminate);
 
+		// Define Window API & Rendering API (MUST be in this order!)
+		WindowAPI::Set(WINDOW_API_GLFW);
+		RendererAPI::Set(RENDERER_API_VULKAN);
+
 		// Initialize Application Layers
-		m_LayerStack.emplace_back(new WindowLayer()); // Move to std::unique_ptr. Manually creating objects is dangerous.
+		m_LayerStack.emplace_back(new WindowLayer());
+		m_LayerStack.emplace_back(new RenderLayer());
 	}
 
 	Application::~Application()

@@ -4,8 +4,6 @@
 #include "Window.h"
 #include "Engine/Layers/Layer.h"
 
-#include "Engine/Layers/WindowLayer.h"
-
 #include <vector>
 
 namespace Engine
