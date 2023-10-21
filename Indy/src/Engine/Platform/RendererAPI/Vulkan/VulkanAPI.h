@@ -31,6 +31,7 @@ namespace Engine
 		// Physical Device Creation
 		void PickPhysicalDevice();
 		bool IsDeviceSuitable(VkPhysicalDevice device);
+		bool CheckDeviceExtensionSupport(VkPhysicalDevice device);
 
 		struct QueueFamilyIndices
 		{
@@ -47,6 +48,24 @@ namespace Engine
 
 		// Window Surface Creation
 		void CreateWindowSurface();
+
+		// Swap Chain
+		struct SwapChainSupportDetails
+		{
+			VkSurfaceCapabilitiesKHR capabilities;
+			std::vector<VkSurfaceFormatKHR> formats;
+			std::vector<VkPresentModeKHR> presentModes;
+		};
+
+		SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
+
+		VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+
+		VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+
+		VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+
+		void CreateSwapChain();
 
 	private:
 		// Instance
@@ -70,9 +89,24 @@ namespace Engine
 		// Window Surface (aka, the Render Context)
 		VkSurfaceKHR m_WindowSurface;
 
+		// Swap Chain (For presenting images to the window surface)
+		VkSwapchainKHR m_SwapChain;
+
+		// Swap Chain Images
+		std::vector<VkImage> m_SwapChainImages;
+
+		// Swap Chain Image Format
+		VkFormat m_SwapChainImageFormat;
+
+		// Swap Chain Extent
+		VkExtent2D m_SwapChainExtent;
 
 		const std::vector<const char*> m_ValidationLayers = {
-			"VK_LAYER_KHRONOS_validation"
+			"VK_LAYER_KHRONOS_validation",
+		};
+
+		const std::vector<const char*> m_DeviceExtensions = {
+			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 		};
 
 		#ifdef ENGINE_DEBUG

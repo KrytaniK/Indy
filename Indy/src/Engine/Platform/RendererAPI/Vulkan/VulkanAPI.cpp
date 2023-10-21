@@ -1,7 +1,11 @@
 #include "VulkanAPI.h"
 
 #include "Engine/Core/Log.h"
+
 #include <set>
+#include <cstdint>
+#include <limits>
+#include <algorithm>
 
 #include <GLFW/glfw3.h>
 
@@ -35,11 +39,6 @@ namespace Engine
 		return VK_FALSE;
 	}
 
-	/*
-		There are a couple of functions that Vulkan doesn't load automatically.
-		Because of this, when using the DebugMessenger, we need to load them
-		manually.
-	*/
 	static VkResult Vulkan_CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
 		auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 		if (func != nullptr) {
@@ -83,10 +82,12 @@ namespace Engine
 		CreateWindowSurface();
 		PickPhysicalDevice();
 		CreateLogicalDevice();
+		CreateSwapChain();
 	}
 
 	void VulkanAPI::Shutdown()
 	{
+		vkDestroySwapchainKHR(m_LogicalDevice, m_SwapChain, nullptr);
 		vkDestroyDevice(m_LogicalDevice, nullptr);
 
 		if (m_EnableValidationLayers)
@@ -225,7 +226,7 @@ namespace Engine
 	{
 		createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-		createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+		createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 		createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 		createInfo.pfnUserCallback = Vulkan_DebugCallback;
 		createInfo.pUserData = nullptr;
@@ -266,33 +267,41 @@ namespace Engine
 		}
 	}
 
-	/* This can be as simple or as complex as needed.I can query for
-		things such as geometry shader support. I can rank all GPUs by
-		some score and choose the one that has the highest score, which
-		could be based on the max image size. (See Vulkan Examples)
-
-		For now, Vulkan support is the only thing needed.
-	*/
 	bool VulkanAPI::IsDeviceSuitable(VkPhysicalDevice device)
 	{
-		// Query for device properties
-		VkPhysicalDeviceProperties deviceProperties;
-		vkGetPhysicalDeviceProperties(device, &deviceProperties);
-
-		// Query for device features
-		VkPhysicalDeviceFeatures deviceFeatures;
-		vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-
-		// Ensure the device can process graphics commands 
-		// (this is implied in FindQueueFamilies)
+		// Ensure the device can process graphics and presentation commands
 		QueueFamilyIndices indices = FindQueueFamilies(device);
-		return indices.isComplete();
+
+		// Ensure all required extensions are supported
+		bool extensionsSupported = CheckDeviceExtensionSupport(device);
+
+		// Ensure Swapchain is adequately supported
+		bool swapChainAdequate = false;
+		if (extensionsSupported) {
+			SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device);
+			swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+		}
+
+		return indices.isComplete() && extensionsSupported && swapChainAdequate;
 	}
 
-	// This can be thought of as an extension to IsDeviceSuitable, though its
-	//	intention is not for selecting the device. It's more to find the queue
-	//	families that you need for your application that happen to be tied to
-	//	that device.
+	bool VulkanAPI::CheckDeviceExtensionSupport(VkPhysicalDevice device)
+	{
+		uint32_t extensionCount;
+		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+		std::set<std::string> requiredExtensions(m_DeviceExtensions.begin(), m_DeviceExtensions.end());
+
+		for (const auto& extension : availableExtensions) {
+			requiredExtensions.erase(extension.extensionName);
+		}
+
+		return requiredExtensions.empty();
+	}
+
 	VulkanAPI::QueueFamilyIndices VulkanAPI::FindQueueFamilies(VkPhysicalDevice device)
 	{
 		QueueFamilyIndices indices;
@@ -361,6 +370,10 @@ namespace Engine
 		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 		createInfo.pEnabledFeatures = &deviceFeatures;
 
+		// Enable Device Extensions
+		createInfo.enabledExtensionCount = static_cast<uint32_t>(m_DeviceExtensions.size());
+		createInfo.ppEnabledExtensionNames = m_DeviceExtensions.data();
+
 		if (vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_LogicalDevice) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create logical device!");
 		}
@@ -378,6 +391,7 @@ namespace Engine
 
 	void VulkanAPI::CreateWindowSurface()
 	{
+		// Get Window
 		Event event{"LayerContext", "RequestWindow"};
 		Events::Dispatch(event);
 		GLFWwindow* GLFW_Window = (GLFWwindow*)event.data;
@@ -387,4 +401,175 @@ namespace Engine
 			INDY_CORE_ERROR("Failed to create window surface!");
 		}
 	}
+
+	VulkanAPI::SwapChainSupportDetails VulkanAPI::QuerySwapChainSupport(VkPhysicalDevice device)
+	{
+		SwapChainSupportDetails details;
+
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_WindowSurface, &details.capabilities);
+
+		// Query for format count
+		uint32_t formatCount;
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_WindowSurface, &formatCount, nullptr);
+
+		// Retrieve formats
+		if (formatCount != 0) {
+			details.formats.resize(formatCount);
+			vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_WindowSurface, &formatCount, details.formats.data());
+		}
+
+		// Query for presentMode count
+		uint32_t presentModeCount;
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_WindowSurface, &presentModeCount, nullptr);
+
+		// Retrieve present modes
+		if (presentModeCount != 0) {
+			details.presentModes.resize(presentModeCount);
+			vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_WindowSurface, &presentModeCount, details.presentModes.data());
+		}
+
+		return details;
+	}
+
+	VkSurfaceFormatKHR VulkanAPI::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
+	{
+		// Check for preferred color format (BGRA and SRGB in this case)
+		for (const auto& availableFormat : availableFormats) {
+			if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+				return availableFormat;
+			}
+		}
+
+		// Some additional code could be added to rank formats and return the
+		// best one, but that's not really needed right now.
+		return availableFormats[0];
+	}
+
+	VkPresentModeKHR VulkanAPI::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
+	{
+		// Vulkan has 4 different present modes. Mailbox is equivelant to "triple 
+		// buffered", whereas Fifo is regular v-sync.
+		for (const auto& availablePresentMode : availablePresentModes) {
+			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+				return availablePresentMode;
+			}
+		}
+
+		return VK_PRESENT_MODE_FIFO_KHR;
+	}
+
+	// Swap extent is the resolution of the swap chain images, in pixels, exactly equal
+	// to the size of the window, in pixels. This requires special handling, as GLFW uses
+	// Screen Coordinates.
+	VkExtent2D VulkanAPI::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities)
+	{
+		// Get Window
+		Event event{ "LayerContext", "RequestWindow" };
+		Events::Dispatch(event);
+		GLFWwindow* GLFW_Window = (GLFWwindow*)event.data;
+
+		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+			return capabilities.currentExtent;
+		}
+		else {
+			int width, height;
+			glfwGetFramebufferSize(GLFW_Window, &width, &height);
+
+			VkExtent2D actualExtent = {
+				static_cast<uint32_t>(width),
+				static_cast<uint32_t>(height)
+			};
+
+			actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+			actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+			return actualExtent;
+		}
+	}
+
+	void VulkanAPI::CreateSwapChain()
+	{
+		SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(m_PhysicalDevice);
+
+		VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
+		VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
+		VkExtent2D extent = ChooseSwapExtent(swapChainSupport.capabilities);
+
+		// Recommended to request at least one more image than the minimum, which
+		// means that we don't have to wait on the driver to complete internal operations.
+		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+
+		// Never exceed max image count. 0 is special, meaning no limit.
+		if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
+			imageCount = swapChainSupport.capabilities.maxImageCount;
+		}
+
+		// Swap Chain Create Info
+		VkSwapchainCreateInfoKHR createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+		createInfo.surface = m_WindowSurface;
+
+		// Swap Chain Image Details
+		createInfo.minImageCount = imageCount;
+		createInfo.imageFormat = surfaceFormat.format;
+		createInfo.imageColorSpace = surfaceFormat.colorSpace;
+		createInfo.imageExtent = extent;
+		createInfo.imageArrayLayers = 1;
+		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+		QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
+		uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+
+		// If the queue families are different, concurrent mode ensures
+		// the swap chain images are shared across queue families.
+		// Exclusive mode is best for performance.
+		if (indices.graphicsFamily != indices.presentFamily) {
+			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+			createInfo.queueFamilyIndexCount = 2;
+			createInfo.pQueueFamilyIndices = queueFamilyIndices;
+		}
+		else {
+			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+			createInfo.queueFamilyIndexCount = 0; // Optional
+			createInfo.pQueueFamilyIndices = nullptr; // Optional
+		}
+
+		// Swap chain image transformations can be specified, if supported. Setting
+		// this to the current transform means that no transformations are applied.
+		createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+
+		// Specify if the alpha channel should be used for blending with other windows.
+		// Best to almost always ignore the alpha channel.
+		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+
+		createInfo.presentMode = presentMode;
+
+		// The color of pixels obscured by other windows are not cared about.
+		createInfo.clipped = VK_TRUE;
+
+		// Definitely worth noting that swap chains are not absolute. They can
+		// become invalid or unoptimized while the app is running, which means
+		// that an entirely new swap chain must be created from scratch. The
+		// reference to the old swap chain must be specified in this field.
+		createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+		// Finally, create the swap chain.
+		if (vkCreateSwapchainKHR(m_LogicalDevice, &createInfo, nullptr, &m_SwapChain) != VK_SUCCESS)
+		{
+			INDY_CORE_ERROR("Failed To Create Swap Chain!");
+		}
+
+		// Retrieve Swap Chain Image Handles
+		vkGetSwapchainImagesKHR(m_LogicalDevice, m_SwapChain, &imageCount, nullptr);
+
+		m_SwapChainImages.resize(imageCount);
+
+		vkGetSwapchainImagesKHR(m_LogicalDevice, m_SwapChain, &imageCount, m_SwapChainImages.data());
+
+		// Store Swap Chain format and extent for later use.
+		m_SwapChainImageFormat = surfaceFormat.format;
+		m_SwapChainExtent = extent;
+	}
 }
+
+	
