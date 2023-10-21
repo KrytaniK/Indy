@@ -20,6 +20,8 @@ namespace Engine
 		virtual void onUpdate(Event& event) override;
 		virtual void onEvent(Event& event) override;
 
+		virtual void onRequestWindow(Event& event);
+
 	private:
 		std::unique_ptr<Window> m_Window;
 	};

@@ -1,6 +1,7 @@
 #include "VulkanAPI.h"
 
 #include "Engine/Core/Log.h"
+#include <set>
 
 #include <GLFW/glfw3.h>
 
@@ -58,7 +59,9 @@ namespace Engine
 
 	VulkanAPI::VulkanAPI() : 
 		m_Vulkan_Instance(nullptr), m_DebugMessenger(nullptr), 
-		m_PhysicalDevice(VK_NULL_HANDLE)
+		m_PhysicalDevice(nullptr), m_LogicalDevice(nullptr), 
+		m_WindowSurface(nullptr), m_GraphicsQueue(nullptr),
+		m_PresentQueue(nullptr)
 	{
 
 	}
@@ -77,6 +80,9 @@ namespace Engine
 
 		CreateInstance();
 		SetupDebugMessenger(); // Requires the vulkan instance to be created.
+		CreateWindowSurface();
+		PickPhysicalDevice();
+		CreateLogicalDevice();
 	}
 
 	void VulkanAPI::Shutdown()
@@ -89,6 +95,7 @@ namespace Engine
 			Vulkan_DestroyDebugUtilsMessengerEXT(m_Vulkan_Instance, m_DebugMessenger, nullptr);
 		}
 
+		vkDestroySurfaceKHR(m_Vulkan_Instance, m_WindowSurface, nullptr);
 		vkDestroyInstance(m_Vulkan_Instance, nullptr);
 	}
 
@@ -282,6 +289,10 @@ namespace Engine
 		return indices.isComplete();
 	}
 
+	// This can be thought of as an extension to IsDeviceSuitable, though its
+	//	intention is not for selecting the device. It's more to find the queue
+	//	families that you need for your application that happen to be tied to
+	//	that device.
 	VulkanAPI::QueueFamilyIndices VulkanAPI::FindQueueFamilies(VkPhysicalDevice device)
 	{
 		QueueFamilyIndices indices;
@@ -297,10 +308,16 @@ namespace Engine
 		int i = 0;
 		for (const auto& queueFamily : queueFamilies)
 		{
+			VkBool32 presentSupport = VK_FALSE;
+			// Ensure there is a queue dedicated to presentation (Can be the same as the graphics queue family in some cases)
+			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_WindowSurface, &presentSupport);
+
+			if (presentSupport)
+				indices.presentFamily = i;
+
+			// Ensure there is a queue dedicated to graphics operations
 			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-			{
 				indices.graphicsFamily = i;
-			}
 
 			if (indices.isComplete())
 				break;
@@ -319,13 +336,20 @@ namespace Engine
 	{
 		QueueFamilyIndices indices = FindQueueFamilies(m_PhysicalDevice);
 
-		VkDeviceQueueCreateInfo queueCreateInfo{};
-		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-		queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
-		queueCreateInfo.queueCount = 1;
+		// Create queues for graphics and present queues.
+		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+		std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
 		float queuePriority = 1.0f;
-		queueCreateInfo.pQueuePriorities = &queuePriority;
+		for (uint32_t queueFamily : uniqueQueueFamilies)
+		{
+			VkDeviceQueueCreateInfo queueCreateInfo{};
+			queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			queueCreateInfo.queueFamilyIndex = queueFamily;
+			queueCreateInfo.queueCount = 1;
+			queueCreateInfo.pQueuePriorities = &queuePriority;
+			queueCreateInfos.push_back(queueCreateInfo);
+		}
 
 		// This is where you would specify the GPU features you want to use.
 		VkPhysicalDeviceFeatures deviceFeatures{};
@@ -333,25 +357,34 @@ namespace Engine
 		// Creating the Logical Device
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		createInfo.pQueueCreateInfos = &queueCreateInfo;
-		createInfo.queueCreateInfoCount = 1;
+		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+		createInfo.pQueueCreateInfos = queueCreateInfos.data();
 		createInfo.pEnabledFeatures = &deviceFeatures;
-
-		// Device specific validation layers are depricated, but
-		// support for older versions is still a good idea.
-		if (m_EnableValidationLayers) {
-			createInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
-			createInfo.ppEnabledLayerNames = m_ValidationLayers.data();
-		}
-		else {
-			createInfo.enabledLayerCount = 0;
-		}
 
 		if (vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_LogicalDevice) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create logical device!");
 		}
 
-		// Create the Queue Family Handle
+		// Create the Graphics Queue Family Handle
 		vkGetDeviceQueue(m_LogicalDevice, indices.graphicsFamily.value(), 0, &m_GraphicsQueue);
+
+		// Create the Presentation Queue Family Handle
+		vkGetDeviceQueue(m_LogicalDevice, indices.presentFamily.value(), 0, &m_PresentQueue);
+	}
+
+	// -----------------------
+	// Window Surface Creation
+	// -----------------------
+
+	void VulkanAPI::CreateWindowSurface()
+	{
+		Event event{"LayerContext", "RequestWindow"};
+		Events::Dispatch(event);
+		GLFWwindow* GLFW_Window = (GLFWwindow*)event.data;
+
+		if (glfwCreateWindowSurface(m_Vulkan_Instance, GLFW_Window, nullptr, &m_WindowSurface) != VK_SUCCESS)
+		{
+			INDY_CORE_ERROR("Failed to create window surface!");
+		}
 	}
 }

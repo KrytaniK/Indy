@@ -35,14 +35,18 @@ namespace Engine
 		struct QueueFamilyIndices
 		{
 			std::optional<uint32_t> graphicsFamily;
+			std::optional<uint32_t> presentFamily;
 
-			bool isComplete() { return graphicsFamily.has_value(); };
+			bool isComplete() { return graphicsFamily.has_value() && presentFamily.has_value(); };
 		};
 
 		QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
 
 		// Logical Device Creation
 		void CreateLogicalDevice();
+
+		// Window Surface Creation
+		void CreateWindowSurface();
 
 	private:
 		// Instance
@@ -57,8 +61,15 @@ namespace Engine
 		// Logical Device
 		VkDevice m_LogicalDevice;
 
-		// Queue (Logical Device Handle)
+		// Graphics Queue (For Graphics Operations)
 		VkQueue m_GraphicsQueue;
+
+		// Presentation Queue (For Presenting graphics to the window)
+		VkQueue m_PresentQueue;
+
+		// Window Surface (aka, the Render Context)
+		VkSurfaceKHR m_WindowSurface;
+
 
 		const std::vector<const char*> m_ValidationLayers = {
 			"VK_LAYER_KHRONOS_validation"

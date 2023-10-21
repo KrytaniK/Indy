@@ -19,6 +19,7 @@ namespace Engine
 		// Bind Event Handles
 		Events::Bind<WindowLayer>("LayerContext", "LayerEvent", this, &WindowLayer::onEvent);
 		Events::Bind<WindowLayer>("LayerContext", "AppUpdate", this, &WindowLayer::onUpdate);
+		Events::Bind<WindowLayer>("LayerContext", "RequestWindow", this, &WindowLayer::onRequestWindow);
 
 		// Create the window instance
 		m_Window = std::unique_ptr<Window>(Window::Create());
@@ -39,5 +40,10 @@ namespace Engine
 	void WindowLayer::onEvent(Event& event)
 	{
 		
+	}
+
+	void WindowLayer::onRequestWindow(Event& event)
+	{
+		event.data = m_Window->GetWindow();
 	}
 }

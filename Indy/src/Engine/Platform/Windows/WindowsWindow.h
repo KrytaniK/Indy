@@ -13,6 +13,7 @@ namespace Engine
 			virtual ~WindowsWindow() {};
 
 			void onUpdate() override;
+			void* GetWindow() override;
 
 			unsigned int GetWidth() const override { return m_WindowSpec.width; };
 			unsigned int GetHeight() const override { return m_WindowSpec.height; };

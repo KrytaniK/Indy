@@ -16,4 +16,9 @@ namespace Engine
 	{
 		m_WindowAPI->onUpdate();
 	}
+
+	void* WindowsWindow::GetWindow()
+	{
+		return m_WindowAPI->GetWindow();
+	}
 }
