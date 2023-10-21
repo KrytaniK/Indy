@@ -20,8 +20,6 @@ namespace Engine
 
 		// Create the renderer instance
 		m_Renderer = std::make_unique<Renderer>();
-
-		INDY_CORE_TRACE("Attached Render Layer");
 	}
 
 	void RenderLayer::onDetach()

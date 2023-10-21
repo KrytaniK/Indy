@@ -22,8 +22,6 @@ namespace Engine
 
 		// Create the window instance
 		m_Window = std::unique_ptr<Window>(Window::Create());
-
-		INDY_CORE_TRACE("Attached Window Layer");
 	}
 
 	void WindowLayer::onDetach()

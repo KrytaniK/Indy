@@ -118,8 +118,6 @@ namespace Engine
 				Event event{ "LayerContext","Keyboard" };
 				Events::Dispatch(event);
 			});
-
-		INDY_CORE_TRACE("GLFW Initialized");
 	}
 
 	GLFW_WindowAPI::~GLFW_WindowAPI()

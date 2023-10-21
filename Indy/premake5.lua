@@ -23,7 +23,7 @@ project "Indy"
 
 	libdirs
 	{
-		"%{prj.directory}/lib/VulkanSDK/1.3.261.1/Lib"
+		"%{VulkanSDK}/1.3.261.1/Lib"
 	}
 
 	links
