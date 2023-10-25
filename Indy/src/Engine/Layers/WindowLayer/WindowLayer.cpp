@@ -39,7 +39,7 @@ namespace Engine
 
 	void WindowLayer::onEvent(Event& event)
 	{
-		
+		// Handler for general layer events
 	}
 
 	void WindowLayer::onRequestWindow(Event& event)
