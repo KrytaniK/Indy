@@ -32,7 +32,10 @@ namespace Engine
 
 		m_Device->Init(s_Vulkan_Instance, m_WindowSurface);
 
-		m_SwapChain->Init(m_Device->GetSwapChainSupportDetails(), m_WindowSurface);
+		auto swapChainSupportDetails = m_Device->GetSwapChainSupportDetails();
+
+		m_SwapChain->Init(swapChainSupportDetails, m_WindowSurface);
+		m_SwapChain->CreateImageViews();
 	}
 
 	void VulkanAPI::Shutdown()

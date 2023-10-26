@@ -10,6 +10,8 @@ namespace Engine
 		void Init(Engine::VulkanDevice::SwapChainSupportDetails supportDetails, VkSurfaceKHR windowSurface);
 		void Shutdown();
 
+		void CreateImageViews();
+
 	private:
 		VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 
@@ -30,5 +32,8 @@ namespace Engine
 
 		// Swap Chain Extent
 		VkExtent2D m_Extent;
+
+		// Swap Chain Image Views
+		std::vector<VkImageView> m_ImageViews;
 	};
 }

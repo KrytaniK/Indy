@@ -75,11 +75,7 @@ namespace Engine
 		// Finally, create the swap chain.
 		if (vkCreateSwapchainKHR(m_SupportDetails.logicalDevice, &createInfo, nullptr, &m_SwapChain) != VK_SUCCESS)
 		{
-			INDY_CORE_ERROR("Failed To Create Swap Chain!");
-		}
-		else
-		{
-			INDY_CORE_WARN("Swap Chain Creation Successful!");
+			INDY_CORE_ERROR("[Vulkan Swap Chain] Failed To Create Swap Chain!");
 		}
 		
 		// Query Swap Chain Image Handles count
@@ -152,6 +148,56 @@ namespace Engine
 			actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
 
 			return actualExtent;
+		}
+	}
+
+	void VulkanSwapChain::CreateImageViews()
+	{
+		if (m_SwapChain == VK_NULL_HANDLE)
+		{
+			INDY_CORE_ERROR("[Vulkan Swap Chain] Cannot Create Image Views: Swap chain has not been initialized!");
+			return;
+		}
+
+		if (m_Images.empty())
+		{
+			INDY_CORE_ERROR("[Vulkan Swap Chain] Cannot Create Image Views: Swap Chain Images have not been created!");
+			return;
+		}
+
+		// Ensure the number of image views matches the number of images.
+		m_ImageViews.resize(m_Images.size());
+
+		// Loop over all the created swap chain images
+		for (size_t i = 0; i < m_Images.size(); i++)
+		{
+			VkImageViewCreateInfo createInfo{};
+			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			createInfo.image = m_Images[i];
+
+			// Specify how images are treated (1D, 2D, 3D Textures, or cube maps)
+			createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+			createInfo.format = m_ImageFormat;
+
+			// Default color mapping
+			createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+			createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+			createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+			createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+			// Specify the image's purpose and which part should be accessed.
+			// This specifies the use of the images as color targets without
+			//	mipmapping levels or multiple layers.
+			createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			createInfo.subresourceRange.baseMipLevel = 0;
+			createInfo.subresourceRange.levelCount = 1;
+			createInfo.subresourceRange.baseArrayLayer = 0;
+			createInfo.subresourceRange.layerCount = 1;
+
+			if (vkCreateImageView(m_SupportDetails.logicalDevice, &createInfo, nullptr, &m_ImageViews[i]) != VK_SUCCESS)
+			{
+				INDY_CORE_ERROR("[Vulkan Swap Chain] Could not create image views!");
+			}
 		}
 	}
 }

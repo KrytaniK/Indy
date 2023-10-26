@@ -46,6 +46,7 @@ namespace Engine
 		// Physical & Logical Devices & Relative Queue Families
 		std::unique_ptr<VulkanDevice> m_Device;
 
+		// Swap Chain
 		std::unique_ptr<VulkanSwapChain> m_SwapChain;
 	};
 }
