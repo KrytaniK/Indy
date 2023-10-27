@@ -2,9 +2,11 @@
 
 #include "../RendererAPI.h"
 
-#include "Core/VulkanDebugUtil.h"
-#include "Core/VulkanDevice.h"
-#include "Core/VulkanSwapChain.h"
+#include "VulkanDebugUtil.h"
+#include "VulkanDevice.h"
+#include "VulkanSwapChain.h"
+#include "VulkanPipeline.h"
+#include "VulkanCommandPool.h"
 
 #include <vulkan/vulkan.h>
 
@@ -32,6 +34,15 @@ namespace Engine
 
 		// Window Surface Creation
 		void CreateWindowSurface();
+		
+		// Framebuffer Creation
+		void CreateFramebuffers();
+
+		// Sync Objects (Temp)
+		void CreateSyncObjects();
+
+		// Temp Draw Method
+		void DrawFrame();
 
 	private:
 		// Instance
@@ -39,6 +50,9 @@ namespace Engine
 
 		// Window Surface
 		VkSurfaceKHR m_WindowSurface;
+
+		// Frame Buffers
+		std::vector<VkFramebuffer> m_Framebuffers;
 
 		// Debug Util
 		std::unique_ptr<VulkanDebugUtil> m_DebugUtil;
@@ -48,5 +62,16 @@ namespace Engine
 
 		// Swap Chain
 		std::unique_ptr<VulkanSwapChain> m_SwapChain;
+		
+		// Graphics Pipeline
+		std::unique_ptr<VulkanPipeline> m_Pipeline;
+
+		// Command Bool & Buffers
+		std::unique_ptr<VulkanCommandPool> m_CommandPool;
+
+		// Temp rendering & presentation (semaphores & fences)
+		VkSemaphore m_ImageAvailableSemaphore;
+		VkSemaphore m_RenderFinishedSemaphore;
+		VkFence m_InFlightFence;
 	};
 }

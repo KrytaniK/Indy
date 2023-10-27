@@ -34,6 +34,6 @@ namespace Engine
 
 	void RenderLayer::onUpdate(Event& event)
 	{
-
+		m_Renderer->onUpdate();
 	}
 }

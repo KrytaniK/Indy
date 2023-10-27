@@ -7,21 +7,23 @@
 
 namespace Engine
 {
-	void VulkanSwapChain::Init(Engine::VulkanDevice::SwapChainSupportDetails supportDetails, VkSurfaceKHR windowSurface)
-	{
-		m_SupportDetails = supportDetails; // Store support details locally.
+	VulkanSwapchainInfo VulkanSwapChain::s_SwapchainInfo;
 
-		VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat(m_SupportDetails.formats);
-		VkPresentModeKHR presentMode = ChoosePresentMode(m_SupportDetails.presentModes);
-		VkExtent2D extent = ChooseExtent(m_SupportDetails.capabilities);
+	void VulkanSwapChain::Init(VkSurfaceKHR windowSurface)
+	{
+		const VulkanDeviceInfo& deviceInfo = VulkanDevice::GetDeviceInfo();
+
+		VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat(deviceInfo.support.formats);
+		VkPresentModeKHR presentMode = ChoosePresentMode(deviceInfo.support.presentModes);
+		VkExtent2D extent = ChooseExtent(deviceInfo.support.capabilities);
 		
 		// Recommended to request at least one more image than the minimum, which
 		// means that we don't have to wait on the driver to complete internal operations.
-		uint32_t imageCount = m_SupportDetails.capabilities.minImageCount + 1;
+		uint32_t imageCount = deviceInfo.support.capabilities.minImageCount + 1;
 		
 		// Never exceed max image count. 0 is special, meaning no limit.
-		if (m_SupportDetails.capabilities.maxImageCount > 0 && imageCount > m_SupportDetails.capabilities.maxImageCount) {
-			imageCount = supportDetails.capabilities.maxImageCount;
+		if (deviceInfo.support.capabilities.maxImageCount > 0 && imageCount > deviceInfo.support.capabilities.maxImageCount) {
+			imageCount = deviceInfo.support.capabilities.maxImageCount;
 		}
 		
 		// Swap Chain Create Info
@@ -37,12 +39,12 @@ namespace Engine
 		createInfo.imageArrayLayers = 1;
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		
-		uint32_t queueFamilyIndices[] = { m_SupportDetails.graphicsQueueFamilyIndex, m_SupportDetails.presentQueueFamilyIndex };
+		uint32_t queueFamilyIndices[] = { deviceInfo.graphicsQueueFamilyIndex, deviceInfo.presentQueueFamilyIndex };
 		
 		// If the queue families are different, concurrent mode ensures
 		// the swap chain images are shared across queue families.
 		// Exclusive mode is best for performance.
-		if (m_SupportDetails.graphicsQueueFamilyIndex != m_SupportDetails.presentQueueFamilyIndex) {
+		if (deviceInfo.graphicsQueueFamilyIndex != deviceInfo.presentQueueFamilyIndex) {
 			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 			createInfo.queueFamilyIndexCount = 2;
 			createInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -55,7 +57,7 @@ namespace Engine
 		
 		// Swap chain image transformations can be specified, if supported. Setting
 		// this to the current transform means that no transformations are applied.
-		createInfo.preTransform = m_SupportDetails.capabilities.currentTransform;
+		createInfo.preTransform = deviceInfo.support.capabilities.currentTransform;
 		
 		// Specify if the alpha channel should be used for blending with other windows.
 		// Best to almost always ignore the alpha channel.
@@ -73,29 +75,31 @@ namespace Engine
 		createInfo.oldSwapchain = VK_NULL_HANDLE;
 		
 		// Finally, create the swap chain.
-		if (vkCreateSwapchainKHR(m_SupportDetails.logicalDevice, &createInfo, nullptr, &m_SwapChain) != VK_SUCCESS)
+		if (vkCreateSwapchainKHR(deviceInfo.logicalDevice, &createInfo, nullptr, &s_SwapchainInfo.swapchain) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("[Vulkan Swap Chain] Failed To Create Swap Chain!");
 		}
 		
 		// Query Swap Chain Image Handles count
-		vkGetSwapchainImagesKHR(m_SupportDetails.logicalDevice, m_SwapChain, &imageCount, nullptr);
+		vkGetSwapchainImagesKHR(deviceInfo.logicalDevice, s_SwapchainInfo.swapchain, &imageCount, nullptr);
 		
-		m_Images.resize(imageCount); // Resize the container
+		s_SwapchainInfo.images.resize(imageCount); // Resize the container
 		
 		// Retrieve Swap Chain Image Handles
-		vkGetSwapchainImagesKHR(m_SupportDetails.logicalDevice, m_SwapChain, &imageCount, m_Images.data());
+		vkGetSwapchainImagesKHR(deviceInfo.logicalDevice, s_SwapchainInfo.swapchain, &imageCount, s_SwapchainInfo.images.data());
 		
 		// Store Swap Chain format and extent for later use.
-		m_ImageFormat = surfaceFormat.format;
-		m_Extent = extent;
+		s_SwapchainInfo.imageFormat = surfaceFormat.format;
+		s_SwapchainInfo.extent = extent;
 
 
 	}
 
 	void VulkanSwapChain::Shutdown()
 	{
-		vkDestroySwapchainKHR(m_SupportDetails.logicalDevice, m_SwapChain, nullptr);
+		const VulkanDeviceInfo& deviceInfo = VulkanDevice::GetDeviceInfo();
+
+		vkDestroySwapchainKHR(deviceInfo.logicalDevice, s_SwapchainInfo.swapchain, nullptr);
 	}
 
 	VkSurfaceFormatKHR VulkanSwapChain::ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
@@ -153,31 +157,31 @@ namespace Engine
 
 	void VulkanSwapChain::CreateImageViews()
 	{
-		if (m_SwapChain == VK_NULL_HANDLE)
+		if (s_SwapchainInfo.swapchain == VK_NULL_HANDLE)
 		{
 			INDY_CORE_ERROR("[Vulkan Swap Chain] Cannot Create Image Views: Swap chain has not been initialized!");
 			return;
 		}
 
-		if (m_Images.empty())
+		if (s_SwapchainInfo.images.empty())
 		{
 			INDY_CORE_ERROR("[Vulkan Swap Chain] Cannot Create Image Views: Swap Chain Images have not been created!");
 			return;
 		}
 
 		// Ensure the number of image views matches the number of images.
-		m_ImageViews.resize(m_Images.size());
+		s_SwapchainInfo.imageViews.resize(s_SwapchainInfo.images.size());
 
 		// Loop over all the created swap chain images
-		for (size_t i = 0; i < m_Images.size(); i++)
+		for (size_t i = 0; i < s_SwapchainInfo.images.size(); i++)
 		{
 			VkImageViewCreateInfo createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			createInfo.image = m_Images[i];
+			createInfo.image = s_SwapchainInfo.images[i];
 
 			// Specify how images are treated (1D, 2D, 3D Textures, or cube maps)
 			createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			createInfo.format = m_ImageFormat;
+			createInfo.format = s_SwapchainInfo.imageFormat;
 
 			// Default color mapping
 			createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -194,7 +198,8 @@ namespace Engine
 			createInfo.subresourceRange.baseArrayLayer = 0;
 			createInfo.subresourceRange.layerCount = 1;
 
-			if (vkCreateImageView(m_SupportDetails.logicalDevice, &createInfo, nullptr, &m_ImageViews[i]) != VK_SUCCESS)
+			const VulkanDeviceInfo& deviceInfo = VulkanDevice::GetDeviceInfo();
+			if (vkCreateImageView(deviceInfo.logicalDevice, &createInfo, nullptr, &s_SwapchainInfo.imageViews[i]) != VK_SUCCESS)
 			{
 				INDY_CORE_ERROR("[Vulkan Swap Chain] Could not create image views!");
 			}

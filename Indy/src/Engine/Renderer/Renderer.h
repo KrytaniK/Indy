@@ -10,6 +10,8 @@ namespace Engine
 		Renderer();
 		~Renderer();
 
+		void onUpdate();
+
 	private:
 		std::unique_ptr<RendererAPI> m_RendererAPI;
 	};

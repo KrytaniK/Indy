@@ -13,4 +13,9 @@ namespace Engine
 	{
 		m_RendererAPI->Shutdown();
 	}
+
+	void Renderer::onUpdate()
+	{
+		
+	}
 }
