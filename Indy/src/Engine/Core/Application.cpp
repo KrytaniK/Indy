@@ -20,14 +20,14 @@ namespace Engine
 {
 	Application::Application()
 	{
-		// Initialize Core and Client Loggers
+		// Initialize Debug Logging
 		Log::Init();
 
-		// Bind Application "Layer" events
+		// Bind Application "Layer" events (Application Class is techinically a layer)
 		Events::Bind<Application>("LayerContext", "LayerEvent", this, &Application::onEvent);
 		Events::Bind<Application>("LayerContext", "AppClose", this, &Application::onApplicationTerminate);
 
-		// Define Window API & Rendering API (MUST be in this order!)
+		// Define Window & Rendering APIs, respectively (MUST be in this order, and before layer creation!)
 		WindowAPI::Set(WINDOW_API_GLFW);
 		RendererAPI::Set(RENDERER_API_VULKAN);
 
@@ -57,11 +57,14 @@ namespace Engine
 		// Create application update event
 		//	*update events should not hold data.
 		Event updateEvent{"LayerContext","AppUpdate"};
+		Event renderEvent{"LayerContext","AppRender"};
+		Event tickEvent{"LayerContext","AppTick"};
 
 		while (!m_ShouldTerminate)
 		{
-			// Dispatch the update event every frame
-			Events::Dispatch(updateEvent);
+			Events::Dispatch(tickEvent);	// Time Dependent Updates
+			Events::Dispatch(updateEvent);	// General Application Updates (Internal state changes)
+			Events::Dispatch(renderEvent);	// Application Rendering
 		}
 	}
 

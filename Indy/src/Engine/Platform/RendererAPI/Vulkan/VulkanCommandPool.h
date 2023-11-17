@@ -6,27 +6,22 @@
 
 namespace Engine
 {
-	struct VulkanCommandPoolInfo
-	{
-		VkCommandPool commandPool;
-		VkCommandBuffer commandBuffer;
-	};
-
 	class VulkanCommandPool
 	{
 	private:
-		static VulkanCommandPoolInfo s_CommandPoolInfo;
+		static VkCommandPool s_CommandPool;
+		static std::vector<VkCommandBuffer> s_CommandBuffers;
 
 	public:
-		static const VulkanCommandPoolInfo& GetCommandPoolInfo() { return s_CommandPoolInfo;  };
+		static const VkCommandPool& GetCommandPool() { return s_CommandPool; };
+		static std::vector<VkCommandBuffer>& GetCommandBuffers() { return s_CommandBuffers; };
 
-	public:
-		void Init();
-		void Shutdown();
-
-		void RecordCommandBuffer(VkCommandBuffer buffer, const std::vector<VkFramebuffer>& framebuffers, uint32_t imageIndex);
-
+		static void Init(uint32_t maxFramesInFlight);
+		static void Shutdown();
+		
+		static void RecordCommandBuffer(VkCommandBuffer buffer, const std::vector<VkFramebuffer>& framebuffers, uint32_t imageIndex);
+	
 	private:
-		void CreateCommandBuffer();
+		static void CreateCommandBuffers(uint32_t maxFramesInFlight);
 	};
 }

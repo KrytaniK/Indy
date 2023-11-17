@@ -9,33 +9,28 @@ namespace Engine
 
 	class VulkanDebugUtil
 	{
+	private:
+		static bool s_Enabled;
+		static VkDebugUtilsMessengerEXT s_Messenger;
+		static std::vector<const char*> s_ValidationLayers;
+
 	public:
-		bool Enabled() { return m_Enabled; };
+		static void Init();
+		static void Shutdown(VkInstance instance);
+		static bool Enabled() { return s_Enabled; };
 
-		// Validation Layers
-		bool QueryValidationLayerSupport();
+		static uint32_t GetValidationLayerCount() { return static_cast<uint32_t>(s_ValidationLayers.size()); };
+		static const char* const* GetValidationLayerNames() { return s_ValidationLayers.data(); };
 
-		uint32_t GetValidationLayerCount() { return static_cast<uint32_t>(m_ValidationLayers.size()); };
-		const char* const* GetValidationLayerNames() { return m_ValidationLayers.data(); };
+		static void PopulateMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
-		// Debug Messenger
-		VkDebugUtilsMessengerEXT GetMessenger() { return m_Messenger; };
-		void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-
-		void CreateDebugMessenger(VkInstance instance);
-		void DestroyDebugMessenger(VkInstance instance);
+		static void CreateMessenger(VkInstance instance);
 
 	private:
-		const std::vector<const char*> m_ValidationLayers = {
-			"VK_LAYER_KHRONOS_validation",
-		};
+		static bool QueryValidationLayerSupport();
+		static void DestroyMessenger(VkInstance instance);
 
-		VkDebugUtilsMessengerEXT m_Messenger;
-
-		#ifdef ENGINE_DEBUG
-			const bool m_Enabled = true;
-		#else
-			const bool m_Enabled = false;
-		#endif
+	private:
+		VulkanDebugUtil();
 	};
 }

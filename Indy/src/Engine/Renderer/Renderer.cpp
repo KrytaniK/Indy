@@ -2,20 +2,21 @@
 
 namespace Engine
 {
-	Renderer::Renderer()
+	std::unique_ptr<RendererAPI> Renderer::s_RendererAPI = nullptr;
+
+	void Renderer::Init()
 	{
-		// Create and initialize the rendering API.
-		m_RendererAPI = std::unique_ptr<RendererAPI>(RendererAPI::Create());
-		m_RendererAPI->Init();
+		s_RendererAPI = std::unique_ptr<RendererAPI>(RendererAPI::Create());
+		s_RendererAPI->Init();
 	}
 
-	Renderer::~Renderer()
+	void Renderer::Shutdown()
 	{
-		m_RendererAPI->Shutdown();
+		s_RendererAPI->Shutdown();
 	}
 
-	void Renderer::onUpdate()
+	void Renderer::DrawFrame()
 	{
-		
+		s_RendererAPI->DrawFrame();
 	}
 }

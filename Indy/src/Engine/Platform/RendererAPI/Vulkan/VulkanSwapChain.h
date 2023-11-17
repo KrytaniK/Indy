@@ -4,35 +4,41 @@
 
 namespace Engine
 {
-	struct VulkanSwapchainInfo
-	{
-		VkSwapchainKHR swapchain;
-		VkExtent2D extent;
-		VkFormat imageFormat;
-		std::vector<VkImage> images;
-		std::vector<VkImageView> imageViews;
-	};
 
 	class VulkanSwapChain
 	{
 	private:
-		static VulkanSwapchainInfo s_SwapchainInfo;
+		static VkSwapchainKHR s_Swapchain;
+		static VkExtent2D s_Extent;
+		static VkFormat s_ImageFormat;
+		static std::vector<VkImage> s_Images;
+		static std::vector<VkImageView> s_ImageViews;
+		static std::vector<VkFramebuffer> s_Framebuffers;
+
 
 	public:
-		static const VulkanSwapchainInfo& GetSwapChainInfo() { return s_SwapchainInfo; };
+		static const VkSwapchainKHR& GetSwapChain() { return s_Swapchain; };
+		static const VkExtent2D& GetExtent() { return s_Extent; };
+		static const VkFormat& GetImageFormat() { return s_ImageFormat; };
+		static const std::vector<VkImage> GetImages() { return s_Images; };
+		static const std::vector<VkImageView> GetImageViews() { return s_ImageViews; };
+		static std::vector<VkFramebuffer>& GetFrameBuffers() { return s_Framebuffers; };
 
-	public:
-		void Init(VkSurfaceKHR windowSurface);
+		static void Init(VkSurfaceKHR windowSurface);
+		static void Shutdown();
+		static void Cleanup();
 
-		void Shutdown();
-
-		void CreateImageViews();
+		static void CreateImageViews();
+		static void CreateFramebuffers();
 
 	private:
-		VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+		static VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 
-		VkPresentModeKHR ChoosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+		static VkPresentModeKHR ChoosePresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 
-		VkExtent2D ChooseExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+		static VkExtent2D ChooseExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+
+	private:
+		VulkanSwapChain();
 	};
 }

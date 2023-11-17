@@ -16,15 +16,14 @@ namespace Engine
 	{
 		// Bind Event Handles
 		Events::Bind<RenderLayer>("LayerContext", "LayerEvent", this, &RenderLayer::onEvent);
-		Events::Bind<RenderLayer>("LayerContext", "AppUpdate", this, &RenderLayer::onUpdate);
+		Events::Bind<RenderLayer>("LayerContext", "AppRender", this, &RenderLayer::onRender);
 
-		// Create the renderer instance
-		m_Renderer = std::make_unique<Renderer>();
+		Renderer::Init();
 	}
 
 	void RenderLayer::onDetach()
 	{
-
+		Renderer::Shutdown();
 	}
 
 	void RenderLayer::onEvent(Event& event)
@@ -34,6 +33,11 @@ namespace Engine
 
 	void RenderLayer::onUpdate(Event& event)
 	{
-		m_Renderer->onUpdate();
+		// Pre-Rendering Setup?
+	}
+
+	void RenderLayer::onRender(Event& event)
+	{
+		Renderer::DrawFrame();
 	}
 }

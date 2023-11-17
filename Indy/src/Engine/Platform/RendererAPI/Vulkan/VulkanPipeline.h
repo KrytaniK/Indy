@@ -8,28 +8,27 @@
 
 namespace Engine
 {
-	struct VulkanPipelineInfo
-	{
-		VkRenderPass renderPass;
-		VkPipelineLayout pipelineLayout;
-		VkPipeline graphicsPipeline;
-	};
-
 	class VulkanPipeline
 	{
 	private:
-		static VulkanPipelineInfo s_PipelineInfo;
+		static VkRenderPass s_RenderPass;
+		static VkPipelineLayout s_PipelineLayout;
+		static VkPipeline s_GraphicsPipeline;
 
 	public:
-		static const VulkanPipelineInfo& GetPipelineInfo() { return s_PipelineInfo; };
+		static const VkRenderPass& GetRenderPass() { return s_RenderPass; };
+		static const VkPipelineLayout& GetLayout() { return s_PipelineLayout; };
+		static const VkPipeline& GetPipeline() { return s_GraphicsPipeline; };
 
-	public:
-		void Init();
-		void Shutdown();
+		static void Init();
+		static void Shutdown();
 
 	private:
-		VkShaderModule CreateShaderModule(VkDevice logicalDevice, const std::vector<char>& shaderCode);
-		void CreateRenderPass(VkDevice logicalDevice, VkFormat swapChainImageFormat);
-		void CreateGraphicsPipeline(VkDevice logicalDevice, VkExtent2D swapChainExtent);
+		static VkShaderModule CreateShaderModule(VkDevice logicalDevice, const std::vector<char>& shaderCode);
+		static void CreateRenderPass(VkDevice logicalDevice, VkFormat swapChainImageFormat);
+		static void CreateGraphicsPipeline(VkDevice logicalDevice, VkExtent2D swapChainExtent);
+
+	private:
+		VulkanPipeline();
 	};
 }

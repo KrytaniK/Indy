@@ -30,6 +30,10 @@ namespace Engine
 		virtual void Init() = 0;
 		virtual void Shutdown() = 0;
 
+		virtual void DrawFrame() = 0;
+
+		virtual void onWindowResize(Event& event) = 0;
+
 		// Creates an instance of the Rendering API set by the application. Defaults to Vulkan
 		static std::unique_ptr<RendererAPI> Create();
 	};

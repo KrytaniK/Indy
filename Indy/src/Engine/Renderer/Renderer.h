@@ -7,12 +7,12 @@ namespace Engine
 	class Renderer
 	{
 	public:
-		Renderer();
-		~Renderer();
+		static void Init();
+		static void Shutdown();
 
-		void onUpdate();
+		static void DrawFrame();
 
 	private:
-		std::unique_ptr<RendererAPI> m_RendererAPI;
+		static std::unique_ptr<RendererAPI> s_RendererAPI;
 	};
 }

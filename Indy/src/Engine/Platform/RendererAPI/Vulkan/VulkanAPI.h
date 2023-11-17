@@ -15,7 +15,9 @@ namespace Engine
 	class VulkanAPI : public RendererAPI
 	{
 	private:
+		static uint32_t MAX_FRAMES_IN_FLIGHT;
 		static VkInstance s_Vulkan_Instance;
+		static void* s_Window;
 
 	public:
 		VulkanAPI();
@@ -25,8 +27,11 @@ namespace Engine
 		virtual void Init() override;
 		virtual void Shutdown() override;
 
+		virtual void DrawFrame() override;
+
+		virtual void onWindowResize(Event& event) override;
+
 	private:
-		void onApplicationClose(Event& event);
 		
 		// Instance Creation
 		void CreateInstance();
@@ -34,44 +39,27 @@ namespace Engine
 
 		// Window Surface Creation
 		void CreateWindowSurface();
-		
-		// Framebuffer Creation
-		void CreateFramebuffers();
 
 		// Sync Objects (Temp)
 		void CreateSyncObjects();
 
-		// Temp Draw Method
-		void DrawFrame();
+		// Swap Chain Recreation
+		void RecreateSwapChain();
 
 	private:
-		// Instance
-		VkInstance m_Vulkan_Instance;
+		struct VulkanFrame
+		{
+			VkSemaphore imageAvailableSemaphore;
+			VkSemaphore renderFinishedSemaphore;
+			VkFence fence;
+		};
 
+	private:
 		// Window Surface
 		VkSurfaceKHR m_WindowSurface;
 
-		// Frame Buffers
-		std::vector<VkFramebuffer> m_Framebuffers;
-
-		// Debug Util
-		std::unique_ptr<VulkanDebugUtil> m_DebugUtil;
-
-		// Physical & Logical Devices & Relative Queue Families
-		std::unique_ptr<VulkanDevice> m_Device;
-
-		// Swap Chain
-		std::unique_ptr<VulkanSwapChain> m_SwapChain;
-		
-		// Graphics Pipeline
-		std::unique_ptr<VulkanPipeline> m_Pipeline;
-
-		// Command Bool & Buffers
-		std::unique_ptr<VulkanCommandPool> m_CommandPool;
-
-		// Temp rendering & presentation (semaphores & fences)
-		VkSemaphore m_ImageAvailableSemaphore;
-		VkSemaphore m_RenderFinishedSemaphore;
-		VkFence m_InFlightFence;
+		std::vector<VulkanFrame> m_FramesInFlight;
+		uint32_t m_CurrentFrame = 0;
+		bool m_FramebufferResized = false;
 	};
 }

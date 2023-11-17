@@ -57,9 +57,35 @@ namespace Engine
 	// Class implementation
 	// --------------------
 
+	#ifdef ENGINE_DEBUG
+		bool VulkanDebugUtil::s_Enabled = true;
+	#else
+		bool VulkanDebugUtil::s_Enabled = false;
+	#endif
+
+	std::vector<const char*> VulkanDebugUtil::s_ValidationLayers = {
+		"VK_LAYER_KHRONOS_validation"
+	};
+
+	VkDebugUtilsMessengerEXT VulkanDebugUtil::s_Messenger = nullptr;
+
+	void VulkanDebugUtil::Init()
+	{
+		VulkanDebugUtil::QueryValidationLayerSupport();
+	}
+
+	void VulkanDebugUtil::Shutdown(VkInstance instance)
+	{
+		VulkanDebugUtil::DestroyMessenger(instance);
+	}
+
 	bool VulkanDebugUtil::QueryValidationLayerSupport()
 	{
-		if (!m_Enabled) return false;
+		if (!s_Enabled)
+		{
+			INDY_CORE_WARN("[Vulkan Debug] Validation Layers are disabled");
+			return false;
+		}
 
 		// Request the number of layers
 		uint32_t layerCount;
@@ -69,8 +95,8 @@ namespace Engine
 		std::vector<VkLayerProperties> availableLayers(layerCount);
 		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-		// Ensure all layers specified in m_ValidationLayers actually exist
-		for (const char* layerName : m_ValidationLayers) {
+		// Ensure all layers specified in s_ValidationLayers actually exist
+		for (const char* layerName : s_ValidationLayers) {
 			bool layerFound = false;
 
 			for (const auto& layerProperties : availableLayers) {
@@ -89,7 +115,7 @@ namespace Engine
 		return true;
 	}
 
-	void VulkanDebugUtil::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+	void VulkanDebugUtil::PopulateMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
 	{
 		createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -99,23 +125,29 @@ namespace Engine
 		createInfo.pUserData = nullptr;
 	}
 
-	void VulkanDebugUtil::CreateDebugMessenger(VkInstance instance)
+	void VulkanDebugUtil::CreateMessenger(VkInstance instance)
 	{
-		if (!m_Enabled) return;
+		if (!s_Enabled) return;
+
+		if (s_Messenger)
+		{
+			INDY_CORE_WARN("[Vulkan Debug] Messenger already exists!");
+			return;
+		}
 
 		VkDebugUtilsMessengerCreateInfoEXT createInfo{};
-		PopulateDebugMessengerCreateInfo(createInfo);
+		VulkanDebugUtil::PopulateMessengerCreateInfo(createInfo);
 
-		if (Vulkan_CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &m_Messenger) != VK_SUCCESS)
+		if (Vulkan_CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &s_Messenger) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("[Vulkan Debug] Failed to set up Debug Messenger!");
 		}
 	}
 
-	void VulkanDebugUtil::DestroyDebugMessenger(VkInstance instance)
+	void VulkanDebugUtil::DestroyMessenger(VkInstance instance)
 	{
-		if (!m_Enabled) return;
+		if (!s_Enabled) return;
 
-		Vulkan_DestroyDebugUtilsMessengerEXT(instance, m_Messenger, nullptr);
+		Vulkan_DestroyDebugUtilsMessengerEXT(instance, s_Messenger, nullptr);
 	}
 }

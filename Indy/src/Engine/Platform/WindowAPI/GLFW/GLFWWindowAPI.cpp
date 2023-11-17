@@ -28,7 +28,7 @@ namespace Engine
 			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // No OpenGL Context is needed.
 		}
 
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE); // Temporary | Disable window resize.
+		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 		m_Window = glfwCreateWindow((int)windowSpec.width, (int)windowSpec.height, windowSpec.title.c_str(), NULL, NULL); // Create GLFW Window
 
@@ -42,6 +42,14 @@ namespace Engine
 		{
 			glfwMakeContextCurrent(m_Window);
 		}
+
+		// GLFW FramebufferResize Callback
+		glfwSetFramebufferSizeCallback(m_Window, [](GLFWwindow* window, int width, int height) 
+			{
+				// Dispatch a window resize event to the Render event context.
+				Event event{"RenderContext", "WindowResize"};
+				Events::Dispatch(event);
+			});
 
 		// ---------------------------
 		// GLFW Window Event Callbacks

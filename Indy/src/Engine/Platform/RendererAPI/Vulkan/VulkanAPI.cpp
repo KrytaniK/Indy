@@ -7,14 +7,17 @@
 namespace Engine
 {
 	VkInstance VulkanAPI::s_Vulkan_Instance;
+	uint32_t VulkanAPI::MAX_FRAMES_IN_FLIGHT = 2;
+	void* VulkanAPI::s_Window = nullptr;
 
-	VulkanAPI::VulkanAPI()
+	VulkanAPI::VulkanAPI() : m_WindowSurface(nullptr)
 	{
-		m_DebugUtil = std::make_unique<VulkanDebugUtil>();
-		m_Device = std::make_unique<VulkanDevice>();
-		m_SwapChain = std::make_unique<VulkanSwapChain>();
-		m_Pipeline = std::make_unique<VulkanPipeline>();
-		m_CommandPool = std::make_unique<VulkanCommandPool>();
+		Events::Bind<VulkanAPI>("RenderContext", "WindowResize", this, &VulkanAPI::onWindowResize);
+
+		Event event{ "LayerContext", "RequestWindow" };
+		Events::Dispatch(event);
+		s_Window = event.data;
+
 	}
 
 	VulkanAPI::~VulkanAPI()
@@ -24,69 +27,109 @@ namespace Engine
 
 	void VulkanAPI::Init()
 	{
-		// Ensure validation layers are supported
-		m_DebugUtil->QueryValidationLayerSupport();
+		VulkanDebugUtil::Init();
 
 		// Instance Creation
 		CreateInstance();
 
-		// Setup the debug messenger, if enabled
-		m_DebugUtil->CreateDebugMessenger(s_Vulkan_Instance);
+		// Setup the debug messenger
+		VulkanDebugUtil::CreateMessenger(s_Vulkan_Instance);
 
 		// Window Surface Creation
 		CreateWindowSurface();
 
 		// Initialize the physical and logical devices
-		m_Device->Init(s_Vulkan_Instance, m_WindowSurface);
+		VulkanDevice::Init(s_Vulkan_Instance, m_WindowSurface);
 
 		// Initialize the swap chain and create the image views
-		m_SwapChain->Init(m_WindowSurface);
-		m_SwapChain->CreateImageViews();
+		VulkanSwapChain::Init(m_WindowSurface);
+		VulkanSwapChain::CreateImageViews();
 
 		// Initialize the graphics pipeline
-		m_Pipeline->Init();
+		VulkanPipeline::Init();
 
 		// Framebuffer creation
-		CreateFramebuffers();
+		VulkanSwapChain::CreateFramebuffers();
 
 		// Initialize the command pool
-		m_CommandPool->Init();
+		VulkanCommandPool::Init(MAX_FRAMES_IN_FLIGHT);
 
 		// Create CPU <-> GPU Sync objects
 		CreateSyncObjects();
-
-		// Draw Test Frame
-		DrawFrame();
 	}
 
 	void VulkanAPI::Shutdown()
 	{
-		const VulkanDeviceInfo& deviceInfo = VulkanDevice::GetDeviceInfo();
+		const VkDevice& logicalDevice = VulkanDevice::GetLogicalDevice();
 
-		vkDestroySemaphore(deviceInfo.logicalDevice, m_ImageAvailableSemaphore, nullptr);
-		vkDestroySemaphore(deviceInfo.logicalDevice, m_RenderFinishedSemaphore, nullptr);
-		vkDestroyFence(deviceInfo.logicalDevice, m_InFlightFence, nullptr);
+		VulkanSwapChain::Shutdown();
+		VulkanPipeline::Shutdown();
 
-		m_CommandPool->Shutdown();
-
-		for (auto framebuffer : m_Framebuffers)
+		// Clean up frame semaphores and fences
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
-			vkDestroyFramebuffer(deviceInfo.logicalDevice, framebuffer, nullptr);
+			vkDestroySemaphore(logicalDevice, m_FramesInFlight[i].renderFinishedSemaphore, nullptr);
+			vkDestroySemaphore(logicalDevice, m_FramesInFlight[i].imageAvailableSemaphore, nullptr);
+			vkDestroyFence(logicalDevice, m_FramesInFlight[i].fence, nullptr);
 		}
 
-		m_Pipeline->Shutdown();
+		VulkanCommandPool::Shutdown();
+		VulkanDevice::Shutdown();
 
-		m_SwapChain->Shutdown();
-		m_Device->Shutdown();
-		m_DebugUtil->DestroyDebugMessenger(s_Vulkan_Instance);
+		VulkanDebugUtil::Shutdown(s_Vulkan_Instance);
 
 		vkDestroySurfaceKHR(s_Vulkan_Instance, m_WindowSurface, nullptr);
 		vkDestroyInstance(s_Vulkan_Instance, nullptr);
 	}
 
-	void VulkanAPI::onApplicationClose(Event& event)
+	// ----------------------
+	// Window Resize Handling
+	// ----------------------
+
+	void VulkanAPI::onWindowResize(Event& event)
 	{
-		Shutdown();
+		if (m_FramebufferResized) return;
+
+		m_FramebufferResized = true;
+
+		// To enable the framebuffer to actually render during resizing, instead of after the resize
+		//	is complete, two calls to drawFrame are necessary. GLFW halts the event loop while resizing
+		//	is in progress, but this callback is fired for every mouse movement while resizing.
+		//	The first call to DrawFrame() will only recreate the swap chain. A second call is needed to actually render
+		//	the result.
+		DrawFrame();
+		DrawFrame();
+	}
+
+	void VulkanAPI::RecreateSwapChain()
+	{
+		const VkDevice& logicalDevice = VulkanDevice::GetLogicalDevice();
+		std::vector<VkFramebuffer>& framebuffers = VulkanSwapChain::GetFrameBuffers();
+
+		GLFWwindow* window = (GLFWwindow*)VulkanAPI::s_Window;
+
+		// Window Minimization. Don't poll events while the window is inactive.
+		int width = 0, height = 0;
+		glfwGetFramebufferSize(window, &width, &height);
+		while (width == 0 && height == 0)
+		{
+			glfwGetFramebufferSize(window, &width, &height);
+			glfwWaitEvents();
+		}
+		
+		vkDeviceWaitIdle(logicalDevice);
+
+		// Destroy out of date swap chain
+		VulkanSwapChain::Cleanup();
+
+		// Re-initialize swap chain
+		VulkanSwapChain::Init(m_WindowSurface);
+
+		// Recreate image views
+		VulkanSwapChain::CreateImageViews();
+
+		// Recreate FrameBuffers
+		VulkanSwapChain::CreateFramebuffers();
 	}
 
 	// ------------------------
@@ -115,12 +158,12 @@ namespace Engine
 		createInfo.ppEnabledExtensionNames = extensions.data();
 
 		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-		if (m_DebugUtil->Enabled())
+		if (VulkanDebugUtil::Enabled())
 		{
-			createInfo.enabledLayerCount = m_DebugUtil->GetValidationLayerCount();
-			createInfo.ppEnabledLayerNames = m_DebugUtil->GetValidationLayerNames();
+			createInfo.enabledLayerCount = VulkanDebugUtil::GetValidationLayerCount();
+			createInfo.ppEnabledLayerNames = VulkanDebugUtil::GetValidationLayerNames();
 
-			m_DebugUtil->PopulateDebugMessengerCreateInfo(debugCreateInfo);
+			VulkanDebugUtil::PopulateMessengerCreateInfo(debugCreateInfo);
 			createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 		}
 		else
@@ -144,7 +187,7 @@ namespace Engine
 
 		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
-		if (m_DebugUtil->Enabled()) {
+		if (VulkanDebugUtil::Enabled()) {
 			extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 		}
 
@@ -168,43 +211,11 @@ namespace Engine
 		}
 	}
 
-	// --------------------
-	// Framebuffer Creation
-	// --------------------
-
-	void VulkanAPI::CreateFramebuffers()
-	{
-		const VulkanDeviceInfo& deviceInfo = VulkanDevice::GetDeviceInfo();
-		const VulkanSwapchainInfo& swapchainInfo = VulkanSwapChain::GetSwapChainInfo();
-		const VulkanPipelineInfo& pipelineInfo = VulkanPipeline::GetPipelineInfo();
-
-		m_Framebuffers.resize(swapchainInfo.imageViews.size());
-
-		for (size_t i = 0; i < swapchainInfo.imageViews.size(); i++)
-		{
-			VkImageView attachments[] = {
-				swapchainInfo.imageViews[i]
-			};
-
-			VkFramebufferCreateInfo framebufferInfo{};
-			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebufferInfo.renderPass = pipelineInfo.renderPass;
-			framebufferInfo.attachmentCount = 1;
-			framebufferInfo.pAttachments = attachments;
-			framebufferInfo.width = swapchainInfo.extent.width;
-			framebufferInfo.height = swapchainInfo.extent.height;
-			framebufferInfo.layers = 1;
-
-			if (vkCreateFramebuffer(deviceInfo.logicalDevice, &framebufferInfo, nullptr, &m_Framebuffers[i]) != VK_SUCCESS)
-			{
-				INDY_CORE_ERROR("[VulkanAPI] Failed to create framebuffer!");
-			}
-		}
-	}
-
 	void VulkanAPI::CreateSyncObjects()
 	{
-		const VulkanDeviceInfo& deviceInfo = VulkanDevice::GetDeviceInfo();
+		const VkDevice& logicalDevice = VulkanDevice::GetLogicalDevice();
+
+		m_FramesInFlight.resize(MAX_FRAMES_IN_FLIGHT);
 
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -213,37 +224,56 @@ namespace Engine
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-		if (vkCreateSemaphore(deviceInfo.logicalDevice, &semaphoreInfo, nullptr, &m_ImageAvailableSemaphore) != VK_SUCCESS ||
-			vkCreateSemaphore(deviceInfo.logicalDevice, &semaphoreInfo, nullptr, &m_RenderFinishedSemaphore) != VK_SUCCESS ||
-			vkCreateFence(deviceInfo.logicalDevice, &fenceInfo, nullptr, &m_InFlightFence) != VK_SUCCESS) {
-			INDY_CORE_ERROR("failed to create semaphores!");
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		{
+			if (vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &m_FramesInFlight[i].imageAvailableSemaphore) != VK_SUCCESS ||
+				vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &m_FramesInFlight[i].renderFinishedSemaphore) != VK_SUCCESS ||
+				vkCreateFence(logicalDevice, &fenceInfo, nullptr, &m_FramesInFlight[i].fence) != VK_SUCCESS) {
+				INDY_CORE_ERROR("failed to create semaphores!");
+			}
 		}
 	}
 
 	void VulkanAPI::DrawFrame()
 	{
-		const VulkanDeviceInfo& deviceInfo = VulkanDevice::GetDeviceInfo();
-		const VulkanSwapchainInfo& swapchainInfo = VulkanSwapChain::GetSwapChainInfo();
-		const VulkanCommandPoolInfo& commandPoolInfo = VulkanCommandPool::GetCommandPoolInfo();
+		const VkDevice& logicalDevice = VulkanDevice::GetLogicalDevice();
+
+		const VkSwapchainKHR& swapchain = VulkanSwapChain::GetSwapChain();
+		std::vector<VkFramebuffer>& framebuffers = VulkanSwapChain::GetFrameBuffers();
+		
+		std::vector<VkCommandBuffer>& commandBuffers = VulkanCommandPool::GetCommandBuffers();
 
 		// Wait for previous frame to finish
-		vkWaitForFences(deviceInfo.logicalDevice, 1, &m_InFlightFence, VK_TRUE, UINT64_MAX);
-		vkResetFences(deviceInfo.logicalDevice, 1, &m_InFlightFence);
+		vkWaitForFences(logicalDevice, 1, &m_FramesInFlight[m_CurrentFrame].fence, VK_TRUE, UINT64_MAX);
 
 		// Get Image from Swap Chain
 		uint32_t imageIndex;
-		vkAcquireNextImageKHR(deviceInfo.logicalDevice, swapchainInfo.swapchain, UINT64_MAX, m_ImageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+		VkResult result = vkAcquireNextImageKHR(logicalDevice, swapchain, UINT64_MAX, m_FramesInFlight[m_CurrentFrame].imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+
+		// Recreate Swap Chain if it is out of date, or suboptimal
+		if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		{
+			RecreateSwapChain();
+			return;
+		}
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+		{
+			INDY_CORE_CRITICAL("Failed to Acquire Swap Chain Image!");
+		}
+
+		// Reset the fence only if work was submitted
+		vkResetFences(logicalDevice, 1, &m_FramesInFlight[m_CurrentFrame].fence);
 
 		// Reset the command buffer and record the commands
-		vkResetCommandBuffer(commandPoolInfo.commandBuffer, 0);
-		m_CommandPool->RecordCommandBuffer(commandPoolInfo.commandBuffer, m_Framebuffers, imageIndex);
+		vkResetCommandBuffer(commandBuffers[m_CurrentFrame], 0);
+		VulkanCommandPool::RecordCommandBuffer(commandBuffers[m_CurrentFrame], framebuffers, imageIndex);
 
 		// Submit the command buffer to the correct queue
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
 		// Specify when and where to wait in the graphics pipeline
-		VkSemaphore waitSemaphores[] = { m_ImageAvailableSemaphore };
+		VkSemaphore waitSemaphores[] = { m_FramesInFlight[m_CurrentFrame].imageAvailableSemaphore };
 		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		submitInfo.waitSemaphoreCount = 1;
 		submitInfo.pWaitSemaphores = waitSemaphores;
@@ -251,15 +281,16 @@ namespace Engine
 
 		// attach the command buffer
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandPoolInfo.commandBuffer;
+		submitInfo.pCommandBuffers = &commandBuffers[m_CurrentFrame];
 
-		// Specify which semaphores to signal when the command buffers finish
-		VkSemaphore signalSemaphores[] = { m_RenderFinishedSemaphore };
+		// Specify which semaphores to signal when the command buffers finish execution
+		VkSemaphore signalSemaphores[] = { m_FramesInFlight[m_CurrentFrame].renderFinishedSemaphore };
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
 
 		// Submit commands to the graphics queue.
-		if (vkQueueSubmit(deviceInfo.graphicsQueue, 1, &submitInfo, m_InFlightFence) != VK_SUCCESS)
+		const VulkanQueue& graphicsQueue = VulkanDevice::GetGraphicsQueue();
+		if (vkQueueSubmit(graphicsQueue.queue, 1, &submitInfo, m_FramesInFlight[m_CurrentFrame].fence) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("Failed to submit draw command buffer!");
 			return;
@@ -272,13 +303,27 @@ namespace Engine
 		presentInfo.waitSemaphoreCount = 1;
 		presentInfo.pWaitSemaphores = signalSemaphores;
 
-		VkSwapchainKHR swapChains[] = { swapchainInfo.swapchain };
+		VkSwapchainKHR swapChains[] = { swapchain };
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = swapChains;
 		presentInfo.pImageIndices = &imageIndex;
 		presentInfo.pResults = nullptr; // Optional
 
-		vkQueuePresentKHR(deviceInfo.presentQueue, &presentInfo);
+		const VulkanQueue& presentQueue = VulkanDevice::GetPresentQueue();
+		result = vkQueuePresentKHR(presentQueue.queue, &presentInfo);
+
+		// Recreate Swap Chain if it is out of date, or suboptimal
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_FramebufferResized)
+		{
+			m_FramebufferResized = false;
+			RecreateSwapChain();
+		}
+		else if (result != VK_SUCCESS)
+		{
+			INDY_CORE_CRITICAL("Failed to Acquire Swap Chain Image!");
+		}
+
+		m_CurrentFrame = (m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 }
 

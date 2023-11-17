@@ -1,5 +1,7 @@
 #include "VulkanSwapChain.h"
 
+#include "VulkanPipeline.h"
+
 #include "Engine/Core/Log.h"
 #include "Engine/EventSystem/Events.h"
 
@@ -7,23 +9,31 @@
 
 namespace Engine
 {
-	VulkanSwapchainInfo VulkanSwapChain::s_SwapchainInfo;
+	VkSwapchainKHR VulkanSwapChain::s_Swapchain;
+	VkExtent2D VulkanSwapChain::s_Extent;
+	VkFormat VulkanSwapChain::s_ImageFormat;
+	std::vector<VkImage> VulkanSwapChain::s_Images;
+	std::vector<VkImageView> VulkanSwapChain::s_ImageViews;
+	std::vector<VkFramebuffer> VulkanSwapChain::s_Framebuffers;
 
 	void VulkanSwapChain::Init(VkSurfaceKHR windowSurface)
 	{
-		const VulkanDeviceInfo& deviceInfo = VulkanDevice::GetDeviceInfo();
+		const VkDevice& logicalDevice = VulkanDevice::GetLogicalDevice();
+		const VulkanQueue& graphicsQueue = VulkanDevice::GetGraphicsQueue();
+		const VulkanQueue& presentQueue = VulkanDevice::GetPresentQueue();
+		const VulkanSwapChainSupport& swapchainSupport = VulkanDevice::GetSwapChainSupport(windowSurface);
 
-		VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat(deviceInfo.support.formats);
-		VkPresentModeKHR presentMode = ChoosePresentMode(deviceInfo.support.presentModes);
-		VkExtent2D extent = ChooseExtent(deviceInfo.support.capabilities);
+		VkSurfaceFormatKHR surfaceFormat = VulkanSwapChain::ChooseSurfaceFormat(swapchainSupport.formats);
+		VkPresentModeKHR presentMode = VulkanSwapChain::ChoosePresentMode(swapchainSupport.presentModes);
+		VkExtent2D extent = VulkanSwapChain::ChooseExtent(swapchainSupport.capabilities);
 		
 		// Recommended to request at least one more image than the minimum, which
 		// means that we don't have to wait on the driver to complete internal operations.
-		uint32_t imageCount = deviceInfo.support.capabilities.minImageCount + 1;
+		uint32_t imageCount = swapchainSupport.capabilities.minImageCount + 1;
 		
 		// Never exceed max image count. 0 is special, meaning no limit.
-		if (deviceInfo.support.capabilities.maxImageCount > 0 && imageCount > deviceInfo.support.capabilities.maxImageCount) {
-			imageCount = deviceInfo.support.capabilities.maxImageCount;
+		if (swapchainSupport.capabilities.maxImageCount > 0 && imageCount > swapchainSupport.capabilities.maxImageCount) {
+			imageCount = swapchainSupport.capabilities.maxImageCount;
 		}
 		
 		// Swap Chain Create Info
@@ -39,12 +49,12 @@ namespace Engine
 		createInfo.imageArrayLayers = 1;
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		
-		uint32_t queueFamilyIndices[] = { deviceInfo.graphicsQueueFamilyIndex, deviceInfo.presentQueueFamilyIndex };
+		uint32_t queueFamilyIndices[] = { graphicsQueue.familyIndex, presentQueue.familyIndex };
 		
 		// If the queue families are different, concurrent mode ensures
 		// the swap chain images are shared across queue families.
 		// Exclusive mode is best for performance.
-		if (deviceInfo.graphicsQueueFamilyIndex != deviceInfo.presentQueueFamilyIndex) {
+		if (graphicsQueue.familyIndex != presentQueue.familyIndex) {
 			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 			createInfo.queueFamilyIndexCount = 2;
 			createInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -57,7 +67,7 @@ namespace Engine
 		
 		// Swap chain image transformations can be specified, if supported. Setting
 		// this to the current transform means that no transformations are applied.
-		createInfo.preTransform = deviceInfo.support.capabilities.currentTransform;
+		createInfo.preTransform = swapchainSupport.capabilities.currentTransform;
 		
 		// Specify if the alpha channel should be used for blending with other windows.
 		// Best to almost always ignore the alpha channel.
@@ -75,31 +85,44 @@ namespace Engine
 		createInfo.oldSwapchain = VK_NULL_HANDLE;
 		
 		// Finally, create the swap chain.
-		if (vkCreateSwapchainKHR(deviceInfo.logicalDevice, &createInfo, nullptr, &s_SwapchainInfo.swapchain) != VK_SUCCESS)
+		if (vkCreateSwapchainKHR(logicalDevice, &createInfo, nullptr, &s_Swapchain) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("[Vulkan Swap Chain] Failed To Create Swap Chain!");
 		}
 		
 		// Query Swap Chain Image Handles count
-		vkGetSwapchainImagesKHR(deviceInfo.logicalDevice, s_SwapchainInfo.swapchain, &imageCount, nullptr);
+		vkGetSwapchainImagesKHR(logicalDevice, s_Swapchain, &imageCount, nullptr);
 		
-		s_SwapchainInfo.images.resize(imageCount); // Resize the container
+		s_Images.resize(imageCount); // Resize the container
 		
 		// Retrieve Swap Chain Image Handles
-		vkGetSwapchainImagesKHR(deviceInfo.logicalDevice, s_SwapchainInfo.swapchain, &imageCount, s_SwapchainInfo.images.data());
+		vkGetSwapchainImagesKHR(logicalDevice, s_Swapchain, &imageCount, s_Images.data());
 		
 		// Store Swap Chain format and extent for later use.
-		s_SwapchainInfo.imageFormat = surfaceFormat.format;
-		s_SwapchainInfo.extent = extent;
-
-
+		s_ImageFormat = surfaceFormat.format;
+		s_Extent = extent;
 	}
 
 	void VulkanSwapChain::Shutdown()
 	{
-		const VulkanDeviceInfo& deviceInfo = VulkanDevice::GetDeviceInfo();
+		Cleanup();
+	}
 
-		vkDestroySwapchainKHR(deviceInfo.logicalDevice, s_SwapchainInfo.swapchain, nullptr);
+	void VulkanSwapChain::Cleanup()
+	{
+		const VkDevice& logicalDevice = VulkanDevice::GetLogicalDevice();
+
+		for (auto framebuffer : s_Framebuffers)
+		{
+			vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
+		}
+
+		for (size_t i = 0; i < s_ImageViews.size(); i++)
+		{
+			vkDestroyImageView(logicalDevice, s_ImageViews[i], nullptr);
+		}
+
+		vkDestroySwapchainKHR(logicalDevice, s_Swapchain, nullptr);
 	}
 
 	VkSurfaceFormatKHR VulkanSwapChain::ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
@@ -139,7 +162,8 @@ namespace Engine
 		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 			return capabilities.currentExtent;
 		}
-		else {
+		else 
+		{
 			int width, height;
 			glfwGetFramebufferSize(GLFW_Window, &width, &height);
 
@@ -157,31 +181,33 @@ namespace Engine
 
 	void VulkanSwapChain::CreateImageViews()
 	{
-		if (s_SwapchainInfo.swapchain == VK_NULL_HANDLE)
+		if (s_Swapchain == VK_NULL_HANDLE)
 		{
 			INDY_CORE_ERROR("[Vulkan Swap Chain] Cannot Create Image Views: Swap chain has not been initialized!");
 			return;
 		}
 
-		if (s_SwapchainInfo.images.empty())
+		if (s_Images.empty())
 		{
 			INDY_CORE_ERROR("[Vulkan Swap Chain] Cannot Create Image Views: Swap Chain Images have not been created!");
 			return;
 		}
 
+		const VkDevice& logicalDevice = VulkanDevice::GetLogicalDevice();
+
 		// Ensure the number of image views matches the number of images.
-		s_SwapchainInfo.imageViews.resize(s_SwapchainInfo.images.size());
+		s_ImageViews.resize(s_Images.size());
 
 		// Loop over all the created swap chain images
-		for (size_t i = 0; i < s_SwapchainInfo.images.size(); i++)
+		for (size_t i = 0; i < s_Images.size(); i++)
 		{
 			VkImageViewCreateInfo createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			createInfo.image = s_SwapchainInfo.images[i];
+			createInfo.image = s_Images[i];
 
 			// Specify how images are treated (1D, 2D, 3D Textures, or cube maps)
 			createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			createInfo.format = s_SwapchainInfo.imageFormat;
+			createInfo.format = s_ImageFormat;
 
 			// Default color mapping
 			createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -198,10 +224,40 @@ namespace Engine
 			createInfo.subresourceRange.baseArrayLayer = 0;
 			createInfo.subresourceRange.layerCount = 1;
 
-			const VulkanDeviceInfo& deviceInfo = VulkanDevice::GetDeviceInfo();
-			if (vkCreateImageView(deviceInfo.logicalDevice, &createInfo, nullptr, &s_SwapchainInfo.imageViews[i]) != VK_SUCCESS)
+			if (vkCreateImageView(logicalDevice, &createInfo, nullptr, &s_ImageViews[i]) != VK_SUCCESS)
 			{
 				INDY_CORE_ERROR("[Vulkan Swap Chain] Could not create image views!");
+			}
+		}
+	}
+	
+	void VulkanSwapChain::CreateFramebuffers()
+	{
+		const VkDevice& logicalDevice = VulkanDevice::GetLogicalDevice();
+		const VkRenderPass& renderPass = VulkanPipeline::GetRenderPass();
+
+		s_Framebuffers.resize(s_ImageViews.size());
+
+		for (size_t i = 0; i < s_ImageViews.size(); i++)
+		{
+			VkImageView attachments[] = {
+				s_ImageViews[i]
+			};
+
+			VkFramebufferCreateInfo framebufferInfo{};
+			framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+
+			framebufferInfo.renderPass = renderPass;
+
+			framebufferInfo.attachmentCount = 1;
+			framebufferInfo.pAttachments = attachments;
+			framebufferInfo.width = s_Extent.width;
+			framebufferInfo.height = s_Extent.height;
+			framebufferInfo.layers = 1;
+
+			if (vkCreateFramebuffer(logicalDevice, &framebufferInfo, nullptr, &s_Framebuffers[i]) != VK_SUCCESS)
+			{
+				INDY_CORE_ERROR("[VulkanAPI] Failed to create framebuffer!");
 			}
 		}
 	}

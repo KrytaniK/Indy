@@ -33,7 +33,6 @@ namespace Engine
 	void WindowLayer::onUpdate(Event& event)
 	{
 		// Deal with any event data
-
 		m_Window->onUpdate();
 	}
 

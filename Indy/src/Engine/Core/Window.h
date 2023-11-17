@@ -10,7 +10,7 @@ namespace Engine
 		std::string title;
 		unsigned int width, height;
 
-		WindowSpec(const std::string& Title = "Indy Engine", unsigned int Width = 1280, unsigned int Height = 720)
+		WindowSpec(const std::string& Title = "Indy Engine", unsigned int Width = 1080, unsigned int Height = 720)
 			: title(Title), width(Width), height(Height) {};
 	};
 

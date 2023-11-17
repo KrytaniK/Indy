@@ -17,11 +17,10 @@ namespace Engine
 		virtual void onAttach() override;
 		virtual void onDetach() override;
 
+		void onRender(Event& event);
+
 	protected:
 		virtual void onUpdate(Event& event) override;
 		virtual void onEvent(Event& event) override;
-
-	private:
-		std::unique_ptr<Renderer> m_Renderer;
 	};
 }

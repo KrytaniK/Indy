@@ -38,24 +38,28 @@ namespace Engine
 	// Class Definitions
 	// -----------------
 
-	VulkanPipelineInfo VulkanPipeline::s_PipelineInfo;
+	VkRenderPass VulkanPipeline::s_RenderPass;
+	VkPipelineLayout VulkanPipeline::s_PipelineLayout;
+	VkPipeline VulkanPipeline::s_GraphicsPipeline;
 
 	void VulkanPipeline::Init()
 	{
-		const VulkanDeviceInfo& deviceInfo = VulkanDevice::GetDeviceInfo();
-		const VulkanSwapchainInfo& swapchainInfo = VulkanSwapChain::GetSwapChainInfo();
+		const VkDevice& logicalDevice = VulkanDevice::GetLogicalDevice();
 
-		CreateRenderPass(deviceInfo.logicalDevice, swapchainInfo.imageFormat);
-		CreateGraphicsPipeline(deviceInfo.logicalDevice, swapchainInfo.extent);
+		const VkFormat& swapchainImageFormat = VulkanSwapChain::GetImageFormat();
+		const VkExtent2D& swapchainExtent = VulkanSwapChain::GetExtent();
+
+		CreateRenderPass(logicalDevice, swapchainImageFormat);
+		CreateGraphicsPipeline(logicalDevice, swapchainExtent);
 	}
 
 	void VulkanPipeline::Shutdown()
 	{
-		const VulkanDeviceInfo& deviceInfo = VulkanDevice::GetDeviceInfo();
+		const VkDevice& logicalDevice = VulkanDevice::GetLogicalDevice();
 
-		vkDestroyPipeline(deviceInfo.logicalDevice, s_PipelineInfo.graphicsPipeline, nullptr);
-		vkDestroyPipelineLayout(deviceInfo.logicalDevice, s_PipelineInfo.pipelineLayout, nullptr);
-		vkDestroyRenderPass(deviceInfo.logicalDevice, s_PipelineInfo.renderPass, nullptr);
+		vkDestroyPipeline(logicalDevice, s_GraphicsPipeline, nullptr);
+		vkDestroyPipelineLayout(logicalDevice, s_PipelineLayout, nullptr);
+		vkDestroyRenderPass(logicalDevice, s_RenderPass, nullptr);
 	}
 
 	VkShaderModule VulkanPipeline::CreateShaderModule(VkDevice logicalDevice, const std::vector<char>& spvCode)
@@ -118,7 +122,7 @@ namespace Engine
 		renderPassInfo.pDependencies = &dependency;
 
 
-		if (vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &s_PipelineInfo.renderPass) != VK_SUCCESS)
+		if (vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &s_RenderPass) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("[VulkanPipeline] Failed to create Render Pass!");
 		}
@@ -126,6 +130,7 @@ namespace Engine
 
 	void VulkanPipeline::CreateGraphicsPipeline(VkDevice logicalDevice, VkExtent2D swapChainExtent)
 	{
+
 		// Test Shader Code (Pushing Through the Triangle)
 		const std::string vertFilePathAbs = "C:/Dev/C++/Indy/Indy/src/Engine/Platform/RendererAPI/Vulkan/TestShaders/hellotrianglevert.spv";
 		const std::string fragFilePathAbs = "C:/Dev/C++/Indy/Indy/src/Engine/Platform/RendererAPI/Vulkan/TestShaders/hellotrianglefrag.spv";
@@ -246,6 +251,7 @@ namespace Engine
 			VK_DYNAMIC_STATE_VIEWPORT,
 			VK_DYNAMIC_STATE_SCISSOR
 		};
+
 		VkPipelineDynamicStateCreateInfo dynamicState{};
 		dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
@@ -259,7 +265,7 @@ namespace Engine
 		pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 		pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
-		if (vkCreatePipelineLayout(logicalDevice, &pipelineLayoutInfo, nullptr, &s_PipelineInfo.pipelineLayout) != VK_SUCCESS) {
+		if (vkCreatePipelineLayout(logicalDevice, &pipelineLayoutInfo, nullptr, &s_PipelineLayout) != VK_SUCCESS) {
 			INDY_CORE_ERROR("failed to create pipeline layout!");
 		}
 
@@ -278,15 +284,15 @@ namespace Engine
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDynamicState = &dynamicState;
 
-		pipelineInfo.layout = s_PipelineInfo.pipelineLayout;
+		pipelineInfo.layout = s_PipelineLayout;
 
-		pipelineInfo.renderPass = s_PipelineInfo.renderPass;
+		pipelineInfo.renderPass = s_RenderPass;
 		pipelineInfo.subpass = 0;
 
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE; // Optional
 		pipelineInfo.basePipelineIndex = -1; // Optional
 
-		if (vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &s_PipelineInfo.graphicsPipeline) != VK_SUCCESS)
+		if (vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &s_GraphicsPipeline) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("[VulkanPipeline] Failed to create Graphics Pipeline!");
 		}

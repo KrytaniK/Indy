@@ -5,7 +5,7 @@
 
 namespace Engine
 {
-	RendererAPI::Type RendererAPI::s_Type = RendererAPI::Type::None;
+	RendererAPI::Type RendererAPI::s_Type;
 
 	// Creates an instance of the Rendering API set by the application. Defaults to Vulkan
 	std::unique_ptr<RendererAPI> RendererAPI::Create()
