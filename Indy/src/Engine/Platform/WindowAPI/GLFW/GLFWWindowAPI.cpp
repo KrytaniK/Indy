@@ -23,7 +23,7 @@ namespace Engine
 		// ---------------
 
 		// Vulkan doesn't need an OpenGL Context.
-		if (RendererAPI::Get() == RENDERER_API_VULKAN)
+		if (RenderContext::Get() == RENDERER_API_VULKAN)
 		{
 			glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // No OpenGL Context is needed.
 		}
@@ -38,7 +38,7 @@ namespace Engine
 		}
 
 		// Set OpenGL Context, if not using Vulkan
-		if (RendererAPI::Get() != RENDERER_API_VULKAN)
+		if (RenderContext::Get() != RENDERER_API_VULKAN)
 		{
 			glfwMakeContextCurrent(m_Window);
 		}

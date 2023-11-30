@@ -24,6 +24,7 @@ namespace Engine
 
 	protected:
 		bool m_ShouldTerminate = false;
+		bool m_Minimized = false;
 	};
 
 	// Defined in client.

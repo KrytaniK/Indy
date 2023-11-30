@@ -5,12 +5,17 @@
 
 namespace Engine
 {
-	class RendererAPI
+	class RenderContext
 	{
 	public:
 		enum class Type
 		{
 			None = 0, OpenGL, Vulkan,
+		};
+
+		enum class DataSubmitType
+		{
+			Vertex = 0, Index,
 		};
 
 	private:
@@ -27,16 +32,20 @@ namespace Engine
 		}
 
 	public:
-		virtual void Init() = 0;
+		virtual void Init(void* window) = 0;
 		virtual void Shutdown() = 0;
+		virtual void CreateContext(void* window) = 0;
 
+		virtual void BeginFrame() = 0;
+		virtual void EndFrame() = 0;
 		virtual void DrawFrame() = 0;
+		virtual void SwapBuffers() = 0;
 
 		virtual void onWindowResize(Event& event) = 0;
 
 		// Creates an instance of the Rendering API set by the application. Defaults to Vulkan
-		static std::unique_ptr<RendererAPI> Create();
+		static std::unique_ptr<RenderContext> Create();
 	};
 }
 
-#define RENDERER_API_VULKAN Engine::RendererAPI::Type::Vulkan
+#define RENDERER_API_VULKAN Engine::RenderContext::Type::Vulkan

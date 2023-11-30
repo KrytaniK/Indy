@@ -1,10 +1,11 @@
-#include "VulkanPipeline.h"
+#include "Pipeline.h"
 
 #include "Engine/Core/Log.h"
+#include "DescriptorPool.h"
 
 #include <fstream>
 
-namespace Engine
+namespace Engine::VulkanAPI
 {
 	// ----------------------------------
 	// Util functions for loading shaders (Temp)
@@ -16,7 +17,7 @@ namespace Engine
 
 		if (!file || !file.is_open())
 		{
-			INDY_CORE_ERROR("[VulkanPipeline] Failed to open file: '{0}'", filePath);
+			INDY_CORE_ERROR("[Pipeline] Failed to open file: '{0}'", filePath);
 		}
 
 		// Get File Size
@@ -38,31 +39,24 @@ namespace Engine
 	// Class Definitions
 	// -----------------
 
-	VkRenderPass VulkanPipeline::s_RenderPass;
-	VkPipelineLayout VulkanPipeline::s_PipelineLayout;
-	VkPipeline VulkanPipeline::s_GraphicsPipeline;
+	VkRenderPass Pipeline::s_RenderPass;
+	VkPipelineLayout Pipeline::s_PipelineLayout;
+	VkPipeline Pipeline::s_GraphicsPipeline;
 
-	void VulkanPipeline::Init()
+	void Pipeline::Init(const VkDevice& logicalDevice, const Viewport& viewport)
 	{
-		const VkDevice& logicalDevice = VulkanDevice::GetLogicalDevice();
-
-		const VkFormat& swapchainImageFormat = VulkanSwapChain::GetImageFormat();
-		const VkExtent2D& swapchainExtent = VulkanSwapChain::GetExtent();
-
-		CreateRenderPass(logicalDevice, swapchainImageFormat);
-		CreateGraphicsPipeline(logicalDevice, swapchainExtent);
+		CreateRenderPass(logicalDevice, viewport.imageFormat);
+		CreateGraphicsPipeline(logicalDevice, viewport.extent);
 	}
 
-	void VulkanPipeline::Shutdown()
+	void Pipeline::Shutdown(const VkDevice& logicalDevice)
 	{
-		const VkDevice& logicalDevice = VulkanDevice::GetLogicalDevice();
-
 		vkDestroyPipeline(logicalDevice, s_GraphicsPipeline, nullptr);
 		vkDestroyPipelineLayout(logicalDevice, s_PipelineLayout, nullptr);
 		vkDestroyRenderPass(logicalDevice, s_RenderPass, nullptr);
 	}
 
-	VkShaderModule VulkanPipeline::CreateShaderModule(VkDevice logicalDevice, const std::vector<char>& spvCode)
+	VkShaderModule Pipeline::CreateShaderModule(const VkDevice& logicalDevice, const std::vector<char>& spvCode)
 	{
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -72,13 +66,13 @@ namespace Engine
 		VkShaderModule shaderModule;
 		if (vkCreateShaderModule(logicalDevice, &createInfo, nullptr, &shaderModule) != VK_SUCCESS)
 		{
-			INDY_CORE_ERROR("[VulkanPipeline] Failed to create shader module!");
+			INDY_CORE_ERROR("[Pipeline] Failed to create shader module!");
 		}
 
 		return shaderModule;
 	}
 
-	void VulkanPipeline::CreateRenderPass(VkDevice logicalDevice, VkFormat swapChainImageFormat)
+	void Pipeline::CreateRenderPass(const VkDevice& logicalDevice, VkFormat swapChainImageFormat)
 	{
 		VkAttachmentDescription colorAttachment{};
 		colorAttachment.format = swapChainImageFormat;
@@ -92,7 +86,7 @@ namespace Engine
 
 		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // Present to Swap Chain
-	
+
 		VkAttachmentReference colorAttachmentRef{};
 		colorAttachmentRef.attachment = 0; // Referenced by fragment shader "layout(location = 0)"
 		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -124,14 +118,20 @@ namespace Engine
 
 		if (vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &s_RenderPass) != VK_SUCCESS)
 		{
-			INDY_CORE_ERROR("[VulkanPipeline] Failed to create Render Pass!");
+			INDY_CORE_ERROR("[Pipeline] Failed to create Render Pass!");
 		}
 	}
 
-	void VulkanPipeline::CreateGraphicsPipeline(VkDevice logicalDevice, VkExtent2D swapChainExtent)
+	void Pipeline::CreateGraphicsPipeline(const VkDevice& logicalDevice, VkExtent2D swapChainExtent)
 	{
+		/* In later iterations, It's important that the shaders should not be hard-coded. I'll provide a base implementation, however,
+		*	it might be useful to allow users to write their own vertex/fragment shaders. I need to conduct further research to
+		*	figure out exactly how I want all of that to work. For now the current code is fine.
+		* 
+		*	One thing that's important to note is that the path to these shaders need to be relative paths, not absolute.
+		*	I couldn't get relative pathing to work before, so it's important that gets done.
+		*/
 
-		// Test Shader Code (Pushing Through the Triangle)
 		const std::string vertFilePathAbs = "C:/Dev/C++/Indy/Indy/src/Engine/Platform/RendererAPI/Vulkan/TestShaders/hellotrianglevert.spv";
 		const std::string fragFilePathAbs = "C:/Dev/C++/Indy/Indy/src/Engine/Platform/RendererAPI/Vulkan/TestShaders/hellotrianglefrag.spv";
 
@@ -166,6 +166,15 @@ namespace Engine
 		vertexInputInfo.pVertexBindingDescriptions = nullptr; // Optional
 		vertexInputInfo.vertexAttributeDescriptionCount = 0;
 		vertexInputInfo.pVertexAttributeDescriptions = nullptr; // Optional
+
+		// Vertex Attributes and Binding descriptions
+		auto bindingDesc = Vertex::GetBindingDescription();
+		auto attrDescs = Vertex::getAttributeDescriptions();
+
+		vertexInputInfo.vertexBindingDescriptionCount = 1;
+		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attrDescs.size());
+		vertexInputInfo.pVertexBindingDescriptions = &bindingDesc;
+		vertexInputInfo.pVertexAttributeDescriptions = attrDescs.data();
 
 		// Input Assembly
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
@@ -207,7 +216,7 @@ namespace Engine
 		rasterizer.lineWidth = 1.0f;
 
 		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
+		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
 		rasterizer.depthBiasEnable = VK_FALSE;
 		rasterizer.depthBiasConstantFactor = 0.0f; // Optional
@@ -257,11 +266,12 @@ namespace Engine
 		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 		dynamicState.pDynamicStates = dynamicStates.data();
 
+
 		// Pipeline Layout Creation
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 0; // Optional
-		pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
+		pipelineLayoutInfo.setLayoutCount = 1; // Optional
+		pipelineLayoutInfo.pSetLayouts = DescriptorPool::GetDescriptorSetLayout(UBO_DESCRIPTOR_SET_LAYOUT); // Optional
 		pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 		pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
@@ -294,7 +304,7 @@ namespace Engine
 
 		if (vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &s_GraphicsPipeline) != VK_SUCCESS)
 		{
-			INDY_CORE_ERROR("[VulkanPipeline] Failed to create Graphics Pipeline!");
+			INDY_CORE_ERROR("[Pipeline] Failed to create Graphics Pipeline!");
 		}
 
 		// Shader Module Cleanup

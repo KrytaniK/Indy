@@ -1,7 +1,5 @@
 #include "WindowsWindow.h"
 
-#include "Engine/Platform/RendererAPI/RendererAPI.h"
-
 namespace Engine
 {
 	WindowsWindow::WindowsWindow(const WindowSpec& spec)

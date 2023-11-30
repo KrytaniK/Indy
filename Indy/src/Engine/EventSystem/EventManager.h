@@ -7,15 +7,6 @@
 #include <functional>
 #include <string>
 
-/*
-
-	I want to make it explicitly clear that this approach needs to be battle tested. It should work "flawlessly",
-		meaning there should be no immediate drawbacks outside of member function conversion, which I will implement later.
-		Using this approach, I should be able to attach event callbacks to specific types within specific callbacks.
-
-	Making this work within a layer system would be very easy. Layers can take in the event
-*/
-
 namespace Engine
 {
 	struct Event

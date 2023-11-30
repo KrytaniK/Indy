@@ -5,10 +5,11 @@
 #include "Engine/EventSystem/Events.h"
 
 #include "Engine/Platform/WindowAPI/WindowAPI.h"
-#include "Engine/Platform/RendererAPI/RendererAPI.h"
+#include "Engine/Platform/RendererAPI/RenderContext.h"
 
 #include "Engine/Layers/WindowLayer/WindowLayer.h"
-#include "Engine/Layers/RenderLayer/RenderLayer.h"
+
+#include "Engine/Renderer/Renderer.h"
 
 // To Do:
 /*
@@ -28,12 +29,16 @@ namespace Engine
 		Events::Bind<Application>("LayerContext", "AppClose", this, &Application::onApplicationTerminate);
 
 		// Define Window & Rendering APIs, respectively (MUST be in this order, and before layer creation!)
+		// In the future, it might be nice to allow hot-swapping of these
 		WindowAPI::Set(WINDOW_API_GLFW);
-		RendererAPI::Set(RENDERER_API_VULKAN);
+		RenderContext::Set(RENDERER_API_VULKAN);
 
-		// Initialize Application Layers
+		// Initialize Application Layers (implicitly creates a window)
 		m_LayerStack.emplace_back(new WindowLayer());
-		m_LayerStack.emplace_back(new RenderLayer());
+
+		Renderer::Init();
+
+
 	}
 
 	Application::~Application()
@@ -52,20 +57,37 @@ namespace Engine
 		// stop event propagation if needed (This method should technically be the "last" stop for an event)
 	}
 
+	/* TODO: Time Tracking
+	*	- Tick events determine the frame rate at which the application updates (usually 16ms/60fps)
+	*	- Update events process state, physics, and may perform heavier calculations. These should happen less frequently (can be around 64ms/15fps)
+	*/
 	void Application::Run()
 	{
-		// Create application update event
-		//	*update events should not hold data.
 		Event updateEvent{"LayerContext","AppUpdate"};
-		Event renderEvent{"LayerContext","AppRender"};
-		Event tickEvent{"LayerContext","AppTick"};
+		Event renderEvent{"RenderContext","AppRender"};
 
 		while (!m_ShouldTerminate)
 		{
-			Events::Dispatch(tickEvent);	// Time Dependent Updates
-			Events::Dispatch(updateEvent);	// General Application Updates (Internal state changes)
-			Events::Dispatch(renderEvent);	// Application Rendering
+			if (!m_Minimized)
+			{
+				Events::Dispatch(updateEvent);
+				// Dispatch Tick Event
+
+				// Begin recording render commands, initialize render pass
+				Renderer::BeginFrame();
+
+				// Ensure all vertex/index data is submitted and uniform data is updated
+				Events::Dispatch(renderEvent);
+					
+				// Issue the draw call, end render pass and command recording
+				Renderer::EndFrame();
+
+				// Present the frame
+				Renderer::DrawFrame();
+			}
 		}
+
+		// Stop Time Tracking
 	}
 
 	void Application::onApplicationTerminate(Event& event)
