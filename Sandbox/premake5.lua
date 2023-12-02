@@ -18,11 +18,18 @@ project "Sandbox"
 	{
 		"%{wks.location}/Indy/src",
 		"%{IncludeDirs.spdlog}",
+		"%{IncludeDirs.Vulkan}",
+	}
+
+	libdirs
+	{
+		"%{VulkanSDK}/1.3.261.1/Lib"
 	}
 
 	links
 	{
-		"Indy"
+		"Indy",
+		"vulkan-1.lib",
 	}
 
 	filter "system:windows"

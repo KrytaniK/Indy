@@ -18,7 +18,6 @@ namespace Engine
 
 	protected:
 		virtual void onUpdate(Event& event) override;
-		virtual void onEvent(Event& event) override;
 
 		virtual void onRequestWindow(Event& event);
 

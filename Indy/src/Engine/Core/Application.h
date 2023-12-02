@@ -15,9 +15,9 @@ namespace Engine
 	public:
 		virtual ~Application();
 
-		virtual void Run();
-		virtual void onEvent(Event& event);
-		virtual void onApplicationTerminate(Event& event);
+		virtual void Run() = 0; // Run loop defined by CLIENT
+
+		virtual void onApplicationTerminate(Event& event); // <-- Might need to be private
 
 	private:
 		std::vector<Layer*> m_LayerStack;

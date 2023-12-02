@@ -9,5 +9,10 @@ namespace Engine
 	public:
 		Sandbox();
 		~Sandbox();
+
+		virtual void Run() override;
+
+	private:
+		void onAppUpdate(Event& event);
 	};
 }

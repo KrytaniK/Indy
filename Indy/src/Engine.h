@@ -11,5 +11,8 @@
 // Event System
 #include "Engine/EventSystem/Events.h" 
 
+// Renderer
+#include "Engine/Renderer/Renderer.h"
+
 // ----- Entry Point -----
 #include "Engine/Core/EntryPoint.h"
