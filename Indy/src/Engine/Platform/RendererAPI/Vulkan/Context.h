@@ -33,6 +33,8 @@ namespace Engine::VulkanAPI
 		virtual void DrawFrame() override;
 		virtual void SwapBuffers() override;
 
+		virtual void Submit(void* vertices, uint32_t vertexCount, void* indices, uint32_t indexCount, uint32_t instanceCount) override;
+
 		virtual void onWindowResize(Event& event) override;
 
 	private:

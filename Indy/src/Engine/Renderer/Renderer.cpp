@@ -2,22 +2,6 @@
 
 namespace Engine
 {
-	struct Vec2
-	{
-		float x, y;
-	};
-
-	struct Vec3
-	{
-		float x, y, z;
-	};
-
-	struct Vertex
-	{
-		Vec2 pos;
-		Vec3 color;
-	};
-
 	std::unique_ptr<RenderContext> Renderer::s_RenderContext = nullptr;
 
 	void Renderer::Init()
@@ -51,4 +35,20 @@ namespace Engine
 		s_RenderContext->DrawFrame();
 		s_RenderContext->SwapBuffers();
 	}
+
+	void Renderer::Draw(Vertex* vertices, uint32_t vertexCount)
+	{
+		s_RenderContext->Submit(vertices, vertexCount, nullptr, 0, 1);
+	}
+
+	void Renderer::DrawIndexed(Vertex* vertices, uint32_t vertexCount, uint32_t* indices, uint32_t indexCount)
+	{
+		s_RenderContext->Submit(vertices, vertexCount, indices, indexCount, 1);
+	}
+
+	void Renderer::DrawInstanced(Vertex* vertices, uint32_t vertexCount, uint32_t* indices, uint32_t indexCount, uint32_t instanceCount)
+	{
+		s_RenderContext->Submit(vertices, vertexCount, indices, indexCount, instanceCount);
+	}
+
 }

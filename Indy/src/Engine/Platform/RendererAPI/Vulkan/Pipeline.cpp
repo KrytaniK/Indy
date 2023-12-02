@@ -124,14 +124,6 @@ namespace Engine::VulkanAPI
 
 	void Pipeline::CreateGraphicsPipeline(const VkDevice& logicalDevice, VkExtent2D swapChainExtent)
 	{
-		/* In later iterations, It's important that the shaders should not be hard-coded. I'll provide a base implementation, however,
-		*	it might be useful to allow users to write their own vertex/fragment shaders. I need to conduct further research to
-		*	figure out exactly how I want all of that to work. For now the current code is fine.
-		* 
-		*	One thing that's important to note is that the path to these shaders need to be relative paths, not absolute.
-		*	I couldn't get relative pathing to work before, so it's important that gets done.
-		*/
-
 		const std::string vertFilePathAbs = "C:/Dev/C++/Indy/Indy/src/Engine/Platform/RendererAPI/Vulkan/TestShaders/hellotrianglevert.spv";
 		const std::string fragFilePathAbs = "C:/Dev/C++/Indy/Indy/src/Engine/Platform/RendererAPI/Vulkan/TestShaders/hellotrianglefrag.spv";
 
@@ -162,10 +154,6 @@ namespace Engine::VulkanAPI
 		// Vertex Input
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertexInputInfo.vertexBindingDescriptionCount = 0;
-		vertexInputInfo.pVertexBindingDescriptions = nullptr; // Optional
-		vertexInputInfo.vertexAttributeDescriptionCount = 0;
-		vertexInputInfo.pVertexAttributeDescriptions = nullptr; // Optional
 
 		// Vertex Attributes and Binding descriptions
 		auto bindingDesc = Vertex::GetBindingDescription();
@@ -182,42 +170,21 @@ namespace Engine::VulkanAPI
 		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-		// Viewport
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = (float)swapChainExtent.width;
-		viewport.height = (float)swapChainExtent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		// Scissor
-		VkRect2D scissor{};
-		scissor.offset = { 0, 0 };
-		scissor.extent = swapChainExtent;
-
 		// Viewport State
 		VkPipelineViewportStateCreateInfo viewportState{};
 		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 		viewportState.viewportCount = 1;
-		viewportState.pViewports = &viewport;
 		viewportState.scissorCount = 1;
-		viewportState.pScissors = &scissor;
 
 		// Rasterizer
 		VkPipelineRasterizationStateCreateInfo rasterizer{};
 		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
 		rasterizer.depthClampEnable = VK_FALSE;
-
 		rasterizer.rasterizerDiscardEnable = VK_FALSE; // enabling this essentially disables framebuffer output.
-
 		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-
 		rasterizer.lineWidth = 1.0f;
-
 		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
 		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-
 		rasterizer.depthBiasEnable = VK_FALSE;
 		rasterizer.depthBiasConstantFactor = 0.0f; // Optional
 		rasterizer.depthBiasClamp = 0.0f; // Optional
@@ -267,11 +234,15 @@ namespace Engine::VulkanAPI
 		dynamicState.pDynamicStates = dynamicStates.data();
 
 
+		std::vector<VkDescriptorSetLayout> descriptorLayouts = {
+			DescriptorPool::GetDescriptorSetLayout(UBO_DESCRIPTOR_SET_LAYOUT)
+		};
+
 		// Pipeline Layout Creation
 		VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
 		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipelineLayoutInfo.setLayoutCount = 1; // Optional
-		pipelineLayoutInfo.pSetLayouts = DescriptorPool::GetDescriptorSetLayout(UBO_DESCRIPTOR_SET_LAYOUT); // Optional
+		pipelineLayoutInfo.pSetLayouts = descriptorLayouts.data(); // Optional
 		pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
 		pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 

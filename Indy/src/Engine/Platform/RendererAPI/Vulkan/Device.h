@@ -11,6 +11,7 @@ namespace Engine::VulkanAPI
 	private:
 		static VkDevice s_LogicalDevice;
 		static VkPhysicalDevice s_PhysicalDevice;
+		static VkPhysicalDeviceProperties s_Properties;
 		static Queue s_GraphicsQueue;
 		static Queue s_PresentQueue;
 
@@ -25,6 +26,7 @@ namespace Engine::VulkanAPI
 
 		static const VkDevice& GetLogicalDevice() { return s_LogicalDevice; };
 		static const VkPhysicalDevice& GetPhysicalDevice() { return s_PhysicalDevice; };
+		static const VkPhysicalDeviceProperties& GetPhysicalDeviceProperties() { return s_Properties; };
 		static const Queue& GetGraphicsQueue() { return s_GraphicsQueue; };
 		static const Queue& GetPresentQueue() { return s_PresentQueue; };
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/Core/Log.h"
+#include "Engine/Renderer/RenderUtils.h"
 #include "Buffer.h"
 
 #include <optional>
@@ -30,11 +31,8 @@ namespace Engine::VulkanAPI
 	// Containers ////////////////////////////
 	//////////////////////////////////////////
 
-	struct Vertex
+	struct Vertex : Engine::Vertex
 	{
-		glm::vec3 pos;
-		glm::vec3 color;
-
 		static VkVertexInputBindingDescription GetBindingDescription()
 		{
 			VkVertexInputBindingDescription bindingDescription;
@@ -50,14 +48,14 @@ namespace Engine::VulkanAPI
 			std::array<VkVertexInputAttributeDescription, 2> attributeDescriptions{};
 
 			// Position Description
-			attributeDescriptions[0].location = 0;
 			attributeDescriptions[0].binding = 0;
+			attributeDescriptions[0].location = 0;
 			attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
 			attributeDescriptions[0].offset = offsetof(Vertex, pos);
 
 			// Color Description
-			attributeDescriptions[1].location = 1;
 			attributeDescriptions[1].binding = 0;
+			attributeDescriptions[1].location = 1;
 			attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
 			attributeDescriptions[1].offset = offsetof(Vertex, color);
 
@@ -65,22 +63,49 @@ namespace Engine::VulkanAPI
 		}
 	};
 
-	struct UniformBufferObject {
-		alignas(16) glm::mat4 model; // alignas(16) enforces alignment and ensures issues don't arise between C++ and shaders
+	struct DrawCallInfo
+	{
+		std::shared_ptr<Buffer> vertexBuffer;
+		std::shared_ptr<Buffer> indexBuffer;
+		uint32_t instanceCount = 1;
+		uint32_t vertexCount = 0;
+		uint32_t indexCount = 0;
+		bool indexed = false;
+	};
+
+	struct ViewProjectionMatrix
+	{
+		alignas(16) glm::mat4 model;
 		alignas(16) glm::mat4 view;
 		alignas(16) glm::mat4 proj;
 	};
 
+	struct ModelMatrix 
+	{
+		alignas(16) glm::mat4 transform;
+	};
+
+	struct UniformBuffer
+	{
+		std::shared_ptr<Buffer> buffer;
+		VkDescriptorBufferInfo descriptorInfo;
+	};
+	
 	struct Frame
 	{
+		struct UniformBuffers
+		{
+			UniformBuffer view;
+		};
+
 		VkSemaphore imageAvailableSemaphore;
 		VkSemaphore renderFinishedSemaphore;
 		VkFence fence;
 		VkCommandBuffer commandBuffer;
-
 		std::vector<Buffer> vertexBuffers;
 
-		std::shared_ptr<Buffer> uniformBuffer; // Split uniform buffers into two (view/proj and model). Model UBO is dynamic, used for each mesh object to be rendered. view/proj is used for camera.
+		UniformBuffers uniformBuffers;
+		VkDescriptorSet descriptorSet;
 	};
 
 	struct SwapChainSupport
@@ -146,7 +171,9 @@ namespace Engine::VulkanAPI
 				frames[currentFrame].imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 		}
 
-		Frame GetCurrentFrame() const { return frames[currentFrame]; };
+		Frame GetCurrentFrame() const { 
+			return frames[currentFrame]; 
+		};
 
 		void ResetFence(const VkDevice& logicalDevice)
 		{

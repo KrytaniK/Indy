@@ -20,13 +20,14 @@ namespace Engine::VulkanAPI
 		static void CreateUBODescriptorSetLayout(const VkDevice& logicalDevice);
 
 		static void AllocateDescriptorSets(const VkDevice& logicalDevice, Viewport& viewport, VkDescriptorSetLayout descriptorSetLayout);
-		static void UpdateDescriptorSets(const VkDevice& logicalDevice, const Viewport& viewport, const VkDeviceSize& range, const VkDescriptorType& descriptorType);
+		static void UpdateDescriptorSets(const VkDevice& logicalDevice, const Viewport& viewport);
 
-		static VkDescriptorSetLayout* GetDescriptorSetLayout(const uint32_t& layoutIndex) { return &s_DescriptorSetLayouts[layoutIndex]; }; // This is temp. A better solution is needed. Currently used in conjunction with the UBO_DESCRIPTOR_SET_LAYOUT macro
+		// This is temp. A better solution is needed. Currently used in conjunction with the UBO_DESCRIPTOR_SET_LAYOUT macro
+		static VkDescriptorSetLayout GetDescriptorSetLayout(const uint32_t& layoutIndex) { return s_DescriptorSetLayouts[layoutIndex]; }; 
 
 	private:
 		static VkDescriptorSetLayoutBinding CreateSetLayoutBinding(uint32_t binding, VkDescriptorType type, uint32_t count, VkShaderStageFlags stageFlags, VkSampler* immutableSamplers = nullptr);
-		static void CreateSetLayout(const VkDevice& logicalDevice, VkDescriptorSetLayout& outLayout, VkDescriptorSetLayoutBinding layoutBinding);
+		static void CreateSetLayout(const VkDevice& logicalDevice, VkDescriptorSetLayoutBinding* layoutBindings, uint32_t bindingCount, VkDescriptorSetLayout& outLayout);
 	};
 
 	#define UBO_DESCRIPTOR_SET_LAYOUT 0

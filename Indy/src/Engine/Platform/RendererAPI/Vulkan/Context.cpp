@@ -124,9 +124,9 @@ namespace Engine::VulkanAPI
 		// Descriptor Sets Initialization //////////////////////////
 
 		DescriptorPool::AllocateDescriptorSets(
-			logicalDevice, s_Viewports[0], *DescriptorPool::GetDescriptorSetLayout(UBO_DESCRIPTOR_SET_LAYOUT));
+			logicalDevice, s_Viewports[0], DescriptorPool::GetDescriptorSetLayout(UBO_DESCRIPTOR_SET_LAYOUT));
 
-		DescriptorPool::UpdateDescriptorSets(logicalDevice, s_Viewports[0], sizeof(UniformBufferObject), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+		DescriptorPool::UpdateDescriptorSets(logicalDevice, s_Viewports[0]);
 
 		/////////////////////////////////////////////////////
 		// Pipeline Initialization //////////////////////////
@@ -227,13 +227,14 @@ namespace Engine::VulkanAPI
 		SwapChain::CreateSwapchain(viewport);
 		SwapChain::CreateImageViews(viewport);
 
+		const VkPhysicalDeviceProperties& deviceProps = Device::GetPhysicalDeviceProperties();
 		
 		for (size_t i = 0; i < viewport.frames.size(); i++)
 		{
-			viewport.frames[i].uniformBuffer = std::make_shared<Buffer>(sizeof(UniformBufferObject), 
-				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, true);
+			viewport.frames[i].uniformBuffers.view.buffer = std::make_shared<Buffer>(sizeof(ViewProjectionMatrix), 
+				VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-			viewport.frames[i].uniformBuffer->MapMemory(sizeof(UniformBufferObject), nullptr);
+			viewport.frames[i].uniformBuffers.view.buffer->Map();
 		}
 
 		s_Viewports.resize(s_Viewports.size() + 1);
@@ -292,21 +293,6 @@ namespace Engine::VulkanAPI
 
 		// Start recording commands and initialize the render pass
 		CommandPool::RecordCommandBuffer_Begin(s_Viewports[0], renderPass, graphicsPipeline);
-
-		#pragma region (Vertex Data Submission) Temp *****REMOVE LATER*****
-
-		const std::vector<Vertex> vertices = {
-			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-			{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-			{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-			{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}
-		};
-
-		const std::vector<uint16_t> indices = {
-			0, 1, 2, 2, 3, 0
-		};
-
-		#pragma endregion
 	}
 
 	///////////////////////////////////////
@@ -353,6 +339,9 @@ namespace Engine::VulkanAPI
 		VkSemaphore signalSemaphores[] = { currentFrame.renderFinishedSemaphore };
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = signalSemaphores;
+
+		if (submitInfo.pCommandBuffers == nullptr)
+			INDY_CORE_CRITICAL("Command Buffer Reference(s) are null!");
 
 		// Submit commands to the graphics queue.
 		if (vkQueueSubmit(graphicsQueue.queue, 1, &submitInfo, currentFrame.fence) != VK_SUCCESS)
@@ -404,6 +393,7 @@ namespace Engine::VulkanAPI
 		}
 
 		s_Viewports[0].Wait(logicalDevice);
+		CommandPool::FlushDrawQueue();
 	}
 
 	//////////////////////////////////////////
@@ -413,6 +403,15 @@ namespace Engine::VulkanAPI
 	void Context::SwapBuffers()
 	{
 		s_Viewports[0].SwapBuffers();
+	}
+
+	/////////////////////////////////////////////
+	// Draw Submission //////////////////////////
+	/////////////////////////////////////////////
+
+	void Context::Submit(void* vertices, uint32_t vertexCount, void* indices, uint32_t indexCount, uint32_t instanceCount)
+	{
+		CommandPool::SubmitDrawCall(vertices, vertexCount, indices, indexCount, instanceCount);
 	}
 }
 

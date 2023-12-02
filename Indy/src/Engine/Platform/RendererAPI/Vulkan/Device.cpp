@@ -8,12 +8,16 @@ namespace Engine::VulkanAPI
 {
 	VkDevice Device::s_LogicalDevice;
 	VkPhysicalDevice Device::s_PhysicalDevice;
+	VkPhysicalDeviceProperties Device::s_Properties;
 	Queue Device::s_GraphicsQueue;
 	Queue Device::s_PresentQueue;
 
 	void Device::Init(const VkInstance& instance, Viewport& viewport)
 	{
 		Device::ChoosePhysicalDevice(instance, viewport);
+
+		vkGetPhysicalDeviceProperties(s_PhysicalDevice, &s_Properties);
+
 		Device::CreateLogicalDevice();
 		Device::GenerateQueueHandles();
 	}

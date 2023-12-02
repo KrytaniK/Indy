@@ -5,6 +5,11 @@
 #include "Pipeline.h"
 #include "SwapChain.h"
 
+// Temp
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <chrono>
 /*
 *	Rendering begins with starting the recording phase and starting the render pass. The application will handle the gathering of all vertex and matrix data, which will be
 *		submitted through the Renderer's exposed API. This means that calls to Renderer::Draw(), Renderer::DrawIndexed() and Renderer::DrawInstanced(), will push 'commands'
@@ -20,6 +25,7 @@
 namespace Engine::VulkanAPI
 {
 	VkCommandPool CommandPool::s_CommandPool;
+	std::vector<DrawCallInfo> CommandPool::s_DrawQueue;
 
 	void CommandPool::Init(const VkDevice& logicalDevice, const Queue& graphicsQueue)
 	{
@@ -105,9 +111,42 @@ namespace Engine::VulkanAPI
 		scissor.extent = viewport.extent;
 		vkCmdSetScissor(currentFrame.commandBuffer, 0, 1, &scissor);
 
-		#pragma region Rendering Pseudocode
+		// Update ViewProjectionMatrix
+		ViewProjectionMatrix vpMatrix{};
+		vpMatrix.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		vpMatrix.proj = glm::perspective(glm::radians(45.0f), viewport.extent.width / (float)viewport.extent.height, 0.1f, 10.0f);
+		vpMatrix.proj[1][1] *= -1;
 
-		#pragma endregion
+		// Eventually, this will be moved to its own data set that gets pushed to shaders per model.
+		static auto startTime = std::chrono::high_resolution_clock::now();
+
+		auto currentTime = std::chrono::high_resolution_clock::now();
+		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+		vpMatrix.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+
+		currentFrame.uniformBuffers.view.buffer->Write(&vpMatrix, sizeof(vpMatrix), 0);
+
+		VkDeviceSize offsets[] = { 0 };
+		for (const DrawCallInfo& drawCall : s_DrawQueue)
+		{
+			vkCmdBindDescriptorSets(currentFrame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &currentFrame.descriptorSet, 0, nullptr);
+
+			VkBuffer vBuffer = drawCall.vertexBuffer->Get();
+			VkBuffer vBuffers[] = { drawCall.vertexBuffer->Get() };
+
+			vkCmdBindVertexBuffers(currentFrame.commandBuffer, 0, 1, vBuffers, offsets);
+
+			if (drawCall.indexed)
+			{
+				vkCmdBindIndexBuffer(currentFrame.commandBuffer, drawCall.indexBuffer->Get(), 0, VK_INDEX_TYPE_UINT32);
+				vkCmdDrawIndexed(currentFrame.commandBuffer, drawCall.indexCount, drawCall.instanceCount, 0, 0, 0);
+				continue;
+			}
+			else
+			{
+				vkCmdDraw(currentFrame.commandBuffer, drawCall.vertexCount, drawCall.instanceCount, 0, 0);
+			}
+		}
 
 		// End Render Pass
 		vkCmdEndRenderPass(currentFrame.commandBuffer);
@@ -117,5 +156,46 @@ namespace Engine::VulkanAPI
 		{
 			INDY_CORE_ERROR("[VulkanCommandBuffer] Failed to record command buffer!");
 		}
+	}
+
+	void CommandPool::SubmitDrawCall(void* vertices, uint32_t vertexCount, void* indices, uint32_t indexCount, uint32_t instanceCount)
+	{
+		DrawCallInfo drawCallInfo;
+		drawCallInfo.vertexCount = vertexCount;
+		drawCallInfo.indexCount = indexCount;
+		drawCallInfo.instanceCount = instanceCount < 1 ? 1 : instanceCount;
+
+		// Vertex Buffer Creation
+		uint32_t vBufferSize = sizeof(Vertex) * vertexCount;
+
+		std::shared_ptr<Buffer> vStagingBuffer = std::make_shared<Buffer>(vBufferSize,
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+		vStagingBuffer->Map(vertices, vBufferSize);
+
+		drawCallInfo.vertexBuffer = std::make_shared<Buffer>(vBufferSize,
+			VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+		vStagingBuffer->CopyTo(drawCallInfo.vertexBuffer->Get());
+
+		if (indices != nullptr)
+		{
+			// Index Buffer Creation
+			drawCallInfo.indexed = true;
+
+			uint32_t iBufferSize = sizeof(uint32_t) * indexCount;
+
+			std::shared_ptr<Buffer> iStagingBuffer = std::make_shared<Buffer>(iBufferSize,
+				VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+			iStagingBuffer->Map(indices, iBufferSize);
+
+			drawCallInfo.indexBuffer = std::make_shared<Buffer>(iBufferSize,
+				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+			iStagingBuffer->CopyTo(drawCallInfo.indexBuffer->Get());
+		}
+
+		s_DrawQueue.emplace_back(drawCallInfo);
 	}
 }

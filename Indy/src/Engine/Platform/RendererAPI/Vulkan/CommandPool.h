@@ -10,6 +10,7 @@ namespace Engine::VulkanAPI
 	{
 	private:
 		static VkCommandPool s_CommandPool;
+		static std::vector<DrawCallInfo> s_DrawQueue;
 
 	public:
 		static const VkCommandPool& GetCommandPool() { return s_CommandPool; };
@@ -22,7 +23,8 @@ namespace Engine::VulkanAPI
 		static void RecordCommandBuffer_Begin(Viewport& viewport, VkRenderPass renderPass, VkPipeline graphicsPipeline);
 		static void RecordCommandBuffer_End(Viewport& viewport, VkPipelineLayout pipelineLayout);
 
-	private:
+		static void SubmitDrawCall(void* vertices, uint32_t vertexCount, void* indices, uint32_t indexCount, uint32_t instanceCount);
 		
+		static void FlushDrawQueue() { s_DrawQueue.clear(); };
 	};
 }

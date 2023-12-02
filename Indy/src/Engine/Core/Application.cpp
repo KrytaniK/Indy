@@ -37,8 +37,6 @@ namespace Engine
 		m_LayerStack.emplace_back(new WindowLayer());
 
 		Renderer::Init();
-
-
 	}
 
 	Application::~Application()
@@ -75,6 +73,43 @@ namespace Engine
 
 				// Begin recording render commands, initialize render pass
 				Renderer::BeginFrame();
+
+				#pragma region Draw Testing
+
+				// The best part is that it doesn't matter where we call Renderer::Draw() or Renderer::DrawIndexed()
+				//	so long as it happens before Renderer::EndFrame(). This is because draw calls are processed and submitted
+				//	to a "queue" in the command pool that gets emptied and cleared after the recording phase. 
+
+				/* I still need to implement per-object rendering, or more accurately, "Meshes". Right now, only one model matrix
+				*	is allowed during rendering, tied to the view matrix. Later, a Camera object will directly influence the view
+				*	matrix, and the the model matrix will be seperate, so that meshes can be rendered individually at different
+				*	locations, and the user can move the camera through input.
+				*/
+
+				std::vector<Vertex> drawVerts{
+					{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+					{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+					{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+					{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+					{{-0.5f, 0.5f, 0.0f}, {0.5f, 0.5f, 0.0f}},
+					{ {-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}}
+				};
+
+				std::vector<Vertex> indexedVerts{
+					{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+					{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+					{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+					{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}
+				};
+
+				std::vector<uint32_t> indices = {
+					0, 1, 2, 2, 3, 0
+				};
+
+				//Renderer::Draw(drawVerts.data(), drawVerts.size());
+				Renderer::DrawIndexed(indexedVerts.data(), indexedVerts.size(), indices.data(), indices.size());
+
+				#pragma endregion
 
 				// Ensure all vertex/index data is submitted and uniform data is updated
 				Events::Dispatch(renderEvent);

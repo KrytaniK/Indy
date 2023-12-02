@@ -7,8 +7,6 @@ namespace Engine::VulkanAPI
 {
 	class Buffer
 	{
-	public:
-		static void CopyBuffer(VkBuffer src, VkBuffer dst, const VkDeviceSize& size);
 
 	public:
 		Buffer() {};
@@ -16,18 +14,17 @@ namespace Engine::VulkanAPI
 		// Constructor for staging buffers
 		Buffer(const VkDeviceSize& size, const VkBufferUsageFlags& usage, const VkMemoryPropertyFlags& properties);
 
-		// Constructor for regular buffers
-		Buffer(const VkDeviceSize& size, const VkBufferUsageFlags& usage, const VkMemoryPropertyFlags& properties, const bool persistentMapping);
-
 		~Buffer();
 
-		void MapMemory(const VkDeviceSize& dataSize, const void* srcData);
-		void UnmapMemory();
+		void Map(const void* srcData, uint32_t dataSize);
+		void Map(); // <-- Persistent Mapping
+		void Unmap();
 
-		void WriteToMappedMemory(const void* srcData, const VkDeviceSize& dataSize, const VkDeviceSize& offset);
+		void Write(const void* srcData, const VkDeviceSize& dataSize, const VkDeviceSize& offset);
+		void CopyTo(VkBuffer dst);
 
-		VkBuffer GetBuffer() const { return m_Buffer; };
-		VkDeviceSize GetBufferSize() const { return m_BufferSize; };
+		VkBuffer Get() const { return m_Buffer; };
+		VkDeviceSize GetSize() const { return m_BufferSize; };
 
 	private:
 		VkBuffer m_Buffer;
