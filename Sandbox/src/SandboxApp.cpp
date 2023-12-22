@@ -15,6 +15,9 @@ namespace Engine
 	Sandbox::Sandbox() 
 	{
 		Events::Bind<Sandbox>("SandboxContext", "AppUpdate", this, &Sandbox::onAppUpdate);
+
+		m_Camera.move(-2.0f, 0.0f, 2.0f);
+		m_Camera.rotate(-45.0f, 0.f);
 	};
 
 	Sandbox::~Sandbox() {};
@@ -29,13 +32,13 @@ namespace Engine
 			if (!m_Minimized)
 			{
 				Events::Dispatch(appUpdateEvent);
-				//Events::Dispatch(updateEvent);
+				Events::Dispatch(updateEvent);
 
 				// Begin recording render commands, initialize render pass
 				Renderer::BeginFrame();
 
 				// Issue the draw call, end render pass and command recording
-				Renderer::EndFrame();
+				Renderer::EndFrame(m_Camera);
 
 				// Present the frame
 				Renderer::DrawFrame();
@@ -49,15 +52,6 @@ namespace Engine
 		// Draw Testing ////////////////
 		////////////////////////////////
 
-		std::vector<Vertex> drawVerts{
-					{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-					{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-					{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-					{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-					{{-0.5f, 0.5f, 0.0f}, {0.5f, 0.5f, 0.0f}},
-					{ {-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}}
-		};
-
 		std::vector<Vertex> indexedVerts{
 			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
 			{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
@@ -69,7 +63,6 @@ namespace Engine
 			0, 1, 2, 2, 3, 0
 		};
 
-		//Renderer::Draw(drawVerts.data(), drawVerts.size());
 		Renderer::DrawIndexed(indexedVerts.data(), static_cast<uint32_t>(indexedVerts.size()), indices.data(), static_cast<uint32_t>(indices.size()));
 	}
 

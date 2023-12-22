@@ -299,11 +299,11 @@ namespace Engine::VulkanAPI
 	// End Frame //////////////////////////
 	///////////////////////////////////////
 
-	void Context::EndFrame()
+	void Context::EndFrame(Camera& camera)
 	{
 		const VkPipelineLayout& pipelineLayout = Pipeline::GetLayout();
 
-		CommandPool::RecordCommandBuffer_End(s_Viewports[0], pipelineLayout);
+		CommandPool::RecordCommandBuffer_End(s_Viewports[0], camera, pipelineLayout);
 	}
 
 	////////////////////////////////////////

@@ -21,7 +21,7 @@ namespace Engine::VulkanAPI
 		static void CreateCommandBuffer(const VkDevice& logicalDevice, VkCommandBuffer& dstBuffer);
 
 		static void RecordCommandBuffer_Begin(Viewport& viewport, VkRenderPass renderPass, VkPipeline graphicsPipeline);
-		static void RecordCommandBuffer_End(Viewport& viewport, VkPipelineLayout pipelineLayout);
+		static void RecordCommandBuffer_End(Viewport& viewport, Camera& camera, VkPipelineLayout pipelineLayout);
 
 		static void SubmitDrawCall(void* vertices, uint32_t vertexCount, void* indices, uint32_t indexCount, uint32_t instanceCount);
 		

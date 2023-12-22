@@ -14,5 +14,6 @@ namespace Engine
 
 	private:
 		void onAppUpdate(Event& event);
+		Camera m_Camera;
 	};
 }

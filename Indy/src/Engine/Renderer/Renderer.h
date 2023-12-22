@@ -14,7 +14,7 @@ namespace Engine
 		static void Shutdown();
 
 		static void BeginFrame();
-		static void EndFrame();
+		static void EndFrame(Camera& camera);
 		static void DrawFrame();
 
 		static void Draw(Vertex* vertices, uint32_t vertexCount);

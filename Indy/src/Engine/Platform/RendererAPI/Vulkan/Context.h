@@ -29,7 +29,7 @@ namespace Engine::VulkanAPI
 		virtual void CreateContext(void* window) override;
 
 		virtual void BeginFrame() override;
-		virtual void EndFrame() override;
+		virtual void EndFrame(Camera& camera) override;
 		virtual void DrawFrame() override;
 		virtual void SwapBuffers() override;
 

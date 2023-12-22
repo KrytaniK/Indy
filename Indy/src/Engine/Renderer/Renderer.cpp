@@ -25,9 +25,9 @@ namespace Engine
 		s_RenderContext->BeginFrame();
 	}
 
-	void Renderer::EndFrame()
+	void Renderer::EndFrame(Camera& camera)
 	{
-		s_RenderContext->EndFrame();
+		s_RenderContext->EndFrame(camera);
 	}
 
 	void Renderer::DrawFrame()

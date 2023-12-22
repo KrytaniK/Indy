@@ -5,11 +5,6 @@
 #include "Pipeline.h"
 #include "SwapChain.h"
 
-// Temp
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <chrono>
 /*
 *	Rendering begins with starting the recording phase and starting the render pass. The application will handle the gathering of all vertex and matrix data, which will be
 *		submitted through the Renderer's exposed API. This means that calls to Renderer::Draw(), Renderer::DrawIndexed() and Renderer::DrawInstanced(), will push 'commands'
@@ -92,7 +87,7 @@ namespace Engine::VulkanAPI
 		vkCmdBindPipeline(currentFrame.commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
 	}
 
-	void CommandPool::RecordCommandBuffer_End(Viewport& viewport, VkPipelineLayout pipelineLayout)
+	void CommandPool::RecordCommandBuffer_End(Viewport& viewport, Camera& camera, VkPipelineLayout pipelineLayout)
 	{
 		Frame currentFrame = viewport.GetCurrentFrame();
 
@@ -113,8 +108,8 @@ namespace Engine::VulkanAPI
 
 		// Update ViewProjectionMatrix
 		ViewProjectionMatrix vpMatrix{};
-		vpMatrix.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		vpMatrix.proj = glm::perspective(glm::radians(45.0f), viewport.extent.width / (float)viewport.extent.height, 0.1f, 10.0f);
+		vpMatrix.view = camera.GetViewMatrix();
+		vpMatrix.proj = camera.GetProjectionMatrix(viewport.extent.width / (float)viewport.extent.height);
 		vpMatrix.proj[1][1] *= -1;
 
 		// Eventually, this will be moved to its own data set that gets pushed to shaders per model.

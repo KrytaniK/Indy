@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Engine/EventSystem/Events.h"
+#include "Engine/Renderer/Camera.h"
 #include <memory>
 
 namespace Engine
@@ -37,7 +38,7 @@ namespace Engine
 		virtual void CreateContext(void* window) = 0;
 
 		virtual void BeginFrame() = 0;
-		virtual void EndFrame() = 0;
+		virtual void EndFrame(Camera& camera) = 0;
 		virtual void DrawFrame() = 0;
 		virtual void SwapBuffers() = 0;
 
