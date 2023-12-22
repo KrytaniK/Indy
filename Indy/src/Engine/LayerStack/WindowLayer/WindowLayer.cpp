@@ -1,24 +1,16 @@
 #include "WindowLayer.h"
 
+#include "Engine/Platform/WindowAPI/WindowAPI.h"
+
 #include <GLFW/glfw3.h>
 
 namespace Engine
 {
-	WindowLayer::WindowLayer()
-	{
-		this->onAttach();
-	}
-
-	WindowLayer::~WindowLayer()
-	{
-		this->onDetach();
-	}
-
 	void WindowLayer::onAttach()
 	{
-		// Bind Event Handles
-		Events::Bind<WindowLayer>("LayerContext", "AppUpdate", this, &WindowLayer::onUpdate);
 		Events::Bind<WindowLayer>("LayerContext", "RequestWindow", this, &WindowLayer::onRequestWindow);
+
+		WindowAPI::Set(WINDOW_API_GLFW);
 
 		// Create the window instance
 		m_Window = std::unique_ptr<Window>(Window::Create());
@@ -26,9 +18,8 @@ namespace Engine
 
 	void WindowLayer::onDetach() {};
 
-	void WindowLayer::onUpdate(Event& event)
+	void WindowLayer::Update()
 	{
-		// Deal with any event data
 		m_Window->onUpdate();
 	}
 

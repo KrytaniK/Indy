@@ -4,12 +4,23 @@
 
 #include "Engine/EventSystem/Events.h"
 
-#include "Engine/Platform/WindowAPI/WindowAPI.h"
 #include "Engine/Platform/RendererAPI/RenderContext.h"
 
-#include "Engine/Layers/WindowLayer/WindowLayer.h"
+#include "Engine/LayerStack/WindowLayer/WindowLayer.h"
+//#include "Engine/LayerStack/RenderLayer/RenderLayer.h"
 
 #include "Engine/Renderer/Renderer.h"
+
+/* Note:
+*	Currently, the Window and Render APIs must be explicity set, or the application crashes. To reduce the ambiguity
+*	involved with this approach, it would be in my best interest to default these values, and whenever the API is
+*	explicitly changed, the application needs to shutdown the window and the renderer, halt all processes, and
+*	re-initialize the window and renderer.
+* 
+*	Additionally, it might be useful to move the Renderer's functionality into a Render Layer. It's not yet clear
+*	whether the CLIENT should have control over the render flow in such an explicit fashion, as missing any step
+*	will result in a crash. Encapsulating Render data and processing into its own layer would solve this issue.
+*/
 
 // To Do:
 /*
@@ -35,32 +46,18 @@ namespace Engine
 		// Bind Application "Layer" events (Application Class is techinically a layer)
 		Events::Bind<Application>("LayerContext", "AppClose", this, &Application::onApplicationTerminate);
 
-		// Define Window & Rendering APIs, respectively (MUST be in this order, and before layer creation!)
-		// It would be useful to allow the user to select the Rendering API before startup.
-		WindowAPI::Set(WINDOW_API_GLFW);
-		RenderContext::Set(RENDERER_API_VULKAN);
+		LayerStack::Push(new WindowLayer());
 
-		// Initialize Application Layers
-		m_LayerStack.emplace_back(new WindowLayer());
-
-		// Initialize Renderer
 		Renderer::Init();
 	}
 
 	Application::~Application()
 	{
-		// Layer Cleanup
-		for (auto it = m_LayerStack.begin(); it != m_LayerStack.end(); ++it)
-		{
-			delete *it;
-		}
+		LayerStack::Cleanup();
 	}
 
 	void Application::onApplicationTerminate(Event& event)
 	{
-		// Handle event data if needed
-
-		// Set termination flag
 		m_ShouldTerminate = true;
 	}
 }

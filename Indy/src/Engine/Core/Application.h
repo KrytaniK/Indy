@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Window.h"
-#include "Engine/Layers/Layer.h"
+#include "Engine/LayerStack/LayerStack.h"
 
 #include <vector>
 
@@ -18,9 +18,6 @@ namespace Engine
 		virtual void Run() = 0; // Run loop defined by CLIENT
 
 		virtual void onApplicationTerminate(Event& event); // <-- Might need to be private
-
-	private:
-		std::vector<Layer*> m_LayerStack;
 
 	protected:
 		bool m_ShouldTerminate = false;

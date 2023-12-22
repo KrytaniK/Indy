@@ -25,13 +25,13 @@ namespace Engine
 	void Sandbox::Run()
 	{
 		Event updateEvent{"SandboxContext","AppUpdate"};
-		Event appUpdateEvent("LayerContext", "AppUpdate");
 
 		while (!m_ShouldTerminate)
 		{
 			if (!m_Minimized)
 			{
-				Events::Dispatch(appUpdateEvent);
+				LayerStack::Update();
+
 				Events::Dispatch(updateEvent);
 
 				// Begin recording render commands, initialize render pass

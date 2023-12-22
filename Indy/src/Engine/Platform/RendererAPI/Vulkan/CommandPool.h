@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Util.h"
+#include "Engine/Renderer/Camera.h"
 
 #include <vulkan/vulkan.h>
 

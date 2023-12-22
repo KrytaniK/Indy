@@ -51,4 +51,4 @@ namespace Engine
 	};
 }
 
-#define RENDERER_API_VULKAN Engine::RenderContext::Type::Vulkan
+#define RENDER_API_VULKAN Engine::RenderContext::Type::Vulkan
