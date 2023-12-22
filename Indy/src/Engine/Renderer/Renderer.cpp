@@ -6,8 +6,6 @@ namespace Engine
 
 	void Renderer::Init()
 	{
-		RenderContext::Set(RENDER_API_VULKAN);
-
 		s_RenderContext = std::unique_ptr<RenderContext>(RenderContext::Create());
 
 		Event event{ "LayerContext","RequestWindow" };
