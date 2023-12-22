@@ -16,8 +16,8 @@ namespace Engine
 	{
 		Events::Bind<Sandbox>("SandboxContext", "AppUpdate", this, &Sandbox::onAppUpdate);
 
-		m_Camera.move(-2.0f, 0.0f, 2.0f);
-		m_Camera.rotate(-45.0f, 0.f);
+		m_Camera.transform.Translate(0.0f, -2.0f, 2.0f, Space::Local);
+		m_Camera.transform.Rotate(-45.0f, 0.0f, 0.0f, Space::Local);
 	};
 
 	Sandbox::~Sandbox() {};

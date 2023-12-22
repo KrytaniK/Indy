@@ -115,6 +115,7 @@ namespace Engine::VulkanAPI
 		std::vector<VkPresentModeKHR> presentModes;
 	};
 
+	// Viewport represents a specific render target.
 	struct Viewport
 	{
 		void* window;

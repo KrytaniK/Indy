@@ -37,7 +37,8 @@ project "Indy"
 
 		defines
 		{
-			"ENGINE_PLATFORM_WINDOWS"
+			"ENGINE_PLATFORM_WINDOWS",
+			"_SILENCE_ALL_MS_EXT_DEPRECATION_WARNINGS"
 		}
 
 	filter "configurations:Debug"
