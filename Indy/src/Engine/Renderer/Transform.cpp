@@ -1,5 +1,7 @@
 #include "Transform.h"
 
+#include "Engine/Core/Log.h"
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
@@ -75,8 +77,8 @@ namespace Engine
 				glm::vec3 localZAxis = glm::vec3(transformMatrix[0][2], transformMatrix[1][2], transformMatrix[2][2]);
 
 				glm::quat xRot = glm::angleAxis(glm::radians(pitch), localXAxis);
-				glm::quat yRot = glm::angleAxis(glm::radians(roll), localYAxis);
-				glm::quat zRot = glm::angleAxis(glm::radians(yaw), localZAxis);
+				glm::quat yRot = glm::angleAxis(glm::radians(yaw), localYAxis);
+				glm::quat zRot = glm::angleAxis(glm::radians(roll), localZAxis);
 				transformMatrix *= glm::mat4_cast(glm::normalize(xRot * yRot * zRot));
 				return;
 			};
@@ -128,6 +130,11 @@ namespace Engine
 		SetRotation(glm::quat(glm::vec3(pitch, yaw, roll)));
 	}
 
+	glm::vec3 Transform::GetOrigin() const
+	{
+		return glm::vec3(localToWorldMatrix[3][0], localToWorldMatrix[3][1], localToWorldMatrix[3][2]);
+	}
+
 	glm::vec3 Transform::GetLocalPosition() const
 	{
 		return glm::vec3(transformMatrix[3][0], transformMatrix[3][1], transformMatrix[3][2]);
@@ -135,7 +142,7 @@ namespace Engine
 
 	glm::vec3 Transform::GetWorldPosition() const
 	{
-		glm::mat4 worldTransformMatrix = transformMatrix * localToWorldMatrix;
+		glm::mat4 worldTransformMatrix = localToWorldMatrix * transformMatrix;
 
 		return glm::vec3(worldTransformMatrix[3][0], worldTransformMatrix[3][1], worldTransformMatrix[3][2]);
 	}

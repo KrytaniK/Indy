@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Transform.h"
+#include "Engine/Core/Log.h"
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
@@ -17,6 +19,7 @@ namespace Engine
 		glm::mat4 GetViewMatrix()
 		{
 			viewMatrix = glm::translate(glm::mat4_cast(transform.GetWorldRotation()), -transform.GetWorldPosition());
+
 			return viewMatrix;
 		}
 

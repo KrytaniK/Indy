@@ -27,8 +27,11 @@ namespace Engine
 		void SetRotation(glm::vec3 newRotation);
 		void SetRotation(float pitch, float yaw, float roll);
 
+		glm::vec3 GetOrigin() const;
+
 		glm::vec3 GetLocalPosition() const;
 		glm::vec3 GetWorldPosition() const;
+
 		glm::quat GetLocalRotation() const;
 		glm::quat GetWorldRotation() const;
 
