@@ -37,7 +37,7 @@ namespace Engine::VulkanAPI
 
 	Context::Context()
 	{
-		Events::Bind<Context>("RenderContext", "WindowResize", this, &Context::onWindowResize);
+		Events::Bind<Context>("Render", "Resize", this, &Context::onWindowResize);
 	}
 
 	Context::~Context()

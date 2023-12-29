@@ -44,7 +44,7 @@ namespace Engine
 		Log::Init();
 
 		// Bind Application "Layer" events (Application Class is techinically a layer)
-		Events::Bind<Application>("LayerContext", "AppClose", this, &Application::onApplicationTerminate);
+		Events::Bind<Application>("Window", "Close", this, &Application::onApplicationTerminate);
 
 		// Must be set BEFORE window initialization
 		RenderContext::Set(RENDER_API_VULKAN);

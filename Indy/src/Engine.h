@@ -14,5 +14,8 @@
 // Renderer
 #include "Engine/Renderer/Renderer.h"
 
+// Input
+#include "Engine/Input/Input.h"
+
 // ----- Entry Point -----
 #include "Engine/Core/EntryPoint.h"

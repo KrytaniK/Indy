@@ -8,7 +8,7 @@ namespace Engine
 {
 	void WindowLayer::onAttach()
 	{
-		Events::Bind<WindowLayer>("LayerContext", "RequestWindow", this, &WindowLayer::onRequestWindow);
+		Events::Bind<WindowLayer>("Window", "Request", this, &WindowLayer::onRequestWindow);
 
 		WindowAPI::Set(WINDOW_API_GLFW);
 

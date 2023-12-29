@@ -8,7 +8,7 @@ namespace Engine
 	{
 		s_RenderContext = std::unique_ptr<RenderContext>(RenderContext::Create());
 
-		Event event{ "LayerContext","RequestWindow" };
+		Event event{ "Window","Request" };
 		Events::Dispatch(event);
 
 		s_RenderContext->Init(event.data);

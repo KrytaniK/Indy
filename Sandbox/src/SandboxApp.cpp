@@ -16,6 +16,10 @@ namespace Engine
 	{
 		Events::Bind<Sandbox>("SandboxContext", "AppUpdate", this, &Sandbox::onAppUpdate);
 
+		InputManager::Init();
+
+		// Create an input binding that binds mouse movement to a 2D vector range, normalized from -1 to 1
+
 		m_Camera.transform.Translate(0.0f, -2.0f, 2.0f, Space::Local);
 		m_Camera.transform.Rotate(-45.0f, 0.0f, 0.0f, Space::Local);
 	};
@@ -30,9 +34,9 @@ namespace Engine
 		{
 			if (!m_Minimized)
 			{
-				LayerStack::Update();
-
 				Events::Dispatch(updateEvent);
+
+				LayerStack::Update();
 
 				// Begin recording render commands, initialize render pass
 				Renderer::BeginFrame();
