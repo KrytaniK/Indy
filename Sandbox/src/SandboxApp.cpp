@@ -1,36 +1,38 @@
 #include "SandboxApp.h"
 
-/* Sandbox utilizes the core Engine to make "something". The purpose of this vsProject
-*	is simply to test the capabilites of the engine and ensure everything works as
-*	intended.
-*/
-
-namespace Engine
+namespace Indy
 {
-	Application* CreateApplication()
+	using namespace Engine;
+
+	std::unique_ptr<Application> CreateApplication()
 	{
-		return new Sandbox();
-	}
-
-	Sandbox::Sandbox() 
-	{
-		Events::Bind<Sandbox>("SandboxContext", "AppUpdate", this, &Sandbox::onAppUpdate);
-
-		InputManager::Init();
-
-		// Create an input binding that binds mouse movement to a 2D vector range, normalized from -1 to 1
-
-		m_Camera.transform.Translate(0.0f, -2.0f, 2.0f, Space::Local);
-		m_Camera.transform.Rotate(-45.0f, 0.0f, 0.0f, Space::Local);
+		return std::make_unique<Sandbox>();
 	};
 
-	Sandbox::~Sandbox() {};
+	Sandbox::Sandbox()
+	{
+		this->m_Terminate = false;
+		this->m_Minimized = false;
+		std::cout << "Sandbox Constructor" << std::endl;
+
+		Events::Bind("Window", "Close", [=](Event& event) { this->Terminate(); });
+		Events::Bind<Sandbox>("SandboxContext", "AppUpdate", this, &Sandbox::onAppUpdate);
+	}
+
+	Sandbox::~Sandbox()
+	{
+		std::cout << "Sandbox Destructor" << std::endl;
+	}
 
 	void Sandbox::Run()
 	{
-		Event updateEvent{"SandboxContext","AppUpdate"};
+		Event updateEvent{ "SandboxContext","AppUpdate" };
 
-		while (!m_ShouldTerminate)
+		Camera camera;
+		camera.transform.Translate(0.0f, -2.0f, 2.0f, Space::Local);
+		camera.transform.Rotate(-45.0f, 0.0f, 0.0f, Space::Local);
+
+		while (!m_Terminate)
 		{
 			if (!m_Minimized)
 			{
@@ -38,13 +40,10 @@ namespace Engine
 
 				LayerStack::Update();
 
-				// Begin recording render commands, initialize render pass
 				Renderer::BeginFrame();
 
-				// Issue the draw call, end render pass and command recording
-				Renderer::EndFrame(m_Camera);
+				Renderer::EndFrame(camera);
 
-				// Present the frame
 				Renderer::DrawFrame();
 			}
 		}
@@ -69,5 +68,4 @@ namespace Engine
 
 		Renderer::DrawIndexed(indexedVerts.data(), static_cast<uint32_t>(indexedVerts.size()), indices.data(), static_cast<uint32_t>(indices.size()));
 	}
-
 }

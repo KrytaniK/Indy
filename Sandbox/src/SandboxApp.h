@@ -2,7 +2,10 @@
 
 #include <Engine.h>
 
-namespace Engine
+import Core;
+
+// Class Implementation
+namespace Indy
 {
 	class Sandbox : public Application
 	{
@@ -13,7 +16,6 @@ namespace Engine
 		virtual void Run() override;
 
 	private:
-		void onAppUpdate(Event& event);
-		Camera m_Camera;
+		void onAppUpdate(Engine::Event& event);
 	};
 }
