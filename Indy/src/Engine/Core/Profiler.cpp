@@ -1,6 +1,7 @@
 #include <string>
 #include <memory>
 #include <sstream>
+#include <fstream>
 
 #include "Engine/Core/LogMacros.h"
 #include "Engine/Core/ProfileMacros.h"
@@ -43,6 +44,10 @@ void EndProfilingSession()
 namespace Indy
 {
 	// --------------------------
+	// ----- Profile Result -----
+	// --------------------------
+
+	// --------------------------
 	// ----- Scope Profiler -----
 	// --------------------------
 
@@ -63,6 +68,11 @@ namespace Indy
 	bool ProfileSessionManager::SessionExists()
 	{
 		return ProfileSessionManager::s_CurrentSession != nullptr;
+	}
+
+	const std::string& ProfileSessionManager::GetSessionName()
+	{
+		return ProfileSessionManager::s_CurrentSession->name;
 	}
 
 	void ProfileSessionManager::RecordProfile(const ProfileResult& result)
@@ -99,18 +109,34 @@ namespace Indy
 	ProfileSession::ProfileSession(const std::string& name)
 		: name(name)
 	{
-		//INDY_CORE_WARN("Profile Session Constructor!");
+		const std::string& filePath = "Indy_Profiler_Output.json";
+		m_ProfilerOutput.open(filePath);
+
+		m_ProfilerOutput << "{\"profiles\": [{}";
+		m_ProfilerOutput.flush();
 	}
 
 	ProfileSession::~ProfileSession()
 	{
-		//INDY_CORE_WARN("Profile Session Destructor!");
+		m_ProfilerOutput << "]}";
+		m_ProfilerOutput.flush();
+
+		m_ProfilerOutput.close();
 	}
 
 	void ProfileSession::RecordProfileResult(const ProfileResult& result)
 	{
-		//m_ProfileStream << "\n" << result.scope << " " << result.duration;
-		INDY_CORE_INFO("Profile Result: [{0}] took {1}ms", result.scope, result.duration);
+		std::stringstream json;
+
+		json << ",{";
+		json << "\"scope\":\"";
+		json << result.scope << "\",";
+		json << "\"duration\":\"";
+		json << result.duration << "\"";
+		json << "}";
+
+		m_ProfilerOutput << json.str();
+		m_ProfilerOutput.flush();
 	}
 
 	void ProfileSession::ReadStream()

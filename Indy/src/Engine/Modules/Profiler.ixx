@@ -4,21 +4,12 @@ module;
 #include <string>
 #include <memory>
 #include <unordered_map>
-#include <sstream>
+#include <fstream>
 
 export module Indy_Core:Profiling;
 
-/*	Scope Profiler pushes profile results to session results stream
-* 
-*	Session Manager Periodically checks the current stream and reads
-*	profile data.
-*		- Stores a raw map of profile results "std::unordered_map<std::string, std::vector<ProfileResult>> results"
-*		- For each entry, takes the average and stores the average result in an internal map
-*			"std::unordered_map<std::string, ProfileResult> avgResults;"
-*/
-
-/* TODO
-	- Create PROFILE_SCOPE macro. need to force variable creation to actually profile scopes.
+/* Note: This approach is NOT thread safe! This needs to be accounted for!
+*	Should be simple to implement, though.
 */
 
 export
@@ -45,7 +36,7 @@ export
 		class ProfileSession
 		{
 		private:
-			std::stringstream m_ProfileStream;
+			std::ofstream m_ProfilerOutput;
 
 		public:
 			std::string name;
@@ -66,7 +57,9 @@ export
 		public:
 			static void RegisterSession(std::shared_ptr<ProfileSession> session);
 			static void EndSession();
+
 			static bool SessionExists();
+			static const std::string& GetSessionName();
 
 			static void RecordProfile(const ProfileResult& result);
 		};

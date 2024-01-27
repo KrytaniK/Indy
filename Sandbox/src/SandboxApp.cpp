@@ -1,5 +1,8 @@
 #include <Engine.h>
 #include <Engine/Core/ProfileMacros.h>
+#include <sstream>
+#include <fstream>
+#include <string>
 
 import Sandbox;
 import Indy_Core;
