@@ -1,6 +1,6 @@
 #include "Pipeline.h"
 
-#include "Engine/Core/Log.h"
+#include "Engine/Core/LogMacros.h"
 #include "DescriptorPool.h"
 
 #include <fstream>

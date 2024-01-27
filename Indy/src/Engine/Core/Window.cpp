@@ -1,5 +1,4 @@
 #include "Window.h"
-#include "Log.h"
 
 #ifdef ENGINE_PLATFORM_WINDOWS
 	#include "Engine/Platform/Windows/WindowsWindow.h"

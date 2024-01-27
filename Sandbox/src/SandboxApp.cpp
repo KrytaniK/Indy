@@ -1,9 +1,12 @@
-#include "SandboxApp.h"
+#include <Engine.h>
+#include <Engine/Core/ProfileMacros.h>
+
+import Sandbox;
+import Indy_Core;
+import Time;
 
 namespace Indy
 {
-	using namespace Engine;
-
 	std::unique_ptr<Application> CreateApplication()
 	{
 		return std::make_unique<Sandbox>();
@@ -13,49 +16,42 @@ namespace Indy
 	{
 		this->m_Terminate = false;
 		this->m_Minimized = false;
-		std::cout << "Sandbox Constructor" << std::endl;
 
-		Events::Bind("Window", "Close", [=](Event& event) { this->Terminate(); });
-		Events::Bind<Sandbox>("SandboxContext", "AppUpdate", this, &Sandbox::onAppUpdate);
+		Engine::Events::Bind("Window", "Close", [=](Engine::Event& event) { this->Terminate(); });
+		Engine::Events::Bind<Sandbox>("SandboxContext", "AppUpdate", this, &Sandbox::onAppUpdate);
 	}
 
 	Sandbox::~Sandbox()
 	{
-		std::cout << "Sandbox Destructor" << std::endl;
+		
 	}
 
 	void Sandbox::Run()
 	{
-		Event updateEvent{ "SandboxContext","AppUpdate" };
 
-		Camera camera;
-		camera.transform.Translate(0.0f, -2.0f, 2.0f, Space::Local);
-		camera.transform.Rotate(-45.0f, 0.0f, 0.0f, Space::Local);
+		Engine::Event updateEvent{ "SandboxContext","AppUpdate" };
+
+		Engine::Camera camera;
+		camera.transform.Translate(0.0f, -2.0f, 2.0f, Engine::Space::Local);
+		camera.transform.Rotate(-45.0f, 0.0f, 0.0f, Engine::Space::Local);
 
 		while (!m_Terminate)
 		{
-			if (!m_Minimized)
-			{
-				Events::Dispatch(updateEvent);
-
-				LayerStack::Update();
-
-				Renderer::BeginFrame();
-
-				Renderer::EndFrame(camera);
-
-				Renderer::DrawFrame();
-			}
+			Engine::Events::Dispatch(updateEvent);
+			Engine::LayerStack::Update();
+			Engine::Renderer::BeginFrame();
+			Engine::Renderer::EndFrame(camera);
+			Engine::Renderer::DrawFrame();
 		}
 	}
 
-	void Sandbox::onAppUpdate(Event& event)
+	void Sandbox::onAppUpdate(Engine::Event& event)
 	{
 		////////////////////////////////
 		// Draw Testing ////////////////
 		////////////////////////////////
 
-		std::vector<Vertex> indexedVerts{
+		std::vector<Engine::Vertex> indexedVerts{
 			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
 			{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
 			{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
@@ -65,7 +61,6 @@ namespace Indy
 		std::vector<uint32_t> indices = {
 			0, 1, 2, 2, 3, 0
 		};
-
-		Renderer::DrawIndexed(indexedVerts.data(), static_cast<uint32_t>(indexedVerts.size()), indices.data(), static_cast<uint32_t>(indices.size()));
+		Engine::Renderer::DrawIndexed(indexedVerts.data(), static_cast<uint32_t>(indexedVerts.size()), indices.data(), static_cast<uint32_t>(indices.size()));
 	}
 }

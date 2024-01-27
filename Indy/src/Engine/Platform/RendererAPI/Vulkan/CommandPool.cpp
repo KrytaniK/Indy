@@ -1,6 +1,6 @@
 #include "CommandPool.h"
 
-#include "Engine/Core/Log.h"
+#include "Engine/Core/LogMacros.h"
 
 #include "Pipeline.h"
 #include "SwapChain.h"

@@ -1,4 +1,4 @@
-export module Core:Application;
+export module Indy_Core:Application;
 
 export {
 	namespace Indy

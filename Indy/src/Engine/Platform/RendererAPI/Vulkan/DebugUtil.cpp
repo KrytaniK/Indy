@@ -1,6 +1,6 @@
 #include "DebugUtil.h"
 
-#include "Engine/Core/Log.h"
+#include "Engine/Core/LogMacros.h"
 
 namespace Engine
 {

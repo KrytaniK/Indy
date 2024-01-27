@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../WindowAPI.h"
-#include "Engine/Core/Log.h"
+#include "Engine/Core/LogMacros.h"
 #include "Engine/EventSystem/Events.h"
 #include "Engine/Platform/RendererAPI/RenderContext.h"
 

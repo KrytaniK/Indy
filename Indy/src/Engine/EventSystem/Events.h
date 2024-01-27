@@ -1,10 +1,58 @@
 #pragma once
 
-#include "Engine/Core/Log.h"
+#include "Engine/Core/LogMacros.h"
 
 #include "EventManager.h"
 
+/* Currently known issues:
+*	- Lifetime Management: Events' ownership is never transferred outside of the scope they're created in. This is an issue
+*		because they could potentially live in memory until the Event Manager reaches the end of its own lifecycle.
+*	- Additionally, event data must be exclusively stored as a void*, and recast to the original type when it's needed. This
+*		is problematic because any callback can edit the data completely and forward that data on to the next callback. This
+*		might be intended for some strangely abstract use cases, but even then, I think a better solution exists.
+*	- There is no way to track event handles. Callbacks always live in the event manager until they are cleaned up at the end
+*		of the program's lifecycle.
+*	- The storage of event callbacks via the use of a string map is problematic. There will always be naming conflicts, and events
+*		can't be properly handled. If user's aren't careful, they could very easily dispatch events into spaces where the event
+*		isn't relevant at all, potentiall introducing breaking behavior.
+*/
+
 // Note: Binding currently returns a size_t to resolve compile warnings. Later this will be changed to return an event handle.
+
+
+// This is just a test approach. Ideally, I want to store events of various types without templating functions, classes or structs.
+//namespace Indy
+//{
+//	struct IEvent
+//	{
+//		bool propagates;
+//		bool bubbles;
+//	};
+//
+//	struct MouseButtonEvent : IEvent
+//	{
+//		int buttonCode, action, mods;
+//	};
+//
+//	struct KeyboardKeyEvent : IEvent
+//	{
+//		int keycode, scancode, action, mods;
+//	};
+//
+//	struct IEventHandle
+//	{
+//		// Some info about the event handle.
+//		// Some utility methods for ease of use.
+//	};
+//
+//	struct IEventHandler
+//	{
+//		virtual IEventHandle* Subscribe() = 0;
+//
+//		virtual void Notify(const T& event) = 0;
+//	};
+//}
+
 
 namespace Engine::Events {
 

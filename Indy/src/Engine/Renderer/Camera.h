@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Transform.h"
-#include "Engine/Core/Log.h"
+#include "Engine/Core/LogMacros.h"
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>

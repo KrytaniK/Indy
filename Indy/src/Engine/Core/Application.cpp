@@ -1,10 +1,11 @@
-#include "Log.h"
+#include "LogMacros.h"
+
 #include "Engine/LayerStack/LayerStack.h"
 #include "Engine/Platform/RendererAPI/RenderContext.h"
 #include "Engine/LayerStack/WindowLayer/WindowLayer.h"
 #include "Engine/Renderer/Renderer.h"
 
-import Core;
+import Indy_Core;
 
 extern std::unique_ptr<Indy::Application> Indy::CreateApplication();
 
@@ -16,31 +17,28 @@ int main(int argc, char** argv)
 
 namespace Indy
 {
-	using namespace Engine;
+	//using namespace Engine;
 
 	Application::Application()
 	{
-		std::cout << "Application Constructor" << std::endl;
-
-		Log::Init();
-		RenderContext::Set(RENDER_API_VULKAN);
-		LayerStack::Push(new WindowLayer());
-		Renderer::Init();
+		Engine::RenderContext::Set(RENDER_API_VULKAN);
+		Engine::LayerStack::Push(new Engine::WindowLayer());
+		Engine::Renderer::Init();
 	}
 
 	Application::~Application()
 	{
-		std::cout << "Application Destructor" << std::endl;
+		
 	}
 
 	// Base Implementation
 	void Application::Run()
 	{
-		std::cout << "Application Run START!" << std::endl;
+		INDY_CORE_INFO("Uh oh! You need to override Application::Run()! Press Enter or Esc to exit.");
 
 		std::cin.get();
 
-		std::cout << "Application Run END!" << std::endl;
+		INDY_CORE_INFO("Goodbye!");
 	} 
 
 	void Application::Terminate()

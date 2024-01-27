@@ -2,8 +2,6 @@
 
 #include <Engine.h>
 
-import Core;
-
 // Class Implementation
 namespace Indy
 {

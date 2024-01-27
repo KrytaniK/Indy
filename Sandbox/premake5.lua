@@ -12,6 +12,7 @@ project "Sandbox"
 	{
 		"src/**.h",
 		"src/**.cpp",
+		"src/**.ixx",
 	}
 
 	includedirs

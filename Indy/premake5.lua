@@ -11,6 +11,7 @@ project "Indy"
 	{
 		"src/**.h",
 		"src/**.cpp",
+		"src/**.ixx",
 	}
 
 	includedirs
@@ -42,12 +43,12 @@ project "Indy"
 		}
 
 	filter "configurations:Debug"
-		defines { "ENGINE_DEBUG" }
+		defines { "ENGINE_DEBUG", "INDY_ENABLE_CORE_DEBUG" }
 		runtime "Debug"
 		symbols "on"
 
 	filter "configurations:Release"
-		defines { "ENGINE_RELEASE" }
+		defines { "ENGINE_RELEASE", "INDY_ENABLE_CORE_DEBUG" }
 		runtime "Release"
 		optimize "on"
 
