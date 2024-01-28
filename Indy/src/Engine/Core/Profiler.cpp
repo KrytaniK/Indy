@@ -56,7 +56,8 @@ namespace Indy
 
 	ScopeProfiler::~ScopeProfiler()
 	{
-		ProfileSessionManager::RecordProfile({m_Scope, Indy::Time::MilliDuration(m_StartTime, Time::Now())});
+		auto end = Time::Now();
+		ProfileSessionManager::RecordProfile({m_Scope, Indy::Time::MilliDuration(m_StartTime, end)});
 	}
 
 	// -----------------------------------
@@ -109,42 +110,59 @@ namespace Indy
 	ProfileSession::ProfileSession(const std::string& name)
 		: name(name)
 	{
-		const std::string& filePath = "Indy_Profiler_Output.json";
-		m_ProfilerOutput.open(filePath);
-
-		m_ProfilerOutput << "{\"profiles\": [{}";
-		m_ProfilerOutput.flush();
+		this->m_RecordCount = 0;
+		this->m_ProfilerOutput.open(PROFILE_OUTPUT_PATH);
+		this->InternalWriteStreamPrefix();
 	}
 
 	ProfileSession::~ProfileSession()
 	{
-		m_ProfilerOutput << "]}";
-		m_ProfilerOutput.flush();
+		this->InternalWriteStreamSuffix();
 
-		m_ProfilerOutput.close();
+		this->m_ProfilerOutput.close();
 	}
 
 	void ProfileSession::RecordProfileResult(const ProfileResult& result)
 	{
+		// Reset the .json file if we're going to record more than 10kb of data.
+		if (this->m_RecordCount >= MAX_PROFILE_RECORD_COUNT)
+		{
+
+			this->m_RecordCount = 0;
+			this->m_ProfilerOutput.close();
+			this->m_ProfilerOutput.open(PROFILE_OUTPUT_PATH);
+			this->InternalWriteStreamPrefix();
+		}
+
 		std::stringstream json;
 
-		json << ",{";
-		json << "\"scope\":\"";
-		json << result.scope << "\",";
-		json << "\"duration\":\"";
+		json << ",\n\t\t{ ";
+		json << "\"scope\": \"";
+		json << result.scope << "\", ";
+		json << "\"duration\": \"";
 		json << result.duration << "\"";
-		json << "}";
+		json << " }";
 
-		m_ProfilerOutput << json.str();
-		m_ProfilerOutput.flush();
+		this->m_ProfilerOutput << json.str();
+		this->m_ProfilerOutput.flush();
+
+		this->m_RecordCount++;
 	}
 
 	void ProfileSession::ReadStream()
 	{
-		/*ProfileResult result;
-		while (m_ProfileStream >> result.scope >> result.duration)
-		{
-			INDY_CORE_WARN("Reading profile result for [{0}]: {1}ms", result.scope, result.duration);
-		}*/
+		
+	}
+
+	void ProfileSession::InternalWriteStreamPrefix()
+	{
+		this->m_ProfilerOutput << "{\n\t\"profiles\": [\n\t\t{}";
+		this->m_ProfilerOutput.flush();
+	}
+
+	void ProfileSession::InternalWriteStreamSuffix()
+	{
+		this->m_ProfilerOutput << "\n]\n}";
+		this->m_ProfilerOutput.flush();
 	}
 }

@@ -33,10 +33,14 @@ export
 			double duration;
 		};
 
+		const std::string PROFILE_OUTPUT_PATH = "Indy_Profiling_Output.json";
+		const uint8_t MAX_PROFILE_RECORD_COUNT = 200;
+
 		class ProfileSession
 		{
 		private:
 			std::ofstream m_ProfilerOutput;
+			uint8_t m_RecordCount;
 
 		public:
 			std::string name;
@@ -47,6 +51,10 @@ export
 
 			void RecordProfileResult(const ProfileResult& result);
 			void ReadStream();
+
+		private:
+			void InternalWriteStreamPrefix();
+			void InternalWriteStreamSuffix();
 		};
 
 		class ProfileSessionManager
