@@ -18,5 +18,6 @@ namespace Engine
 
 	private:
 		std::unique_ptr<Window> m_Window;
+		uint8_t m_WindowCount;
 	};
 }

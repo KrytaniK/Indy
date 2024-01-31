@@ -1,6 +1,6 @@
 #include <chrono>
 
-import Time;
+import Indy_Core_Time;
 
 namespace Indy
 {

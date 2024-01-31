@@ -5,9 +5,9 @@ module;
 export module Sandbox;
 
 export import <memory>;
-export import <iostream>;
 
 import Indy_Core;
+import EventSystem;
 
 export {
 	namespace Indy
@@ -17,6 +17,8 @@ export {
 		public:
 			Sandbox();
 			~Sandbox();
+
+			void OnWindowCreate(WindowCreateEvent* event);
 
 			virtual void Run() override;
 

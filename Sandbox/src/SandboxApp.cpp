@@ -3,10 +3,12 @@
 #include <sstream>
 #include <fstream>
 #include <string>
+#include <ios>
 
 import Sandbox;
 import Indy_Core;
-import Time;
+import Indy_Core_Time;
+import EventSystem;
 
 namespace Indy
 {
@@ -22,11 +24,17 @@ namespace Indy
 
 		Engine::Events::Bind("Window", "Close", [=](Engine::Event& event) { this->Terminate(); });
 		Engine::Events::Bind<Sandbox>("SandboxContext", "AppUpdate", this, &Sandbox::onAppUpdate);
+		
 	}
 
 	Sandbox::~Sandbox()
 	{
 		
+	}
+
+	void Sandbox::OnWindowCreate(WindowCreateEvent* event)
+	{
+		INDY_INFO("Attempting to create window!");
 	}
 
 	void Sandbox::Run()
@@ -38,6 +46,7 @@ namespace Indy
 		camera.transform.Translate(0.0f, -2.0f, 2.0f, Engine::Space::Local);
 		camera.transform.Rotate(-45.0f, 0.0f, 0.0f, Engine::Space::Local);
 
+		std::string line;
 		while (!m_Terminate)
 		{
 			Engine::Events::Dispatch(updateEvent);

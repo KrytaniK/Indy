@@ -77,7 +77,4 @@ export
 
 	std::shared_ptr<Indy::ProfileSession> StartProfilingSession(const std::string& sessionName);
 	void EndProfilingSession();
-
-	std::ostream& operator<<(std::ostream& os, const Indy::ProfileResult& profileResult);
-	std::istream& operator>>(std::istream& os, const Indy::ProfileResult& profileResult);
 }

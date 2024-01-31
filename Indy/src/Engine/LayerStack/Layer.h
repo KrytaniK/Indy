@@ -10,6 +10,5 @@ namespace Engine
 		virtual void onAttach() = 0;
 		virtual void onDetach() = 0;
 		virtual void Update() = 0;
-
 	};
 }

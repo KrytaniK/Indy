@@ -23,6 +23,7 @@ namespace Indy
 
 		return s_Logger;
 	}
+
 #endif
 
 	// ----------------------------------

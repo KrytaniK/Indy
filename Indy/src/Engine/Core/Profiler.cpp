@@ -7,7 +7,6 @@
 #include "Engine/Core/ProfileMacros.h"
 
 import Indy_Core;
-import Time;
 
 std::unique_ptr<Indy::ScopeProfiler> ProfileScope(const std::string& scope_sig)
 {
@@ -26,16 +25,6 @@ std::shared_ptr<Indy::ProfileSession> StartProfilingSession(const std::string& s
 	return session;
 }
 
-std::ostream& operator<<(std::ostream& os, const Indy::ProfileResult& profileResult)
-{
-	return os;
-};
-
-std::istream& operator>>(std::istream& is, const Indy::ProfileResult& profileResult)
-{
-	return is;
-};
-
 void EndProfilingSession()
 {
 	Indy::ProfileSessionManager::EndSession();
@@ -43,10 +32,6 @@ void EndProfilingSession()
 
 namespace Indy
 {
-	// --------------------------
-	// ----- Profile Result -----
-	// --------------------------
-
 	// --------------------------
 	// ----- Scope Profiler -----
 	// --------------------------
@@ -125,9 +110,9 @@ namespace Indy
 	void ProfileSession::RecordProfileResult(const ProfileResult& result)
 	{
 		// Reset the .json file if we're going to record more than 10kb of data.
+		// This takes (on average) between 0.02-0.1ms.
 		if (this->m_RecordCount >= MAX_PROFILE_RECORD_COUNT)
 		{
-
 			this->m_RecordCount = 0;
 			this->m_ProfilerOutput.close();
 			this->m_ProfilerOutput.open(PROFILE_OUTPUT_PATH);
@@ -135,7 +120,6 @@ namespace Indy
 		}
 
 		std::stringstream json;
-
 		json << ",\n\t\t{ ";
 		json << "\"scope\": \"";
 		json << result.scope << "\", ";

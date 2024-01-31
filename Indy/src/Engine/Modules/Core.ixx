@@ -4,7 +4,7 @@ export import <memory>;
 export import <iostream>;
 
 // Global time tracking
-export import Time;
+export import Indy_Core_Time;
 
 // Runtime behavior (Defined by CLIENT)
 export import :Application;
@@ -12,6 +12,9 @@ export import :Application;
 // Logging, Profiling, etc.
 export import :Logging;
 export import :Profiling;
+
+// Window handling
+export import :Window;
 
 // File operations (Read/Write)?
 // export import :FS;
@@ -21,9 +24,6 @@ export import :Profiling;
 
 // Layer Stack
 // export import :Layers;
-
-// Window handling
-// export import :Window;
 
 // Rendering
 // export import :Renderer;

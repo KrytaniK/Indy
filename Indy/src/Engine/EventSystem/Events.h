@@ -17,42 +17,6 @@
 *		isn't relevant at all, potentiall introducing breaking behavior.
 */
 
-// Note: Binding currently returns a size_t to resolve compile warnings. Later this will be changed to return an event handle.
-
-
-// This is just a test approach. Ideally, I want to store events of various types without templating functions, classes or structs.
-//namespace Indy
-//{
-//	struct IEvent
-//	{
-//		bool propagates;
-//		bool bubbles;
-//	};
-//
-//	struct MouseButtonEvent : IEvent
-//	{
-//		int buttonCode, action, mods;
-//	};
-//
-//	struct KeyboardKeyEvent : IEvent
-//	{
-//		int keycode, scancode, action, mods;
-//	};
-//
-//	struct IEventHandle
-//	{
-//		// Some info about the event handle.
-//		// Some utility methods for ease of use.
-//	};
-//
-//	struct IEventHandler
-//	{
-//		virtual IEventHandle* Subscribe() = 0;
-//
-//		virtual void Notify(const T& event) = 0;
-//	};
-//}
-
 
 namespace Engine::Events {
 

@@ -2,7 +2,7 @@ module;
 
 #include <chrono>
 
-export module Time;
+export module Indy_Core_Time;
 
 export constexpr double DeltaTime = 1.0 / 30.0;
 
