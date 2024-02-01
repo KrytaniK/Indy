@@ -35,7 +35,7 @@ namespace Engine::VulkanAPI
 
 		virtual void Submit(void* vertices, uint32_t vertexCount, void* indices, uint32_t indexCount, uint32_t instanceCount) override;
 
-		virtual void onWindowResize(Event& event) override;
+		//virtual void onWindowResize(Event& event) override;
 
 	private:
 		static std::vector<const char*> GetRequiredExtensions();

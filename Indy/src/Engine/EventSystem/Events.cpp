@@ -1,11 +1,11 @@
-#include "LogMacros.h"
-#include "ProfileMacros.h"
+#include "Engine/Core/LogMacros.h"
+#include "Engine/Core/ProfileMacros.h"
 
 #include <memory>
 #include <typeindex>
 #include <map>
 
-import EventSystem;
+import Indy_Core_EventSystem;
 
 namespace Indy
 {

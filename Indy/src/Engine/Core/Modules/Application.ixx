@@ -1,5 +1,7 @@
 export module Indy_Core:Application;
 
+import Indy_Core_EventSystem;
+
 export {
 	namespace Indy
 	{
@@ -12,9 +14,11 @@ export {
 
 			void Terminate();
 
+		private:
+			void onEvent(ApplicationEvent* event);
+
 		protected:
 			bool m_Terminate;
-			bool m_Minimized;
 		};
 	}
 }

@@ -2,14 +2,14 @@ module;
 
 #include <functional>
 
-export module EventSystem:EventListener;
+export module Indy_Core_EventSystem:EventListener;
+
+import :EventTypes;
 
 export
 {
 	namespace Indy
 	{
-		struct IEvent;
-
 		class IEventListener
 		{
 		public:

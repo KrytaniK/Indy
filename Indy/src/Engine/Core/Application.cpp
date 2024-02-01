@@ -1,26 +1,22 @@
 #include "LogMacros.h"
-
-#include "Engine/LayerStack/LayerStack.h"
-#include "Engine/Platform/RendererAPI/RenderContext.h"
-#include "Engine/LayerStack/WindowLayer/WindowLayer.h"
-#include "Engine/Renderer/Renderer.h"
+#include <iostream>
 
 import Indy_Core;
+import Indy_Core_EventSystem;
+import Indy_Core_LayerStack;
 
 namespace Indy
 {
-	//using namespace Engine;
-
 	Application::Application()
 	{
-		Engine::RenderContext::Set(RENDER_API_VULKAN);
-		Engine::LayerStack::Push(new Engine::WindowLayer());
-		Engine::Renderer::Init();
+		EventManager::AddEventListener<Application, ApplicationEvent>(this, &Application::onEvent);
+
+		LayerStack::Push(new WindowLayer()); // Ensures Window operations are possible
 	}
 
 	Application::~Application()
 	{
-		
+		LayerStack::Cleanup();
 	}
 
 	// Base Implementation
@@ -35,6 +31,13 @@ namespace Indy
 
 	void Application::Terminate()
 	{
-		this->m_Terminate = true;
+		m_Terminate = true;
 	}
+	
+	void Application::onEvent(ApplicationEvent* event)
+	{
+		if (event->terminate)
+			Terminate();
+	}
+
 }

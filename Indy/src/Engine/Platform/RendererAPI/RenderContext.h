@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Engine/EventSystem/Events.h"
 #include "Engine/Renderer/Camera.h"
 #include <memory>
 
@@ -44,7 +43,7 @@ namespace Engine
 
 		virtual void Submit(void* vertices, uint32_t vertexCount, void* indices, uint32_t indexCount, uint32_t instanceCount) = 0;
 
-		virtual void onWindowResize(Event& event) = 0;
+		//virtual void onWindowResize(Event& event) = 0;
 
 		// Creates an instance of the Rendering API set by the application. Defaults to Vulkan
 		static std::unique_ptr<RenderContext> Create();

@@ -1,6 +1,8 @@
-#include "LayerStack.h"
+#include <vector>
 
-namespace Engine
+import Indy_Core_LayerStack;
+
+namespace Indy
 {
 	std::vector<Layer*> LayerStack::s_Layers;
 	uint32_t LayerStack::s_LayerIndex;

@@ -1,14 +1,10 @@
+#include <memory>
 #include <Engine.h>
-#include <Engine/Core/ProfileMacros.h>
-#include <sstream>
-#include <fstream>
-#include <string>
-#include <ios>
 
 import Sandbox;
 import Indy_Core;
-import Indy_Core_Time;
-import EventSystem;
+import Indy_Core_LayerStack;
+import Indy_Core_EventSystem;
 
 namespace Indy
 {
@@ -19,12 +15,12 @@ namespace Indy
 
 	Sandbox::Sandbox()
 	{
-		this->m_Terminate = false;
-		this->m_Minimized = false;
+		m_Terminate = false;
 
-		Engine::Events::Bind("Window", "Close", [=](Engine::Event& event) { this->Terminate(); });
-		Engine::Events::Bind<Sandbox>("SandboxContext", "AppUpdate", this, &Sandbox::onAppUpdate);
-		
+		OpenWindow({ "Test", 1280, 760 });
+
+		WindowRequestEvent event;
+		EventManager::Notify<WindowRequestEvent>(&event);
 	}
 
 	Sandbox::~Sandbox()
@@ -32,47 +28,11 @@ namespace Indy
 		
 	}
 
-	void Sandbox::OnWindowCreate(WindowCreateEvent* event)
-	{
-		INDY_INFO("Attempting to create window!");
-	}
-
 	void Sandbox::Run()
 	{
-
-		Engine::Event updateEvent{ "SandboxContext","AppUpdate" };
-
-		Engine::Camera camera;
-		camera.transform.Translate(0.0f, -2.0f, 2.0f, Engine::Space::Local);
-		camera.transform.Rotate(-45.0f, 0.0f, 0.0f, Engine::Space::Local);
-
-		std::string line;
 		while (!m_Terminate)
 		{
-			Engine::Events::Dispatch(updateEvent);
-			Engine::LayerStack::Update();
-			Engine::Renderer::BeginFrame();
-			Engine::Renderer::EndFrame(camera);
-			Engine::Renderer::DrawFrame();
+			LayerStack::Update();
 		}
-	}
-
-	void Sandbox::onAppUpdate(Engine::Event& event)
-	{
-		////////////////////////////////
-		// Draw Testing ////////////////
-		////////////////////////////////
-
-		std::vector<Engine::Vertex> indexedVerts{
-			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-			{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-			{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},
-			{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}}
-		};
-
-		std::vector<uint32_t> indices = {
-			0, 1, 2, 2, 3, 0
-		};
-		Engine::Renderer::DrawIndexed(indexedVerts.data(), static_cast<uint32_t>(indexedVerts.size()), indices.data(), static_cast<uint32_t>(indices.size()));
 	}
 }

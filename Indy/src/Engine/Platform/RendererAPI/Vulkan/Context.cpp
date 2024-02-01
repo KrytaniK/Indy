@@ -1,7 +1,6 @@
 #include "Context.h"
 
 #include "Engine/Core/LogMacros.h"
-#include "Engine/EventSystem/Events.h"
 
 #include "DebugUtil.h"
 #include "Device.h"
@@ -37,7 +36,7 @@ namespace Engine::VulkanAPI
 
 	Context::Context()
 	{
-		Events::Bind<Context>("Render", "Resize", this, &Context::onWindowResize);
+		//Events::Bind<Context>("Render", "Resize", this, &Context::onWindowResize);
 	}
 
 	Context::~Context()
@@ -187,12 +186,12 @@ namespace Engine::VulkanAPI
 	// Window Resize Callback //////////////////////////
 	////////////////////////////////////////////////////
 
-	void Context::onWindowResize(Event& event)
+	/*void Context::onWindowResize(Event& event)
 	{
 		if (m_FramebufferResized) return;
 
 		m_FramebufferResized = true;
-	}
+	}*/
 
 	///////////////////////////////////////////////////////
 	// Context/Viewport Creation //////////////////////////

@@ -72,9 +72,4 @@ export
 			static void RecordProfile(const ProfileResult& result);
 		};
 	}
-
-	std::unique_ptr<Indy::ScopeProfiler> ProfileScope(const std::string& scope_sig);
-
-	std::shared_ptr<Indy::ProfileSession> StartProfilingSession(const std::string& sessionName);
-	void EndProfilingSession();
 }

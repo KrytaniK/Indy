@@ -7,6 +7,7 @@
 #include "Engine/Core/ProfileMacros.h"
 
 import Indy_Core;
+import Indy_Core_Time;
 
 std::unique_ptr<Indy::ScopeProfiler> ProfileScope(const std::string& scope_sig)
 {

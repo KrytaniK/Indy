@@ -1,3 +1,5 @@
+#include <memory>
+
 import Indy_Core;
 
 extern std::unique_ptr<Indy::Application> Indy::CreateApplication();
