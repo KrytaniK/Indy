@@ -8,22 +8,18 @@ module;
 
 export module Indy_Core_EventSystem:EventManager;
 
-import :EventTypes;
 import :EventHandle;
 import :EventListener;
 
 export namespace Indy
 {
-	template<class EventType>
-	class EventListener;
-
-	template<class C, class EventType>
-	class MemberEventListener;
-
 	typedef std::vector<std::shared_ptr<IEventListener>> ListenerList;
 
 	class EventManager
 	{
+	private:
+		EventManager();
+
 	public:
 		template<class EventType>
 		static IEventHandle AddEventListener(std::function<void(EventType*)>);
@@ -45,35 +41,24 @@ export namespace Indy
 	IEventHandle EventManager::AddEventListener(std::function<void(EventType*)> callback)
 	{
 		std::type_index id = std::type_index(typeid(EventType));
+
+		// Generate the handle to be returned;
 		IEventHandle handle{ id };
 
+		// Find out which event we're targeting
 		auto it = s_EventListeners.find(id);
 
+		// If it's not found, this is the first event listener of this type
 		if (it == s_EventListeners.end())
 		{
-			// First time adding an event listener of this type
-			ListenerList listeners;
-			listeners.emplace_back(std::make_shared<EventListener<EventType>>(callback));
-			s_EventListeners.emplace(id, listeners);
+			s_EventListeners.emplace(id, ListenerList{ std::make_shared<EventListener<EventType>>(callback) });
 			handle.index = 0;
 			return handle;
 		}
 
-		// Check for empy indices
-		auto indexIt = s_EmptyIndices.find(id);
-
-		if (indexIt == s_EmptyIndices.end())
-		{
-			// No empty indices
-			handle.index = it->second.size();
-			it->second.emplace_back(std::make_shared<EventListener<EventType>>(callback));
-			return handle;
-		}
-
-		// Grab the most recently emptied index and insert there
-		handle.index = indexIt->second.back();
-		indexIt->second.pop_back();
-		it->second.insert(it->second.begin() + handle.index, std::make_shared<EventListener<EventType>>(callback));
+		// Otherwise, push the listener info the listener list
+		it->second.emplace_back(std::make_shared<EventListener<EventType>>(callback));
+		handle.index = it->second.size() - 1;
 
 		return handle;
 	}
@@ -82,35 +67,24 @@ export namespace Indy
 	IEventHandle EventManager::AddEventListener(C* instance, void(C::* callback)(EventType*))
 	{
 		std::type_index id = std::type_index(typeid(EventType));
+
+		// Generate the handle to be returned;
 		IEventHandle handle{ id };
 
+		// Find out which event we're targeting
 		auto it = s_EventListeners.find(id);
 
+		// If it's not found, this is the first event listener of this type
 		if (it == s_EventListeners.end())
 		{
-			// First time adding an event listener of this type
-			ListenerList listeners;
-			listeners.emplace_back(std::make_shared<MemberEventListener<C, EventType>>(instance, callback));
-			s_EventListeners.emplace(id, listeners);
+			s_EventListeners.emplace(id, ListenerList{ std::make_shared<MemberEventListener<C, EventType>>(instance, callback) });
 			handle.index = 0;
 			return handle;
 		}
 
-		// Check for empy indices
-		auto indexIt = s_EmptyIndices.find(id);
-
-		if (indexIt == s_EmptyIndices.end())
-		{
-			// No empty indices
-			handle.index = it->second.size();
-			it->second.emplace_back(std::make_shared<MemberEventListener<C, EventType>>(instance, callback));
-			return handle;
-		}
-
-		// Grab the most recently emptied index and insert there
-		handle.index = indexIt->second.back();
-		indexIt->second.pop_back();
-		it->second.insert(it->second.begin() + handle.index, std::make_shared<MemberEventListener<C, EventType>>(instance, callback));
+		// Otherwise, push the listener info the listener list
+		it->second.emplace_back(std::make_shared<MemberEventListener<C, EventType>>(instance, callback));
+		handle.index = it->second.size() - 1;
 
 		return handle;
 	}
@@ -118,25 +92,26 @@ export namespace Indy
 	template<typename EventType>
 	void EventManager::Notify(EventType* event)
 	{
+		using namespace std;
+
+		// Find the entry for this event type in the event listeners list
 		auto it = s_EventListeners.find(std::type_index(typeid(EventType)));
 
+		// Bail if it doesn't exist
 		if (it == s_EventListeners.end())
 		{
 			return;
 		}
 
-		for (size_t i = 0; i < it->second.size(); i++)
+		if (event->bubbles)
 		{
-			if (it->second.at(i).get() == nullptr)
-				continue;
-
-			if (!event->propagates)
-				return;
-
-			if (event->bubbles)
-				it->second.at(it->second.size() - 1 - i)->Exec(event);
-			else
-				it->second.at(i)->Exec(event);
+			for (auto listIt = it->second.rbegin(); listIt != it->second.rend(); ++listIt)
+				listIt->get()->Exec(event);
+		}
+		else
+		{
+			for (auto listIt = it->second.begin(); listIt != it->second.end(); ++listIt)
+				listIt->get()->Exec(event);
 		}
 	}
 }

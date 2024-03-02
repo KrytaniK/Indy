@@ -1,5 +1,4 @@
 #include "Engine/Core/LogMacros.h"
-#include "Engine/Core/ProfileMacros.h"
 
 #include <memory>
 #include <typeindex>
@@ -19,20 +18,17 @@ namespace Indy
 
 	void EventManager::RemoveEventListener(const IEventHandle& handle)
 	{
+		// Find the listener list for the event type we're searching for
 		auto it = EventManager::s_EventListeners.find(handle.eventID);
 
+		// If it's not found, the an event listener was never registered with that type.
 		if (it == EventManager::s_EventListeners.end())
 		{
 			INDY_CORE_ERROR("Could not remove event listener: Event not registered!");
 			return;
 		}
 
-		it->second.at(handle.index) = nullptr;
-
-		auto indexIt = EventManager::s_EmptyIndices.find(handle.eventID);
-		if (indexIt == EventManager::s_EmptyIndices.end())
-		{
-			EventManager::s_EmptyIndices.emplace(handle.eventID, std::vector<size_t>(handle.index));
-		}
+		// Remove the listener from the listener list
+		it->second.erase(it->second.begin() + handle.index);
 	}
 }

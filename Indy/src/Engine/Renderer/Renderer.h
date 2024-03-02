@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Engine/Platform/RendererAPI/RenderContext.h"
+#include "Engine/Platform/Rendering/RenderContext.h"
 #include "RenderUtils.h"
 
 #include <vector>

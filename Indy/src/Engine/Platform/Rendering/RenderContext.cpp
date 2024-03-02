@@ -1,7 +1,7 @@
 #include "RenderContext.h"
 
 #include "Engine/Core/LogMacros.h"
-#include "Engine/Platform/RendererAPI/Vulkan/Context.h"
+#include "Engine/Platform/Rendering/Vulkan/Context.h"
 
 namespace Engine
 {

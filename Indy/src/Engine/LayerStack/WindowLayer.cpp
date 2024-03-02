@@ -34,6 +34,16 @@ namespace Indy
 
 	void WindowLayer::Update()
 	{
+		// Delete any Windows Queued for deletion
+		while (!m_WindowDeleteQueue.empty())
+		{
+			uint8_t winID = m_WindowDeleteQueue.front();
+			m_WindowDeleteQueue.pop();
+
+			DestroyWindow(winID);
+		}
+
+		// Update any remaining windows
 		for (uint8_t i = 0; i < m_Windows.size(); i++)
 			m_Windows.at(i)->Update();
 	}
@@ -50,7 +60,7 @@ namespace Indy
 		m_WindowCount++;
 
 		// Store vector index for this window
-		m_WindowIndices.emplace(event->createInfo.id, m_Windows.size());
+		m_WindowIndices.emplace(event->createInfo.id, static_cast<uint8_t>(m_Windows.size()));
 
 		// Generate Window
 		#ifdef ENGINE_PLATFORM_WINDOWS
@@ -65,23 +75,7 @@ namespace Indy
 		// Stop event propagation
 		event->propagates = false;
 
-		// Find the target vector index
-		const auto indexIt = m_WindowIndices.find(event->id);
-		if (indexIt == m_WindowIndices.end())
-		{
-			INDY_CORE_ERROR("Index for Window with ID {0} not found!", event->id);
-			return;
-		}
-
-		// Decrement the indices for windows that occured AFTER this one.
-		for (auto& pair : m_WindowIndices)
-		{
-			if (pair.second > indexIt->second)
-				pair.second--;
-		}
-
-		// Remove Window from vector
-		m_Windows.erase(m_Windows.begin() + indexIt->second);
+		m_WindowDeleteQueue.push(event->id);
 
 		// decrement window count
 		if (--m_WindowCount > 0)
@@ -122,5 +116,26 @@ namespace Indy
 			windowID = GenerateWindowID();
 		
 		return windowID;
+	}
+
+	void WindowLayer::DestroyWindow(uint8_t id)
+	{
+		// Find the target vector index
+		const auto indexIt = m_WindowIndices.find(id);
+		if (indexIt == m_WindowIndices.end())
+		{
+			INDY_CORE_ERROR("Index for Window with ID {0} not found!", id);
+			return;
+		}
+
+		// Decrement the indices for windows that occured AFTER this one.
+		for (auto& pair : m_WindowIndices)
+		{
+			if (pair.second > indexIt->second)
+				pair.second--;
+		}
+
+		// Remove Window from vector
+		m_Windows.erase(m_Windows.begin() + indexIt->second);
 	}
 }
