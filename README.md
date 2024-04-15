@@ -24,7 +24,6 @@
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
 
 <!-- PROJECT LOGO -->
 <br />
@@ -38,7 +37,7 @@
   <p align="center">
     Real-time, procedural game development.
     <br />
-    <a href="https://github.com/krytanik/indy"><strong>Explore the docs »</strong></a>
+    <a href="https://indy-docs-f1y4-j4mj2i81m-krytaniks-projects.vercel.app"><strong>Explore the docs »</strong></a>
     <br />
     <br />
     <a href="#">View Demo</a>
@@ -165,20 +164,21 @@ If you're curious about the website's progress, you can view the public repo [he
 
 Indy is still very early in its development. Below is where the core library currently stands:
 
-- [x] Events
-- [x] Input
-- [ ] Render Pipeline < In Progress
-- [ ] Time
-- [ ] User Interface
-- [ ] Platform Support
-  - [ ] Mac
-  - [ ] Linux
++ [x] Events
++ [x] Input
++ [ ] Render Pipeline < In Progress
++ [ ] Time
++ [ ] User Interface
++ [ ] Platform Support
+  + [ ] Mac
+  + [ ] Linux
++ [ ] Support for Header Files
 
 These are only some of the planned features that haven't yet made their way to the planning board:
 
-- [ ] Minimalistic Editor
-- [ ] Entity-Component System
-- [ ] Custom Shaders/Materials
++ [ ] Minimalistic Editor
++ [ ] Entity-Component System
++ [ ] Custom Shaders/Materials
 
 _To stay up to date on latest changes, check out Indy's [Documentation][docs-url]_
 
