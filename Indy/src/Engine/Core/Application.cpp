@@ -1,43 +1,29 @@
 #include "LogMacros.h"
 #include <iostream>
+#include <memory>
 
 import Indy_Core;
-import Indy_Core_EventSystem;
 import Indy_Core_LayerStack;
+import Indy_Core_EventSystem;
 
 namespace Indy
 {
 	Application::Application()
 	{
-		EventManager::AddEventListener<Application, ApplicationEvent>(this, &Application::onEvent);
-
-		LayerStack::Push(new WindowLayer()); // Ensures Window operations are possible
+		m_LayerStack = std::make_unique<LayerStack>();
 	}
 
 	Application::~Application()
 	{
-		LayerStack::Cleanup();
+		
 	}
 
-	// Base Implementation
-	void Application::Run()
+	void Application::StartAndRun()
 	{
-		INDY_CORE_INFO("Uh oh! You need to override Application::Run()! Press Enter or Esc to exit.");
-
-		std::cin.get();
-
-		INDY_CORE_INFO("Goodbye!");
-	} 
-
-	void Application::Terminate()
-	{
-		m_Terminate = true;
+		while (!m_ShouldClose)
+		{
+			m_LayerStack->Update();
+			Run();
+		}
 	}
-	
-	void Application::onEvent(ApplicationEvent* event)
-	{
-		if (event->terminate)
-			Terminate();
-	}
-
 }

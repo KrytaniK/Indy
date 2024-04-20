@@ -16,7 +16,7 @@ export
 			bool propagates = true;
 		};
 
-		struct ApplicationEvent : IEvent
+		struct ApplicationEvent : IEvent 
 		{
 			bool terminate = false;
 		};

@@ -16,17 +16,16 @@ export
 		class LayerStack
 		{
 		public:
-			static std::vector<Layer*> s_Layers;
+			LayerStack();
+			~LayerStack();
 
-			static void Cleanup();
-
-			static void Update();
-
-			static void Push(Layer* layer);
-			static void PushOverlay(Layer* layer);
+			void Update();
+			void PushLayer(const std::shared_ptr<Layer> layer);
+			void PushOverlay(const std::shared_ptr<Layer> overlay); // should likely derive an Overlay class from Layer
 
 		private:
-			static uint32_t s_LayerIndex;
+			std::vector<std::shared_ptr<Layer>> m_Layers;
+			uint32_t m_OverlayStartIndex;
 		};
 	}
 }

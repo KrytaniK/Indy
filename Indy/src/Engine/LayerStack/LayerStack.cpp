@@ -1,36 +1,38 @@
-#include <vector>
+#include "Engine/Core/LogMacros.h"
 
 import Indy_Core_LayerStack;
 
 namespace Indy
 {
-	std::vector<Layer*> LayerStack::s_Layers;
-	uint32_t LayerStack::s_LayerIndex;
+	LayerStack::LayerStack()
+		: m_OverlayStartIndex(0)
+	{}
 
-	void LayerStack::Cleanup()
+	LayerStack::~LayerStack()
 	{
-		for (auto layer = s_Layers.begin(); layer != s_Layers.end(); ++layer)
+		for (size_t i = 0; i < m_Layers.size(); i++)
 		{
-			(*layer)->onDetach();
-
-			delete *layer;
+			m_Layers.at(i)->onDetach();
 		}
 	}
 
 	void LayerStack::Update()
 	{
-		for (auto layer : s_Layers)
-			layer->Update();
+		for (size_t i = 0; i < m_Layers.size(); i++)
+		{
+			m_Layers.at(i)->Update();
+		}
 	}
 
-	void LayerStack::Push(Layer* layer)
+	void LayerStack::PushLayer(const std::shared_ptr<Layer> layer)
 	{
-		s_Layers.insert(s_Layers.begin() + s_LayerIndex, layer);
+		m_Layers.insert(m_Layers.begin() + m_OverlayStartIndex++, layer);
 		layer->onAttach();
 	}
 
-	void LayerStack::PushOverlay(Layer* layer)
+	void LayerStack::PushOverlay(const std::shared_ptr<Layer> overlay)
 	{
-		s_Layers.emplace_back(layer);
+		m_Layers.emplace_back(overlay);
+		overlay->onAttach();
 	}
 }
