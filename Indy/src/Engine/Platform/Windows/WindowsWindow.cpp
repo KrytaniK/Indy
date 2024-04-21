@@ -43,7 +43,7 @@ namespace Indy
 				WindowDestroyEvent event{};
 				event.id = ptr->first->id;
 
-				EventManager::Notify<WindowDestroyEvent>(&event);
+				EventManager::Notify<WindowDestroyEvent>(event);
 			}
 		);
 
@@ -138,7 +138,7 @@ namespace Indy
 				event.bit = ctrlInfo.bit;
 				event.deviceState = &action;
 
-				EventManager::Notify<InputDeviceEvent>(&event);
+				EventManager::Notify<InputDeviceEvent>(event);
 			}
 		);
 
@@ -176,7 +176,7 @@ namespace Indy
 				event.bit = ctrlInfo.bit;
 				event.deviceState = &action;
 
-				EventManager::Notify<InputDeviceEvent>(&event);
+				EventManager::Notify<InputDeviceEvent>(event);
 			}
 		);
 	}

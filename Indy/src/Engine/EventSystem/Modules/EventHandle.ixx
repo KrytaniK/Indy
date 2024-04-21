@@ -11,7 +11,7 @@ export
 		struct IEventHandle
 		{
 			std::type_index eventID;
-			size_t index = 0;
+			int32_t index = 0;
 		};
 	}
 }

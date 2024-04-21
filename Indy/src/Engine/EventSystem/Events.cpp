@@ -8,10 +8,13 @@ import Indy_Core_EventSystem;
 
 namespace Indy
 {
-	std::map<std::type_index, ListenerList> EventManager::s_EventListeners;
-	std::map<std::type_index, std::vector<size_t>> EventManager::s_EmptyIndices;
+	std::vector<std::pair<std::type_index, uint32_t>> EventManagerCSR::s_TypeIndices;
+	std::vector<std::shared_ptr<IEventListener>> EventManagerCSR::s_EventListeners;
 
-	void IEventListener::Exec(IEvent* event)
+	std::unordered_map<std::type_index, ListenerList> EventManager::s_EventListeners;
+	std::unordered_map<std::type_index, std::vector<size_t>> EventManager::s_EmptyIndices;
+
+	void IEventListener::Exec(IEvent& event)
 	{
 		this->Internal_Exec(event);
 	}
@@ -29,6 +32,6 @@ namespace Indy
 		}
 
 		// Remove the listener from the listener list
-		it->second.erase(it->second.begin() + handle.index);
+		it->second.at(handle.index) = nullptr;
 	}
 }

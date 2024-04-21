@@ -14,9 +14,9 @@ namespace Indy
 
 	void WindowLayer::onAttach()
 	{
-		EventManager::AddEventListener<WindowLayer, WindowCreateEvent>(this, &WindowLayer::OnWindowCreate);
+		/*EventManager::AddEventListener<WindowLayer, WindowCreateEvent>(this, &WindowLayer::OnWindowCreate);
 		EventManager::AddEventListener<WindowLayer, WindowDestroyEvent>(this, &WindowLayer::OnWindowDestroy);
-		EventManager::AddEventListener<WindowLayer, WindowRequestEvent>(this, &WindowLayer::OnRequestWindow);
+		EventManager::AddEventListener<WindowLayer, WindowRequestEvent>(this, &WindowLayer::OnRequestWindow);*/
 
 		if (glfwInit() == GLFW_FALSE)
 		{
@@ -84,7 +84,7 @@ namespace Indy
 		// Trigger App Termination if no windows remain
 		ApplicationEvent terminateEvent;
 		terminateEvent.terminate = true;
-		EventManager::Notify<ApplicationEvent>(&terminateEvent);
+		EventManager::Notify<ApplicationEvent>(terminateEvent);
 	}
 
 	void WindowLayer::OnRequestWindow(WindowRequestEvent* event)

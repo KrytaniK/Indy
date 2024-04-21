@@ -8,6 +8,6 @@ namespace Indy
 	{
 		WindowCreateEvent event{};
 		event.createInfo = createInfo;
-		EventManager::Notify<WindowCreateEvent>(&event);
+		EventManager::Notify<WindowCreateEvent>(event);
 	}
 }

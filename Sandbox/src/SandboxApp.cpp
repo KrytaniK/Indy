@@ -1,5 +1,3 @@
-#include <Engine/Core/ProfileMacros.h>
-
 #include <Engine.h>
 
 import Sandbox;

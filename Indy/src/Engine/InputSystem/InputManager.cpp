@@ -31,12 +31,12 @@ namespace Indy
 
 	void InputManager::Enable()
 	{
-		m_EventHandles.emplace_back(
+		/*m_EventHandles.emplace_back(
 			EventManager::AddEventListener<InputManager, InputDeviceDetectEvent>(this, &InputManager::OnDeviceDetected)
 		);
 		m_EventHandles.emplace_back(
 			EventManager::AddEventListener<InputManager, InputDeviceEvent>(this, &InputManager::OnDeviceEvent)
-		);
+		);*/
 	}
 
 	void InputManager::Disable()
