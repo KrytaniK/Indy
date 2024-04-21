@@ -2,8 +2,8 @@ module;
 
 export module Sandbox;
 
-import Indy_Core;
-import Indy_Core_InputSystem;
+export import Indy_Core;
+import Indy_Core_EventSystem;
 
 export {
 	namespace Indy
@@ -13,6 +13,8 @@ export {
 		public:
 			Sandbox();
 			~Sandbox();
+
+			void Test(ApplicationEvent& e) {};
 
 			virtual void Run() override;
 		};

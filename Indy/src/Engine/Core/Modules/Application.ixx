@@ -4,7 +4,6 @@ module;
 
 export module Indy_Core:Application;
 
-import Indy_Core_EventSystem;
 import Indy_Core_LayerStack;
 
 export {
@@ -23,8 +22,11 @@ export {
 			virtual void Run() = 0;
 
 		protected:
+			// For use with layered architectures
 			std::unique_ptr<LayerStack> m_LayerStack;
-			bool m_ShouldClose = false;
+
+			// Controls application lifetime. Setting this to true terminates the program
+			bool m_ShouldClose = true;
 		};
 	}
 }

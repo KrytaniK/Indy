@@ -167,7 +167,7 @@ export namespace Indy
 				// Safe to assume insertion at the end of each vector won't break anything. Indices will always match.
 				// Additionally, s_TypeIndices will always retain logical order.
 				s_TypeIndices.emplace_back(std::make_pair(id, handle.index));
-				s_EventListeners.emplace_back(std::make_shared<<MemberEventListener<C, EventType>>(instance, callback));
+				s_EventListeners.emplace_back(std::make_shared<MemberEventListener<C, EventType>>(instance, callback));
 				return handle;
 			}
 

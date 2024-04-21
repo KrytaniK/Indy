@@ -1,10 +1,8 @@
-#include <Engine.h>
+#include <memory>
 
 import Sandbox;
-import Indy_Core;
-import Indy_Core_LayerStack;
-import Indy_Core_InputSystem;
-import Indy_Core_EventSystem;
+import Indy_Core_Profiler;
+
 
 namespace Indy
 {
@@ -25,6 +23,6 @@ namespace Indy
 
 	void Sandbox::Run()
 	{
-		INDY_INFO("Sandbox::Run()");
+		
 	}
 }
