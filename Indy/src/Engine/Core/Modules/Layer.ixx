@@ -1,10 +1,10 @@
-export module Indy_Core_LayerStack:Layer;
+export module Indy_Core:Layer;
 
 export
 {
 	namespace Indy
 	{
-		class Layer
+		class ILayer
 		{
 		public:
 			virtual void onAttach() = 0;

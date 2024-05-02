@@ -2,7 +2,7 @@ module;
 
 #include <functional>
 
-export module Indy_Core_EventSystem:EventListener;
+export module Indy_Core_Events:EventListener;
 
 import :EventTypes;
 

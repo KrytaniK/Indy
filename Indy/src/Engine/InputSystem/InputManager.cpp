@@ -5,7 +5,7 @@
 #include <map>
 
 import Indy_Core_InputSystem;
-import Indy_Core_EventSystem;
+import Indy_Core_Events;
 
 namespace Indy
 {

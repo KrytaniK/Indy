@@ -4,7 +4,7 @@
 #include <GLFW/glfw3.h>
 
 import Indy_Core_Window;
-import Indy_Core_EventSystem;
+import Indy_Core_Events;
 import Indy_Core_InputSystem;
 
 namespace Indy

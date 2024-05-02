@@ -2,8 +2,8 @@
 
 #include <GLFW/glfw3.h>
 
-import Indy_Core_LayerStack;
-import Indy_Core_EventSystem;
+import Indy_Core;
+import Indy_Core_Events;
 
 namespace Indy
 {

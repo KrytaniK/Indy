@@ -1,6 +1,6 @@
 #include "Engine/Core/LogMacros.h"
 
-import Indy_Core_LayerStack;
+import Indy_Core;
 
 namespace Indy
 {
@@ -24,13 +24,13 @@ namespace Indy
 		}
 	}
 
-	void LayerStack::PushLayer(const std::shared_ptr<Layer> layer)
+	void LayerStack::PushLayer(const std::shared_ptr<ILayer> layer)
 	{
 		m_Layers.insert(m_Layers.begin() + m_OverlayStartIndex++, layer);
 		layer->onAttach();
 	}
 
-	void LayerStack::PushOverlay(const std::shared_ptr<Layer> overlay)
+	void LayerStack::PushOverlay(const std::shared_ptr<ILayer> overlay)
 	{
 		m_Layers.emplace_back(overlay);
 		overlay->onAttach();

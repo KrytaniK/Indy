@@ -3,8 +3,6 @@
 #include <memory>
 
 import Indy_Core;
-import Indy_Core_LayerStack;
-import Indy_Core_EventSystem;
 
 namespace Indy
 {
@@ -20,6 +18,14 @@ namespace Indy
 
 	void Application::StartAndRun()
 	{
+		// Application is meant to execute once
+		if (m_ShouldClose)
+		{
+			Run();
+			return;
+		}
+
+		// Application is meant to run contininuously
 		while (!m_ShouldClose)
 		{
 			m_LayerStack->Update();

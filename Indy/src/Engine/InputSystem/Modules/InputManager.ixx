@@ -9,7 +9,7 @@ module;
 
 export module Indy_Core_InputSystem:InputManager;
 
-import Indy_Core_EventSystem;
+import Indy_Core_Events;
 
 import :Device;
 import :DeviceControl;
@@ -44,7 +44,6 @@ export
 			void Enable();
 			void Disable();
 			bool Enabled() const { return m_IsEnabled; };
-
 
 		private:
 			// Event Handlers

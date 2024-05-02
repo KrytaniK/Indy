@@ -2,7 +2,7 @@ module;
 
 #include <typeindex>
 
-export module Indy_Core_EventSystem:EventHandle;
+export module Indy_Core_Events:EventHandle;
 
 export
 {

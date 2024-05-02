@@ -2,7 +2,7 @@ module;
 
 #include <cstdint>
 
-export module Indy_Core_EventSystem:EventTypes;
+export module Indy_Core_Events:EventTypes;
 
 import Indy_Core_Window;
 

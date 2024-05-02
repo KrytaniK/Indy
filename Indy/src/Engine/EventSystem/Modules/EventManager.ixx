@@ -6,7 +6,7 @@ module;
 #include <typeindex>
 #include <unordered_map>
 
-export module Indy_Core_EventSystem:EventManager;
+export module Indy_Core_Events:EventManager;
 
 import :EventHandle;
 import :EventListener;
@@ -19,6 +19,7 @@ export namespace Indy
 	{
 	private:
 		EventManagerCSR();
+		~EventManagerCSR() = default;
 
 	private:
 		static std::vector<std::pair<std::type_index, uint32_t>> s_TypeIndices; // These MUST stay ordered

@@ -4,7 +4,7 @@
 #include <typeindex>
 #include <map>
 
-import Indy_Core_EventSystem;
+import Indy_Core_Events;
 
 namespace Indy
 {

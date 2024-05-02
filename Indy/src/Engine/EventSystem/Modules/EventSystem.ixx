@@ -1,4 +1,4 @@
-export module Indy_Core_EventSystem;
+export module Indy_Core_Events;
 
 export import :EventTypes;
 export import :EventHandle;

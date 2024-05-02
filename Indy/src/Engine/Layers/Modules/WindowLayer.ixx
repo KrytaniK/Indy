@@ -5,9 +5,9 @@ module;
 #include <memory>
 #include <queue>
 
-export module Indy_Core_LayerStack:WindowLayer;
+export module Indy_Core:WindowLayer;
 
-import Indy_Core_EventSystem;
+import Indy_Core_Events;
 import Indy_Core_Window;
 
 import :Layer;
@@ -16,7 +16,7 @@ export
 {
 	namespace Indy
 	{
-		class WindowLayer : public Layer
+		class WindowLayer : public ILayer
 		{
 		public:
 			virtual void onAttach() override;

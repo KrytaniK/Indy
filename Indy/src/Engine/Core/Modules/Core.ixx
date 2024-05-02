@@ -8,14 +8,13 @@ export module Indy_Core;
 // CLIENT derived application class
 export import :Application;
 
+// Default Layer Stack for layered architectures
+export import :LayerStack;
+
 // Debug Utilities
 export import :Logging;
 
-//// Window
-//import Indy_Core_Window;
-//
-//// Input
-//import Indy_Core_InputSystem;
+export import :WindowLayer;
 
 export {
 	namespace Indy

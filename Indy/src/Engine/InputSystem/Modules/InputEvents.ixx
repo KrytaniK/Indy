@@ -5,7 +5,7 @@ module;
 
 export module Indy_Core_InputSystem:Events;
 
-import Indy_Core_EventSystem;
+import Indy_Core_Events;
 
 import :Device;
 

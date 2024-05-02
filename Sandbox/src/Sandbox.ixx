@@ -3,7 +3,7 @@ module;
 export module Sandbox;
 
 export import Indy_Core;
-import Indy_Core_EventSystem;
+import Indy_Core_Events;
 
 export {
 	namespace Indy

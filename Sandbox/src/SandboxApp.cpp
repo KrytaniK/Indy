@@ -1,11 +1,12 @@
 #include <memory>
+#include <iostream>
 
 import Sandbox;
-import Indy_Core_Profiler;
-
+import Indy_Core_Input;
 
 namespace Indy
 {
+
 	std::unique_ptr<Application> CreateApplication()
 	{
 		return std::make_unique<Sandbox>();
