@@ -7,33 +7,26 @@ import Indy_Core_Input;
 
 namespace Indy
 {
-	Device::Device(const DeviceInfo& info, const uint16_t stateSize)
-		: m_Info(info), m_State(std::make_shared<DeviceState>(stateSize))
+	Device::Device(const DeviceInfo& info, const uint16_t stateSize, const std::vector<std::shared_ptr<DeviceControl>>& controls)
+		: m_Info(info), m_State(std::make_shared<DeviceState>(stateSize)), m_Controls(controls)
 	{
+		for (const auto& control : m_Controls)
+		{
+			control->AttachTo(m_State);
+
+			if (control->GetInfo().childCount > 0)
+			{
+				for (const auto& child : control->m_Children)
+				{
+					child->AttachTo(m_State);
+				}
+			}
+		}
 	}
 
 	const DeviceInfo& Device::GetInfo() const
 	{
 		return m_Info;
-	}
-
-	void Device::AddControl(std::shared_ptr<DeviceControl> control)
-	{
-		// Guard against existing controls
-		for (const auto& deviceControl : m_Controls)
-		{
-			if (deviceControl->GetInfo().displayName == control->GetInfo().displayName)
-			{
-				INDY_CORE_ERROR("Could not add control [{0}]. Control already exists!", control->GetInfo().displayName);
-				return;
-			}
-		}
-
-		// Give the control a weak pointer to device state
-		control->AttachTo(m_State);
-
-		// Store the device control
-		m_Controls.emplace_back(control);
 	}
 
 	std::weak_ptr<DeviceControl> Device::GetControl(const std::string controlName)
@@ -42,7 +35,19 @@ namespace Indy
 		{
 			if (control->GetInfo().displayName == controlName)
 				return control;
+
+			if (control->GetInfo().childCount > 0)
+			{
+				for (const auto& child : control->m_Children)
+				{
+					if (child->GetInfo().displayName == controlName)
+						return child;
+				}
+			}
 		}
+
+		INDY_CORE_WARN("Requested control [{0}] does not exist...", controlName);
+		return std::weak_ptr<DeviceControl>();
 	}
 
 }

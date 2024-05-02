@@ -14,28 +14,34 @@ namespace Indy
 			m_Children.reserve(info.childCount);
 	}
 
-	DeviceControl::~DeviceControl()
+	DeviceControl::DeviceControl(const DeviceControlInfo& info, const std::vector<std::shared_ptr<DeviceControl>>& childControls)
+		: m_Info(info), m_Children(childControls)
 	{
 
-	}
-
-	void DeviceControl::AddChild(std::shared_ptr<DeviceControl> control)
-	{
-		for (const auto& child : m_Children)
-		{
-			if (child->GetInfo().displayName == control->GetInfo().displayName)
-			{
-				INDY_CORE_ERROR("Could not add control [{0}]. Control already exists!", control->GetInfo().displayName);
-				return;
-			}
-		}
-
-		m_Children.emplace_back(control);
 	}
 
 	const DeviceControlInfo& DeviceControl::GetInfo() const
 	{
 		return m_Info;
+	}
+
+	std::weak_ptr<DeviceControl> DeviceControl::GetChild(const std::string& controlName)
+	{
+		for (const auto& child : m_Children)
+		{
+			if (child->GetInfo().displayName == controlName)
+				return child;
+		}
+
+		return std::weak_ptr<DeviceControl>();
+	}
+
+	std::weak_ptr<DeviceControl> DeviceControl::GetChild(uint16_t index)
+	{
+		if (index < m_Children.size())
+			return m_Children[index];
+
+		return std::weak_ptr<DeviceControl>();
 	}
 
 	void DeviceControl::AttachTo(std::weak_ptr<DeviceState> state)

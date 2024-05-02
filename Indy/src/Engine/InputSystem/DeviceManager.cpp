@@ -15,11 +15,73 @@ namespace Indy
 		// Reserve enough space up front to refrain from unnecessary reallocations
 		m_Devices.reserve(50);
 		m_Layouts.reserve(50);
+
+		// Attach Event Listeners
+		m_EventHandles.push(
+			EventManagerCSR::AddEventListener<DeviceManager, DeviceDetectEvent>(this, &DeviceManager::OnDeviceDetected)
+		);
 	}
 
 	DeviceManager::~DeviceManager()
 	{
+		while (!m_EventHandles.empty())
+		{
+			auto& handle = m_EventHandles.front();
+			EventManagerCSR::RemoveEventListener(handle);
+			m_EventHandles.pop();
+		}
+	}
 
+	void DeviceManager::AddLayout(const DeviceLayout& layout)
+	{
+		m_Layouts.emplace_back(layout);
+	}
+
+	std::weak_ptr<Device> DeviceManager::GetDevice(const std::string& displayName)
+	{
+		for (const auto& device : m_Devices)
+		{
+			if (device->GetInfo().displayName == displayName)
+				return device;
+		}
+
+		return std::weak_ptr<Device>();
+	}
+
+	std::weak_ptr<Device> DeviceManager::GetDevice(uint16_t deviceClass, uint16_t layoutClass)
+	{
+		for (const auto& device : m_Devices)
+		{
+			if (device->GetInfo().deviceClass == deviceClass && device->GetInfo().layoutClass == layoutClass)
+			{
+				return device;
+			}
+		}
+
+		return std::weak_ptr<Device>();
+	}
+
+	std::weak_ptr<Device> DeviceManager::GetActiveDevice(uint16_t deviceClass)
+	{
+		for (const auto& device : m_ActiveDevices)
+		{
+			if (device.first == deviceClass)
+				return device.second;
+		}
+
+		return std::weak_ptr<Device>();
+	}
+
+	void DeviceManager::SetActiveDevice(uint16_t deviceClass, const std::weak_ptr<Device>& device)
+	{
+		if (deviceClass != device.lock()->GetInfo().deviceClass)
+			return;
+
+		for (const auto& device : m_ActiveDevices)
+		{
+			if (device.first == deviceClass)
+				device.second = device;
+		}
 	}
 
 	std::unique_ptr<DeviceLayout> DeviceManager::MatchDeviceLayout(const DeviceInfo& deviceInfo)

@@ -143,9 +143,9 @@ export namespace Indy
 				{
 					// Before we check for null values, set the handle's index to be the last element in this event type's section.
 					if (i == s_TypeIndices.size() - 1)
-						handle.index = s_TypeIndices.size(); // at either the end of the vector
+						handle.index = (int32_t)s_TypeIndices.size(); // at either the end of the vector
 					else
-						handle.index = (size_t)s_TypeIndices.at(i + 1).second; // or the start of the next type's section
+						handle.index = (int32_t)s_TypeIndices.at(i + 1).second; // or the start of the next type's section
 
 					// And check for null values in this event type's section of event listeners.
 					for (int32_t j = s_TypeIndices.at(i).second; j < handle.index; j++)
@@ -163,7 +163,7 @@ export namespace Indy
 				if (s_TypeIndices.empty())
 					handle.index = 0;
 				else
-					handle.index = s_EventListeners.size();
+					handle.index = (int32_t)s_EventListeners.size();
 
 				// Safe to assume insertion at the end of each vector won't break anything. Indices will always match.
 				// Additionally, s_TypeIndices will always retain logical order.
@@ -298,7 +298,7 @@ export namespace Indy
 
 		// Otherwise, push the listener info the listener list
 		it->second.emplace_back(std::make_shared<MemberEventListener<C, EventType>>(instance, callback));
-		handle.index = it->second.size() - 1;
+		handle.index = (int32_t)it->second.size() - 1;
 
 		return handle;
 	}

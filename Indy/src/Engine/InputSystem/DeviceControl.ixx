@@ -27,13 +27,18 @@ export
 
 		class DeviceControl
 		{
+			friend class Device;
+
 		public:
 			DeviceControl(const DeviceControlInfo& info);
-			~DeviceControl();
+			DeviceControl(const DeviceControlInfo& info, const std::vector<std::shared_ptr<DeviceControl>>& childControls);
+			~DeviceControl() = default;
 
-			void AddChild(std::shared_ptr<DeviceControl> control);
 			const DeviceControlInfo& GetInfo() const;
+			std::weak_ptr<DeviceControl> GetChild(const std::string& controlName);
+			std::weak_ptr<DeviceControl> GetChild(uint16_t index);
 
+		private:
 			void AttachTo(std::weak_ptr<DeviceState> state);
 
 		private:

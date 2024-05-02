@@ -34,12 +34,11 @@ export
 		class Device
 		{
 		public:
-			Device(const DeviceInfo& info, const uint16_t stateSize);
+			Device(const DeviceInfo& info, const uint16_t stateSize, const std::vector<std::shared_ptr<DeviceControl>>& controls);
 			~Device() = default;
 
 			const DeviceInfo& GetInfo() const;
 
-			void AddControl(std::shared_ptr<DeviceControl> control);
 			std::weak_ptr<DeviceControl> GetControl(const std::string controlName);
 
 		private:

@@ -77,68 +77,30 @@ namespace Indy
 
 		glfwSetScrollCallback(m_NativeWindow, [](GLFWwindow* window, double xoffset, double yoffset)
 			{
-				//double data[] = {xoffset, yoffset};
-
-				/*const InputDeviceControlInfo& ctrlInfo = InputManager::GetDeviceControlInfo("Default Mouse", "Scroll");
-
-				InputDeviceEvent event;
-				event.deviceFormat = ctrlInfo.deviceFormat;
-				event.offset = ctrlInfo.offset;
-				event.size = ctrlInfo.Size();
-				event.deviceState = &data;*/
-
-				//EventManager::Notify<InputDeviceEvent>(&event);
+				
 			}
 		);
 
 		glfwSetCursorPosCallback(m_NativeWindow, [](GLFWwindow* window, double xpos, double ypos)
 			{
-				//double data[] = { xpos, ypos };
-
-				/*const InputDeviceControlInfo& ctrlInfo = InputManager::GetDeviceControlInfo("Default Mouse", "Position");
-
-				InputDeviceEvent event;
-				event.deviceFormat = ctrlInfo.deviceFormat;
-				event.offset = ctrlInfo.offset;
-				event.size = ctrlInfo.Size();
-				event.deviceState = &data;*/
-
-				//EventManager::Notify<InputDeviceEvent>(&event);
+				
 			}
 		);
 
 		glfwSetMouseButtonCallback(m_NativeWindow, [](GLFWwindow* window, int button, int action, int mods)
 			{
-				std::string targetControl;
-				switch (button)
-				{
-					case GLFW_MOUSE_BUTTON_LEFT:
-					{
-						targetControl = "Left Mouse Button";
-						break;
-					}
-					case GLFW_MOUSE_BUTTON_RIGHT:
-					{
-						targetControl = "Right Mouse Button";
-						break;
-					}
-					default:
-					{
-						targetControl = "Right Mouse Button";
-						break;
-					}
-				}
-
-				const InputDeviceControlInfo& ctrlInfo = InputManager::GetDeviceControlInfo("Default Mouse", targetControl);
-
-				InputDeviceEvent event;
-				event.deviceFormat = ctrlInfo.deviceFormat;
-				event.offset = ctrlInfo.offset;
-				event.size = ctrlInfo.Size();
-				event.bit = ctrlInfo.bit;
-				event.deviceState = &action;
-
-				EventManager::Notify<InputDeviceEvent>(event);
+				/*	----- This is how I want it to work -----
+					int[] data = { button, action, mods };
+				*	
+				*	NewInputEvent event;
+				*	event.deviceClass = 0x0000; // Pointer
+				*	event.layoutClass = 0x0010; // GLFW Mouse
+				*	event.control = "Left Mouse Button"; // Optional name parameter
+				*	event.controlIndex = button; // Corresponding to one of th GLFW_MOUSE_BUTTON macros
+				*	event.data = &data;
+				* 
+				*	EventSystemCSR::Notify<NewInputEvent>(event);
+				*/
 			}
 		);
 
@@ -151,6 +113,19 @@ namespace Indy
 				// Repeat actions aren't necessary (for now)
 				if (action == GLFW_REPEAT)
 					return;
+
+				/*	----- This is how I want it to work -----
+					int[] data = { key, scancode, action, mods };
+				*
+				*	NewInputEvent event;
+				*	event.deviceClass = 0x0001; // Keyboard
+				*	event.layoutClass = 0x0011; // GLFW Keyboard
+				*	event.control = "Space"; // Optional name parameter
+				*	event.controlIndex = key; // Corresponding to one of th GLFW_MOUSE_BUTTON macros
+				*	event.data = &data;
+				*
+				*	EventSystemCSR::Notify<NewInputEvent>(event);
+				*/
 
 				std::string targetControl;
 				switch (key)
