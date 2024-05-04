@@ -62,7 +62,9 @@ namespace Indy
 		for (const auto& device : m_Devices)
 		{
 			if (device->GetInfo().displayName == displayName)
+			{
 				return device;
+			}
 		}
 
 		return std::weak_ptr<Device>();

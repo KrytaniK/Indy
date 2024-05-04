@@ -14,10 +14,20 @@ namespace Indy
 			m_Children.reserve(info.childCount);
 	}
 
-	DeviceControl::DeviceControl(const DeviceControlInfo& info, const std::vector<std::shared_ptr<DeviceControl>>& childControls)
+	DeviceControl::DeviceControl(const DeviceControlInfo& info, const std::vector< std::shared_ptr<DeviceControl>>& childControls)
 		: m_Info(info), m_Children(childControls)
 	{
+		
+	}
 
+	void DeviceControl::SetParent(const std::weak_ptr<DeviceControl>& parent)
+	{
+		if (!m_ParentControl.expired())
+		{
+			INDY_CORE_ERROR(
+				"Cannot set the parent of control [{0}]. Control is already bound to an existing control [{1}].",
+				m_Info.displayName, m_ParentControl.lock()->GetInfo().displayName);
+		}
 	}
 
 	const DeviceControlInfo& DeviceControl::GetInfo() const
@@ -56,6 +66,23 @@ namespace Indy
 		m_State = state;
 	}
 
+	void DeviceControl::OnValueChange()
+	{
+		// Notify all control watchers
+		DeviceControlContext ctx(this);
+		for (const auto& callback : m_Listeners)
+			callback(ctx);
+
+		// If no parent exists, bail
+		if (m_ParentControl.expired())
+			return;
+
+		// Notify all parent watchers
+		m_ParentControl.lock()->OnValueChange();
+	}
+
+	
+
 	void DeviceControl::Update(std::byte* data)
 	{
 		// Can't update state if it's invalid
@@ -68,13 +95,15 @@ namespace Indy
 		// If this control updates a bit
 		// Data will always be converted to a boolean value of 0 or 1 before writing to state.
 		if (m_Info.bit != 0xFF)
-		{
-
 			m_State.lock()->WriteBit(m_Info.byteOffset, m_Info.bit, (*data != std::byte{0}));
-			return;
-		}
+		else // Otherwise, update the control state.
+			m_State.lock()->Write(m_Info.byteOffset, data, m_Info.sizeInBytes);
 
-		// Otherwise, update the control state.
-		m_State.lock()->Write(m_Info.byteOffset, data, m_Info.sizeInBytes);
+		OnValueChange();
+	}
+
+	void DeviceControl::Watch(ControlContextCallback callback)
+	{
+		m_Listeners.emplace_back(callback);
 	}
 }

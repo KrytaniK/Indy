@@ -29,6 +29,8 @@ export
 			T Read(uint16_t byteOffset);
 			int ReadBit(uint16_t byteOffset, uint8_t bit);
 
+			size_t Size() { return m_StateBlock.size(); };
+
 		private:
 			std::vector<std::byte> m_StateBlock;
 		};

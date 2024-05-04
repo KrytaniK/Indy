@@ -5,6 +5,7 @@ module;
 #include <string>
 #include <vector>
 #include <memory>
+#include <functional>
 
 export module Indy_Core_Input:DeviceControl;
 
@@ -16,6 +17,10 @@ export
 {
 	namespace Indy
 	{
+		class DeviceControlContext;
+
+		typedef std::function<void(DeviceControlContext& ctx)> ControlContextCallback;
+
 		struct DeviceControlInfo
 		{
 			std::string displayName;
@@ -34,8 +39,10 @@ export
 
 		public:
 			DeviceControl(const DeviceControlInfo& info);
-			DeviceControl(const DeviceControlInfo& info, const std::vector<std::shared_ptr<DeviceControl>>& childControls);
+			DeviceControl(const DeviceControlInfo& info, const std::vector< std::shared_ptr<DeviceControl>>& childControls);
 			~DeviceControl() = default;
+
+			void SetParent(const std::weak_ptr<DeviceControl>& parent);
 
 			const DeviceControlInfo& GetInfo() const;
 
@@ -43,6 +50,8 @@ export
 			std::weak_ptr<DeviceControl> GetChild(uint16_t index);
 
 			void Update(std::byte* data);
+
+			void Watch(ControlContextCallback callback);
 
 			template<typename T>
 			T ReadAs()
@@ -63,11 +72,45 @@ export
 
 		private:
 			void AttachTo(std::weak_ptr<DeviceState> state);
+			void OnValueChange();
 
 		private:
 			DeviceControlInfo m_Info;
 			std::vector<std::shared_ptr<DeviceControl>> m_Children;
+			std::vector<ControlContextCallback> m_Listeners;
+			std::weak_ptr<DeviceControl> m_ParentControl;
 			std::weak_ptr<DeviceState> m_State;
+		};
+
+		class DeviceControlContext
+		{
+		public:
+			DeviceControlContext(DeviceControl* control)
+			{
+				m_Control = control;
+			};
+
+			~DeviceControlContext() = default;
+
+			const std::string& Name()
+			{
+				if (!m_Control)
+					return "[Expired]";
+
+				return m_Control->GetInfo().displayName;
+			};
+
+			template<typename T>
+			T ReadAs()
+			{
+				if (!m_Control)
+					return T();
+
+				return m_Control->ReadAs<T>();
+			};
+
+		private:
+			DeviceControl* m_Control;
 		};
 	}
 }

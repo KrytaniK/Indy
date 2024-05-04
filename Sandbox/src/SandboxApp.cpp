@@ -38,24 +38,36 @@ namespace Indy
 		deviceInfo.deviceClass = 0x0000;
 		deviceInfo.layoutClass = 0x0000;
 
-		InputCreateData createData;
-		createData.deviceInfo = &deviceInfo;
-		createData.deviceLayout = &mouseLayout;
+		InputCreateInfo createInfo;
+		createInfo.deviceInfo = &deviceInfo;
+		createInfo.deviceLayout = &mouseLayout;
+
+		InputWatchInfo watchInfo;
+		watchInfo.device = "Default Mouse";
+		watchInfo.control = "Position";
+		watchInfo.callback = [=](DeviceControlContext& ctx)
+			{
+				INDY_CORE_INFO("Mouse Position Changed!");
+			};
 
 		bool value = 1;
 		float x = 37.5f;
 		float pos[] = { x, 283.2f };
 
-		InputNotifyData input;
-		input.deviceClass = 0x0000;
-		input.layoutClass = 0x0000;
-		input.controlName = "X";
-		input.data = &x;
+		InputNotifyInfo input;
+		input.device = "Default Mouse";
+		input.control = "Position";
+		input.data = &pos;
 
 		LayerEvent createEvent;
 		createEvent.target = INDY_CORE_LAYER_INPUT;
 		createEvent.action = InputLayer::EventActions::Create;
-		createEvent.data = &createData;
+		createEvent.data = &createInfo;
+
+		LayerEvent watchEvent;
+		watchEvent.target = INDY_CORE_LAYER_INPUT;
+		watchEvent.action = InputLayer::EventActions::Watch;
+		watchEvent.data = &watchInfo;
 
 		LayerEvent updateControlEvent;
 		updateControlEvent.target = INDY_CORE_LAYER_INPUT;
@@ -63,6 +75,7 @@ namespace Indy
 		updateControlEvent.data = &input;
 
 		EventManagerCSR::Notify<LayerEvent>(createEvent);
+		EventManagerCSR::Notify<LayerEvent>(watchEvent);
 		EventManagerCSR::Notify<LayerEvent>(updateControlEvent);
 	}
 
