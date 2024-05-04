@@ -9,7 +9,6 @@ namespace Indy
 {
 	void LA_InputUpdate::Execute(ILayerData* layerData)
 	{
-		INDY_CORE_INFO("Input Layer Action: Update");
 		// Extract Input Update Data
 		InputUpdateInfo* actionData = static_cast<InputUpdateInfo*>(layerData);
 
@@ -71,7 +70,6 @@ namespace Indy
 
 	void LA_InputCreateDevice::Execute(ILayerData* layerData)
 	{
-		INDY_CORE_INFO("Input Layer Action: Create Device");
 		// Extract Input Update Data
 		InputCreateDeviceInfo* actionData = static_cast<InputCreateDeviceInfo*>(layerData);
 
@@ -90,7 +88,6 @@ namespace Indy
 
 	void LA_InputCreateLayout::Execute(ILayerData* layerData)
 	{
-		INDY_CORE_INFO("Input Layer Action: Create Layout");
 		// Extract Input Update Data
 		InputCreateLayoutInfo* actionData = static_cast<InputCreateLayoutInfo*>(layerData);
 
@@ -109,7 +106,6 @@ namespace Indy
 
 	void LA_InputWatchControl::Execute(ILayerData* layerData)
 	{
-		INDY_CORE_INFO("Input Layer Action: Watch Control");
 		// Extract Input Update Data
 		InputWatchControlInfo* actionData = static_cast<InputWatchControlInfo*>(layerData);
 
