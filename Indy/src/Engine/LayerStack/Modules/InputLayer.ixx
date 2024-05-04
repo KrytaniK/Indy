@@ -29,7 +29,7 @@ export
 			virtual void Update() override;
 
 		private:
-			virtual void onEvent(ILayerEvent& event) override;
+			virtual void onEvent(ILayerEvent* event) override;
 
 		private:
 			std::shared_ptr<DeviceManager> m_DeviceManager;

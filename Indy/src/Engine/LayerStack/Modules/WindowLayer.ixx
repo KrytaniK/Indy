@@ -27,7 +27,7 @@ export
 			virtual void Update() override;
 
 		private:
-			virtual void onEvent(ILayerEvent& event) override;
+			virtual void onEvent(ILayerEvent* event) override;
 
 			void OnWindowCreate(WindowCreateEvent* event);
 			void OnWindowDestroy(WindowDestroyEvent* event);

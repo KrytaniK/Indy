@@ -18,10 +18,6 @@ namespace Indy
 			EventManagerCSR::AddEventListener<WindowLayer, ILayerEvent>(this, &WindowLayer::onEvent)
 		);
 
-		/*EventManager::AddEventListener<WindowLayer, WindowCreateEvent>(this, &WindowLayer::OnWindowCreate);
-		EventManager::AddEventListener<WindowLayer, WindowDestroyEvent>(this, &WindowLayer::OnWindowDestroy);
-		EventManager::AddEventListener<WindowLayer, WindowRequestEvent>(this, &WindowLayer::OnRequestWindow);*/
-
 		if (glfwInit() == GLFW_FALSE)
 		{
 			INDY_CORE_CRITICAL("[WindowLayer] Could not initialize GLFW!");
@@ -52,13 +48,13 @@ namespace Indy
 			m_Windows.at(i)->Update();
 	}
 
-	void WindowLayer::onEvent(ILayerEvent& event)
+	void WindowLayer::onEvent(ILayerEvent* event)
 	{
-		if (event.targetLayer != "ICL_Window")
+		if (event->targetLayer != "ICL_Window")
 			return;
 
 		// Automatically stop event propagation
-		event.propagates = false;
+		event->propagates = false;
 
 		
 	}

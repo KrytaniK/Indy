@@ -83,14 +83,10 @@ namespace Indy
 		updateControlEvent.action = InputLayerAction::Update;
 		updateControlEvent.layerData = &input;
 
-		auto layerEvent = static_cast<ILayerEvent*>(&layoutCreateEvent);
-		auto ile = static_cast<InputLayerEvent*>(layerEvent);
-		INDY_CORE_WARN("Action: {0}", (uint8_t)ile->action);
-
-		EventManagerCSR::Notify<ILayerEvent>(layoutCreateEvent);
-		EventManagerCSR::Notify<ILayerEvent>(deviceCreateEvent);
-		EventManagerCSR::Notify<ILayerEvent>(watchControlEvent);
-		EventManagerCSR::Notify<ILayerEvent>(updateControlEvent);
+		EventManagerCSR::Notify<ILayerEvent>(&layoutCreateEvent);
+		EventManagerCSR::Notify<ILayerEvent>(&deviceCreateEvent);
+		EventManagerCSR::Notify<ILayerEvent>(&watchControlEvent);
+		EventManagerCSR::Notify<ILayerEvent>(&updateControlEvent);
 	}
 
 	Sandbox::~Sandbox()

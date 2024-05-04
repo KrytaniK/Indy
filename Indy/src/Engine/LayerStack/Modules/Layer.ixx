@@ -46,7 +46,7 @@ export
 			virtual void Update() = 0;
 
 		private:
-			virtual void onEvent(ILayerEvent& event) = 0;
+			virtual void onEvent(ILayerEvent* event) = 0;
 
 		protected:
 			std::vector<IEventHandle> m_EventHandles;

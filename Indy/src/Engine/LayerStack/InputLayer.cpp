@@ -36,26 +36,25 @@ namespace Indy
 
 	}
 
-	void InputLayer::onEvent(ILayerEvent& event)
+	void InputLayer::onEvent(ILayerEvent* event)
 	{
-		INDY_CORE_INFO("Input OnEvent. Target: [{0}]", event.targetLayer);
-		if (event.targetLayer != "ICL_Input")
+		INDY_CORE_INFO("Input OnEvent. Target: [{0}]", event->targetLayer);
+		if (event->targetLayer != "ICL_Input")
 		{
 			return;
 		}
 
-
-		event.propagates = false;
+		event->propagates = false;
 
 		// Cast to Input Layer Event
-		InputLayerEvent inputEvent = static_cast<InputLayerEvent>(event);
+		InputLayerEvent* inputEvent = static_cast<InputLayerEvent*>(event);
 
 		// Attach the device manager to the action data
 		InputActionData actionData;
 		actionData.deviceManager = m_DeviceManager;
 
 		// Based on which action is specified, execute said action
-		uint8_t action = static_cast<uint8_t>(inputEvent.action);
+		uint8_t action = static_cast<uint8_t>(inputEvent->action);
 		INDY_CORE_INFO("Action: {0}", action);
 		return;
 		m_LayerActions[action]->Execute(&actionData);
