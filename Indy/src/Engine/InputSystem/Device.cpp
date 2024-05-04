@@ -63,4 +63,23 @@ namespace Indy
 		return m_State;
 	}
 
+	void Device::Update(std::byte* newState)
+	{
+		// Bail if state is invalid
+		if (!m_State)
+		{
+			INDY_CORE_ERROR(
+				"Failed to process input. Bad State... \n[Device Name] {0}\n[Device Class] {1}\n[Device Layout] {2}",
+				m_Info.displayName,
+				m_Info.deviceClass,
+				m_Info.layoutClass
+			);
+			return;
+		}
+
+		// Write device state
+		m_State->Write(0, newState, m_State->Size());
+		return;
+	}
+
 }

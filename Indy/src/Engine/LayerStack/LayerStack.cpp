@@ -1,6 +1,6 @@
 #include "Engine/Core/LogMacros.h"
 
-import Indy_Core;
+import Indy_Core_LayerStack;
 
 namespace Indy
 {

@@ -4,7 +4,7 @@ module;
 
 export module Indy_Core:Application;
 
-import :LayerStack;
+import Indy_Core_LayerStack;
 
 export {
 	namespace Indy

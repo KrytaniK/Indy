@@ -2,8 +2,8 @@
 
 #include <GLFW/glfw3.h>
 
-import Indy_Core;
 import Indy_Core_Events;
+import Indy_Core_WindowLayer;
 
 namespace Indy
 {
@@ -15,7 +15,7 @@ namespace Indy
 	void WindowLayer::onAttach()
 	{
 		m_EventHandles.emplace_back(
-			EventManagerCSR::AddEventListener<WindowLayer, LayerEvent>(this, &WindowLayer::onEvent)
+			EventManagerCSR::AddEventListener<WindowLayer, ILayerEvent>(this, &WindowLayer::onEvent)
 		);
 
 		/*EventManager::AddEventListener<WindowLayer, WindowCreateEvent>(this, &WindowLayer::OnWindowCreate);
@@ -52,37 +52,15 @@ namespace Indy
 			m_Windows.at(i)->Update();
 	}
 
-	void WindowLayer::onEvent(LayerEvent& event)
+	void WindowLayer::onEvent(ILayerEvent& event)
 	{
-		if (event.target != INDY_CORE_LAYER_WINDOW)
+		if (event.targetLayer != "ICL_Window")
 			return;
 
 		// Automatically stop event propagation
 		event.propagates = false;
 
-		// Handle Event
-		switch (event.action)
-		{
-			case (EventActions::Request):
-			{
-				// Re-Enable propagation, since this is a request.
-				event.propagates = true;
-
-				break;
-			}
-			case (EventActions::Create):
-			{
-
-				break;
-			}
-			case (EventActions::Destroy):
-			{
-
-				break;
-			}
-			default:
-				break;
-		}
+		
 	}
 
 	void WindowLayer::OnWindowCreate(WindowCreateEvent* event)

@@ -5,12 +5,12 @@ module;
 #include <memory>
 #include <queue>
 
-export module Indy_Core:WindowLayer;
+export module Indy_Core_WindowLayer;
 
+import Indy_Core_LayerStack;
 import Indy_Core_Events;
 import Indy_Core_Window;
 
-import :LayerStack;
 
 export
 {
@@ -27,12 +27,7 @@ export
 			virtual void Update() override;
 
 		private:
-			virtual void onEvent(LayerEvent& event) override;
-
-			// New Methods to replace their "On" variants
-			//void CreateWindow(const WindowCreateInfo& createInfo);
-			//void DestroyWindow(const uint8_t windowID);
-			//std::weak_ptr<IWindow> GetActiveWindow();
+			virtual void onEvent(ILayerEvent& event) override;
 
 			void OnWindowCreate(WindowCreateEvent* event);
 			void OnWindowDestroy(WindowDestroyEvent* event);

@@ -55,8 +55,6 @@ export
 		private:
 			WindowProps m_Props;
 			GLFWwindow* m_NativeWindow;
-			std::unique_ptr<InputManager> m_InputManager;
-			std::pair<WindowProps*, InputManager*> m_GFLWWindowPtr;
 		};
 	}
 }

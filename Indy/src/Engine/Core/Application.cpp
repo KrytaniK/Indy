@@ -1,9 +1,8 @@
-#include "LogMacros.h"
-#include <iostream>
 #include <memory>
 
 import Indy_Core;
 import Indy_Core_Events;
+import Indy_Core_LayerStack;
 
 namespace Indy
 {

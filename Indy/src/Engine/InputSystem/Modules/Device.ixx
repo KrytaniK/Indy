@@ -44,6 +44,8 @@ export
 
 			std::weak_ptr<DeviceState> GetState();
 
+			void Update(std::byte* newState);
+
 		private:
 			DeviceInfo m_Info;
 			std::vector<std::shared_ptr<DeviceControl>> m_Controls;

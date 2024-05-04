@@ -6,6 +6,7 @@
 
 import Sandbox;
 import Indy_Core;
+import Indy_Core_InputLayer;
 import Indy_Core_Input;
 import Indy_Core_Events;
 
@@ -38,11 +39,13 @@ namespace Indy
 		deviceInfo.deviceClass = 0x0000;
 		deviceInfo.layoutClass = 0x0000;
 
-		InputCreateInfo createInfo;
-		createInfo.deviceInfo = &deviceInfo;
-		createInfo.deviceLayout = &mouseLayout;
+		InputCreateDeviceInfo createDeviceInfo;
+		createDeviceInfo.deviceInfo = &deviceInfo;
 
-		InputWatchInfo watchInfo;
+		InputCreateLayoutInfo createLayoutInfo;
+		createLayoutInfo.layout = &mouseLayout;
+
+		InputWatchControlInfo watchInfo;
 		watchInfo.device = "Default Mouse";
 		watchInfo.control = "Position";
 		watchInfo.callback = [=](DeviceControlContext& ctx)
@@ -53,30 +56,41 @@ namespace Indy
 		bool value = 1;
 		float x = 37.5f;
 		float pos[] = { x, 283.2f };
+		void* data = &pos;
 
-		InputNotifyInfo input;
+		InputUpdateInfo input;
 		input.device = "Default Mouse";
 		input.control = "Position";
-		input.data = &pos;
+		input.newState = &data;
 
-		LayerEvent createEvent;
-		createEvent.target = INDY_CORE_LAYER_INPUT;
-		createEvent.action = InputLayer::EventActions::Create;
-		createEvent.data = &createInfo;
+		InputLayerEvent deviceCreateEvent;
+		deviceCreateEvent.targetLayer = "ICL_Input";
+		deviceCreateEvent.action = InputLayerAction::CreateDevice;
+		deviceCreateEvent.layerData = &createDeviceInfo;
 
-		LayerEvent watchEvent;
-		watchEvent.target = INDY_CORE_LAYER_INPUT;
-		watchEvent.action = InputLayer::EventActions::Watch;
-		watchEvent.data = &watchInfo;
+		InputLayerEvent layoutCreateEvent;
+		layoutCreateEvent.targetLayer = "ICL_Input";
+		layoutCreateEvent.action = InputLayerAction::CreateLayout;
+		layoutCreateEvent.layerData = &createLayoutInfo;
 
-		LayerEvent updateControlEvent;
-		updateControlEvent.target = INDY_CORE_LAYER_INPUT;
-		updateControlEvent.action = InputLayer::EventActions::Notify;
-		updateControlEvent.data = &input;
+		InputLayerEvent watchControlEvent;
+		watchControlEvent.targetLayer = "ICL_Input";
+		watchControlEvent.action = InputLayerAction::WatchControl;
+		watchControlEvent.layerData = &watchInfo;
 
-		EventManagerCSR::Notify<LayerEvent>(createEvent);
-		EventManagerCSR::Notify<LayerEvent>(watchEvent);
-		EventManagerCSR::Notify<LayerEvent>(updateControlEvent);
+		InputLayerEvent updateControlEvent;
+		updateControlEvent.targetLayer = "ICL_Input";
+		updateControlEvent.action = InputLayerAction::Update;
+		updateControlEvent.layerData = &input;
+
+		auto layerEvent = static_cast<ILayerEvent*>(&layoutCreateEvent);
+		auto ile = static_cast<InputLayerEvent*>(layerEvent);
+		INDY_CORE_WARN("Action: {0}", (uint8_t)ile->action);
+
+		EventManagerCSR::Notify<ILayerEvent>(layoutCreateEvent);
+		EventManagerCSR::Notify<ILayerEvent>(deviceCreateEvent);
+		EventManagerCSR::Notify<ILayerEvent>(watchControlEvent);
+		EventManagerCSR::Notify<ILayerEvent>(updateControlEvent);
 	}
 
 	Sandbox::~Sandbox()
