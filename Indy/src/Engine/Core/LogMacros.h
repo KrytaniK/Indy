@@ -2,7 +2,7 @@
 
 #include "spdlog/spdlog.h"
 
-import Indy_Core;
+import Indy_Core_Debug;
 
 // Core Log Macros
 #define INDY_CORE_TRACE(...)        Indy::CoreLoggingContext::Get()->trace(__VA_ARGS__)

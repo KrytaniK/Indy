@@ -6,7 +6,7 @@ module;
 // General includes
 #include <memory>
 
-export module Indy_Core:Logging;
+export module Indy_Core_Debug;
 
 // See https://github.com/gabime/spdlog for intended use of spdlog.
 

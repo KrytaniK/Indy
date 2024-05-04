@@ -12,9 +12,11 @@ export import :Application;
 export import :LayerStack;
 
 // Debug Utilities
-export import :Logging;
+export import Indy_Core_Debug;
+export import Indy_Core_Profiler;
 
 export import :WindowLayer;
+export import :InputLayer;
 
 export {
 	namespace Indy

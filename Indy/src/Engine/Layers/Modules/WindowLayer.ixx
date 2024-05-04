@@ -10,7 +10,7 @@ export module Indy_Core:WindowLayer;
 import Indy_Core_Events;
 import Indy_Core_Window;
 
-import :Layer;
+import :LayerStack;
 
 export
 {
@@ -19,11 +19,21 @@ export
 		class WindowLayer : public ILayer
 		{
 		public:
+			enum EventActions : uint8_t { Request = 0x00, Create, Destroy };
+
+		public:
 			virtual void onAttach() override;
 			virtual void onDetach() override;
 			virtual void Update() override;
 
 		private:
+			virtual void onEvent(LayerEvent& event) override;
+
+			// New Methods to replace their "On" variants
+			//void CreateWindow(const WindowCreateInfo& createInfo);
+			//void DestroyWindow(const uint8_t windowID);
+			//std::weak_ptr<IWindow> GetActiveWindow();
+
 			void OnWindowCreate(WindowCreateEvent* event);
 			void OnWindowDestroy(WindowDestroyEvent* event);
 			void OnRequestWindow(WindowRequestEvent* event);

@@ -40,6 +40,9 @@ export
 			const DeviceInfo& GetInfo() const;
 
 			std::weak_ptr<DeviceControl> GetControl(const std::string controlName);
+			std::weak_ptr<DeviceControl> GetControl(const uint16_t controlIndex);
+
+			std::weak_ptr<DeviceState> GetState();
 
 		private:
 			DeviceInfo m_Info;

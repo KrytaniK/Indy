@@ -50,4 +50,17 @@ namespace Indy
 		return std::weak_ptr<DeviceControl>();
 	}
 
+	std::weak_ptr<DeviceControl> Device::GetControl(const uint16_t controlIndex)
+	{
+		if (controlIndex < m_Controls.size())
+			return m_Controls[controlIndex];
+
+		return std::weak_ptr<DeviceControl>();
+	}
+
+	std::weak_ptr<DeviceState> Device::GetState()
+	{
+		return m_State;
+	}
+
 }

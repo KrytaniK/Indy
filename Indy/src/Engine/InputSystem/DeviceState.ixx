@@ -21,6 +21,7 @@ export
 
 			template<typename T>
 			void Write(uint16_t byteOffset, T value);
+			void Write(uint16_t byteOffset, std::byte* data, size_t size);
 			void WriteBit(uint16_t byteOffset, uint8_t bitOffset, bool value);
 
 
@@ -41,7 +42,7 @@ export
 		{
 			if (byteOffset + sizeof(value) > m_StateBlock.size())
 			{
-				INDY_CORE_ERROR("Attempted to write outside of device state bounds...");
+				INDY_CORE_ERROR("Attempted to write outside of device state bounds...\nByte Offset: {0}\n Size: {1}", byteOffset, m_StateBlock.size());
 				return;
 			}
 
@@ -62,7 +63,11 @@ export
 				return T();
 			}
 
-			return static_cast<T>(m_StateBlock[byteOffset]);
+			T result;
+
+			memcpy(&result, &m_StateBlock[byteOffset], sizeof(T));
+
+			return result;
 		}
 	}
 }

@@ -14,6 +14,10 @@ namespace Indy
 
 	void WindowLayer::onAttach()
 	{
+		m_EventHandles.emplace_back(
+			EventManagerCSR::AddEventListener<WindowLayer, LayerEvent>(this, &WindowLayer::onEvent)
+		);
+
 		/*EventManager::AddEventListener<WindowLayer, WindowCreateEvent>(this, &WindowLayer::OnWindowCreate);
 		EventManager::AddEventListener<WindowLayer, WindowDestroyEvent>(this, &WindowLayer::OnWindowDestroy);
 		EventManager::AddEventListener<WindowLayer, WindowRequestEvent>(this, &WindowLayer::OnRequestWindow);*/
@@ -46,6 +50,39 @@ namespace Indy
 		// Update any remaining windows
 		for (uint8_t i = 0; i < m_Windows.size(); i++)
 			m_Windows.at(i)->Update();
+	}
+
+	void WindowLayer::onEvent(LayerEvent& event)
+	{
+		if (event.target != INDY_CORE_LAYER_WINDOW)
+			return;
+
+		// Automatically stop event propagation
+		event.propagates = false;
+
+		// Handle Event
+		switch (event.action)
+		{
+			case (EventActions::Request):
+			{
+				// Re-Enable propagation, since this is a request.
+				event.propagates = true;
+
+				break;
+			}
+			case (EventActions::Create):
+			{
+
+				break;
+			}
+			case (EventActions::Destroy):
+			{
+
+				break;
+			}
+			default:
+				break;
+		}
 	}
 
 	void WindowLayer::OnWindowCreate(WindowCreateEvent* event)
@@ -82,9 +119,9 @@ namespace Indy
 			return;
 
 		// Trigger App Termination if no windows remain
-		ApplicationEvent terminateEvent;
+		/*ApplicationEvent terminateEvent;
 		terminateEvent.terminate = true;
-		EventManager::Notify<ApplicationEvent>(terminateEvent);
+		EventManager::Notify<ApplicationEvent>(terminateEvent);*/
 	}
 
 	void WindowLayer::OnRequestWindow(WindowRequestEvent* event)

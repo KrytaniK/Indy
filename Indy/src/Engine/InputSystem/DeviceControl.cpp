@@ -55,4 +55,26 @@ namespace Indy
 
 		m_State = state;
 	}
+
+	void DeviceControl::Update(std::byte* data)
+	{
+		// Can't update state if it's invalid
+		if (m_State.expired())
+		{
+			INDY_CORE_ERROR("Could not set control state [{0}]. Invalid device state.", m_Info.displayName);
+			return;
+		}
+
+		// If this control updates a bit
+		// Data will always be converted to a boolean value of 0 or 1 before writing to state.
+		if (m_Info.bit != 0xFF)
+		{
+
+			m_State.lock()->WriteBit(m_Info.byteOffset, m_Info.bit, (*data != std::byte{0}));
+			return;
+		}
+
+		// Otherwise, update the control state.
+		m_State.lock()->Write(m_Info.byteOffset, data, m_Info.sizeInBytes);
+	}
 }

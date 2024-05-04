@@ -11,11 +11,24 @@ namespace Indy
 		m_StateBlock.resize(size);
 	}
 
+	void DeviceState::Write(uint16_t byteOffset, std::byte* data, size_t size)
+	{
+		if (byteOffset + size > m_StateBlock.size())
+		{
+			INDY_CORE_ERROR("Attempted to write outside of device state bounds...\nByte Offset: {0}\n State Size: {1}\nSize: {2}\nOffset & Size: {3}", byteOffset, m_StateBlock.size(), size, byteOffset + size);
+			return;
+		}
+
+		std::byte* state = m_StateBlock.data() + byteOffset;
+
+		memcpy(state, data, size);
+	}
+
 	void DeviceState::WriteBit(uint16_t byteOffset, uint8_t bitOffset, bool value)
 	{
 		if (byteOffset > m_StateBlock.size())
 		{
-			INDY_CORE_ERROR("Attempted to write outside of device state bounds...");
+			INDY_CORE_ERROR("Attempted to write outside of device state bounds...\nByte Offset: {0}\n Size: {1}", byteOffset, m_StateBlock.size());
 			return;
 		}
 

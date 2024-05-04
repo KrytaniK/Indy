@@ -1,5 +1,6 @@
 module;
 
+#include "Engine/Core/LogMacros.h"
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -8,6 +9,8 @@ module;
 export module Indy_Core_Input:DeviceControl;
 
 import :DeviceState;
+
+// TODO: I need a way to deduce type information for each control
 
 export
 {
@@ -35,8 +38,28 @@ export
 			~DeviceControl() = default;
 
 			const DeviceControlInfo& GetInfo() const;
+
 			std::weak_ptr<DeviceControl> GetChild(const std::string& controlName);
 			std::weak_ptr<DeviceControl> GetChild(uint16_t index);
+
+			void Update(std::byte* data);
+
+			template<typename T>
+			T ReadAs()
+			{
+				if (m_State.expired())
+				{
+					INDY_CORE_ERROR("Could not read data for control [{0}]. Invalid state.");
+					return (T)(0);
+				}
+
+				if (m_Info.bit != 0xFF)
+				{
+					return static_cast<T>(m_State.lock()->ReadBit(m_Info.byteOffset, m_Info.bit));
+				}
+
+				return m_State.lock()->Read<T>(m_Info.byteOffset);
+			}
 
 		private:
 			void AttachTo(std::weak_ptr<DeviceState> state);

@@ -15,26 +15,46 @@ namespace Indy
 		// Reserve enough space up front to refrain from unnecessary reallocations
 		m_Devices.reserve(50);
 		m_Layouts.reserve(50);
-
-		// Attach Event Listeners
-		m_EventHandles.push(
-			EventManagerCSR::AddEventListener<DeviceManager, DeviceDetectEvent>(this, &DeviceManager::OnDeviceDetected)
-		);
-	}
-
-	DeviceManager::~DeviceManager()
-	{
-		while (!m_EventHandles.empty())
-		{
-			auto& handle = m_EventHandles.front();
-			EventManagerCSR::RemoveEventListener(handle);
-			m_EventHandles.pop();
-		}
 	}
 
 	void DeviceManager::AddLayout(const DeviceLayout& layout)
 	{
 		m_Layouts.emplace_back(layout);
+	}
+
+	void DeviceManager::AddDevice(const DeviceInfo& deviceInfo)
+	{
+		// Check against all existing devices.
+		for (const auto& device : m_Devices)
+		{
+			// If specified device class and layout class match an existing device,
+			//	odds are the device is the same. No need to build again
+			if (device->GetInfo().deviceClass == deviceInfo.deviceClass
+				&& device->GetInfo().layoutClass == deviceInfo.layoutClass)
+			{
+				INDY_CORE_WARN("WARNING: Could not build device [{0}]. Device already exists. Potential Reconnect?", deviceInfo.displayName);
+				// In the future, This might set the primary input device,
+				//	and/or dispatch events notifying of a device reconnect.
+				return;
+			}
+		}
+
+		// Match device with a device layout
+		std::unique_ptr<DeviceLayout> layout = MatchDeviceLayout(deviceInfo);
+
+		// If no matching layout was found, set aside for when new layouts
+		//	are registered.
+		if (!layout)
+		{
+			INDY_CORE_WARN("WARNING: No matching layout was found for device [{0}]", deviceInfo.displayName);
+			m_DeviceQueue.push(deviceInfo);
+			return;
+		}
+
+		// Build and store device
+		m_Devices.emplace_back(
+			m_DeviceBuilder->Build(deviceInfo, *layout)
+		);
 	}
 
 	std::weak_ptr<Device> DeviceManager::GetDevice(const std::string& displayName)
@@ -72,15 +92,15 @@ namespace Indy
 		return std::weak_ptr<Device>();
 	}
 
-	void DeviceManager::SetActiveDevice(uint16_t deviceClass, const std::weak_ptr<Device>& device)
+	void DeviceManager::SetActiveDevice(uint16_t deviceClass, const std::weak_ptr<Device>& activeDevice)
 	{
-		if (deviceClass != device.lock()->GetInfo().deviceClass)
+		if (deviceClass != activeDevice.lock()->GetInfo().deviceClass)
 			return;
 
-		for (const auto& device : m_ActiveDevices)
+		for (auto& device : m_ActiveDevices)
 		{
 			if (device.first == deviceClass)
-				device.second = device;
+				device.second = activeDevice;
 		}
 	}
 
@@ -128,40 +148,5 @@ namespace Indy
 
 		// Return a copy of the layout with the highest match percentage
 		return std::make_unique<DeviceLayout>(m_Layouts[matchIndex]);
-	}
-
-	void DeviceManager::OnDeviceDetected(DeviceDetectEvent& event)
-	{
-		// Check against all existing devices.
-		for (const auto& device : m_Devices)
-		{
-			// If specified device class and layout class match an existing device,
-			//	odds are the device is the same. No need to build again
-			if (device->GetInfo().deviceClass == event.deviceInfo.deviceClass
-				&& device->GetInfo().layoutClass == event.deviceInfo.layoutClass)
-			{
-				INDY_CORE_WARN("WARNING: Could not build device [{0}]. Device already exists. Potential Reconnect?", event.deviceInfo.displayName);
-				// In the future, This might set the primary input device,
-				//	and/or dispatch events notifying of a device reconnect.
-				return;
-			}
-		}
-
-		// Match device with a device layout
-		std::unique_ptr<DeviceLayout> layout = MatchDeviceLayout(event.deviceInfo);
-
-		// If no matching layout was found, set aside for when new layouts
-		//	are registered.
-		if (!layout)
-		{
-			INDY_CORE_WARN("WARNING: No matching layout was found for device [{0}]", event.deviceInfo.displayName);
-			m_DeviceQueue.push(event.deviceInfo);
-			return;
-		}
-
-		// Build and store device
-		m_Devices.emplace_back(
-			m_DeviceBuilder->Build(event.deviceInfo, *layout)
-		);
 	}
 }

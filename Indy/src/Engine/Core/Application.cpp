@@ -3,6 +3,7 @@
 #include <memory>
 
 import Indy_Core;
+import Indy_Core_Events;
 
 namespace Indy
 {

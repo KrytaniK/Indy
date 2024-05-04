@@ -16,11 +16,6 @@ export
 			bool propagates = true;
 		};
 
-		struct ApplicationEvent : IEvent
-		{
-			bool terminate = false;
-		};
-
 		struct WindowCreateEvent : IEvent
 		{
 			bool bubbles = false;

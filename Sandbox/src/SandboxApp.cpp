@@ -2,8 +2,10 @@
 
 #include <memory>
 #include <iostream>
+#include <vector>
 
 import Sandbox;
+import Indy_Core;
 import Indy_Core_Input;
 import Indy_Core_Events;
 
@@ -17,42 +19,51 @@ namespace Indy
 
 	Sandbox::Sandbox()
 	{
-		DeviceLayout myDeviceLayout;
-		myDeviceLayout.deviceClass = 0x0000;
-		myDeviceLayout.layoutClass = 0x0000;
-		myDeviceLayout.sizeInBytes = 0x0001;
-		myDeviceLayout.controls = {
-			{"Test 1", 0, 0, 0, 0, 2},
-			{"1 Left Button", 0, 1, 0, 1, 0},
-			{"1 Right Button", 0, 1, 0, 2, 0},
-			{"Test 2", 0, 0, 0, 0, 2},
-			{"2 Left Button", 0, 1, 0, 3, 0},
-			{"2 Right Button", 0, 1, 0, 4, 0},
+		m_LayerStack->PushLayer(std::make_shared<InputLayer>());
+
+		DeviceLayout mouseLayout;
+		mouseLayout.displayName = "Mouse";
+		mouseLayout.deviceClass = 0x0000;
+		mouseLayout.layoutClass = 0x0000;
+		mouseLayout.sizeInBytes = 9;
+		mouseLayout.controls = {
+			{"Left Mouse Button", 0x0001, 0x0001, 0, 0, 0},
+			{"Position", 0x0008, 0xFFFF, 0, 0xFF, 2},
+			{"X", 0x0004, 0xFFFF, 0x0000, 0xFF, 0},
+			{"Y", 0x0004, 0xFFFF, 0x0004, 0xFF, 0},
 		};
 
-		DeviceManager dvMng;
-		dvMng.AddLayout(myDeviceLayout);
+		DeviceInfo deviceInfo;
+		deviceInfo.displayName = "Default Mouse";
+		deviceInfo.deviceClass = 0x0000;
+		deviceInfo.layoutClass = 0x0000;
 
-		// Device Detection
-		DeviceInfo device;
-		device.displayName = "My Device";
-		device.deviceClass = 0x0000;
-		device.layoutClass = 0x0000;
+		InputCreateData createData;
+		createData.deviceInfo = &deviceInfo;
+		createData.deviceLayout = &mouseLayout;
 
-		DeviceDetectEvent ddEvent;
-		ddEvent.deviceInfo = device;
+		bool value = 1;
+		float x = 37.5f;
+		float pos[] = { x, 283.2f };
 
-		EventManagerCSR::Notify(ddEvent);
+		InputNotifyData input;
+		input.deviceClass = 0x0000;
+		input.layoutClass = 0x0000;
+		input.controlName = "X";
+		input.data = &x;
 
-		std::weak_ptr<Device> myDevice = dvMng.GetDevice(0x0000, 0x0000);
-		std::weak_ptr<Device> myActiveDevice = dvMng.GetActiveDevice(0x0000);
+		LayerEvent createEvent;
+		createEvent.target = INDY_CORE_LAYER_INPUT;
+		createEvent.action = InputLayer::EventActions::Create;
+		createEvent.data = &createData;
 
-		auto leftBtn = myDevice.lock()->GetControl("1 Left Button");
+		LayerEvent updateControlEvent;
+		updateControlEvent.target = INDY_CORE_LAYER_INPUT;
+		updateControlEvent.action = InputLayer::EventActions::Notify;
+		updateControlEvent.data = &input;
 
-		if (leftBtn.expired())
-			return;
-
-		
+		EventManagerCSR::Notify<LayerEvent>(createEvent);
+		EventManagerCSR::Notify<LayerEvent>(updateControlEvent);
 	}
 
 	Sandbox::~Sandbox()

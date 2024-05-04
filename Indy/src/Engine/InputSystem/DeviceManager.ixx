@@ -25,19 +25,18 @@ export
 		{
 		public:
 			DeviceManager();
-			~DeviceManager();
+			~DeviceManager() = default;
 
 			void AddLayout(const DeviceLayout& layout);
+			void AddDevice(const DeviceInfo& deviceInfo);
 
 			std::weak_ptr<Device> GetDevice(const std::string& displayName);
 			std::weak_ptr<Device> GetDevice(uint16_t deviceClass, uint16_t layoutClass);
 
 			std::weak_ptr<Device> GetActiveDevice(uint16_t deviceClass);
-			void SetActiveDevice(uint16_t deviceClass, const std::weak_ptr<Device>& device);
+			void SetActiveDevice(uint16_t deviceClass, const std::weak_ptr<Device>& activeDevice);
 
 		private:
-			void OnDeviceDetected(DeviceDetectEvent& event);
-
 			std::unique_ptr<DeviceLayout> MatchDeviceLayout(const DeviceInfo& deviceInfo);
 
 		private:
@@ -48,8 +47,6 @@ export
 			std::vector<DeviceLayout> m_Layouts;
 
 			std::queue<DeviceInfo> m_DeviceQueue;
-
-			std::queue<IEventHandle> m_EventHandles;
 		};
 	}
 }

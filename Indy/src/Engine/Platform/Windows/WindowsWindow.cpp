@@ -89,18 +89,7 @@ namespace Indy
 
 		glfwSetMouseButtonCallback(m_NativeWindow, [](GLFWwindow* window, int button, int action, int mods)
 			{
-				/*	----- This is how I want it to work -----
-					int[] data = { button, action, mods };
-				*	
-				*	NewInputEvent event;
-				*	event.deviceClass = 0x0000; // Pointer
-				*	event.layoutClass = 0x0010; // GLFW Mouse
-				*	event.control = "Left Mouse Button"; // Optional name parameter
-				*	event.controlIndex = button; // Corresponding to one of th GLFW_MOUSE_BUTTON macros
-				*	event.data = &data;
-				* 
-				*	EventSystemCSR::Notify<NewInputEvent>(event);
-				*/
+				
 			}
 		);
 
@@ -113,19 +102,6 @@ namespace Indy
 				// Repeat actions aren't necessary (for now)
 				if (action == GLFW_REPEAT)
 					return;
-
-				/*	----- This is how I want it to work -----
-					int[] data = { key, scancode, action, mods };
-				*
-				*	NewInputEvent event;
-				*	event.deviceClass = 0x0001; // Keyboard
-				*	event.layoutClass = 0x0011; // GLFW Keyboard
-				*	event.control = "Space"; // Optional name parameter
-				*	event.controlIndex = key; // Corresponding to one of th GLFW_MOUSE_BUTTON macros
-				*	event.data = &data;
-				*
-				*	EventSystemCSR::Notify<NewInputEvent>(event);
-				*/
 
 				std::string targetControl;
 				switch (key)

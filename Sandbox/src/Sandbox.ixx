@@ -14,8 +14,6 @@ export {
 			Sandbox();
 			~Sandbox();
 
-			void Test(ApplicationEvent& e) {};
-
 			virtual void Run() override;
 		};
 	}
