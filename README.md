@@ -164,8 +164,8 @@ If you're curious about the website's progress, you can view the public repo [he
 
 Indy is still very early in its development. Below is where the core library currently stands:
 
-+ [x] Events
-+ [x] Input
++ [x] ~~Events~~
++ [x] ~~Input~~
 + [ ] Render Pipeline < In Progress
 + [ ] Time
 + [ ] User Interface
