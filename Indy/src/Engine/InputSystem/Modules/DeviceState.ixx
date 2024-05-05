@@ -53,7 +53,7 @@ export
 			std::byte* updateRegion = m_StateBlock.data() + byteOffset;
 
 			// copy the value into that region of memory.
-			memcpy(updateRegion, &value, sizeof(value));
+			std::memcpy(updateRegion, &value, sizeof(value));
 		}
 
 		template<typename T>
@@ -67,7 +67,7 @@ export
 
 			T result;
 
-			memcpy(&result, &m_StateBlock[byteOffset], sizeof(T));
+			std::memcpy(&result, &m_StateBlock[byteOffset], sizeof(T));
 
 			return result;
 		}

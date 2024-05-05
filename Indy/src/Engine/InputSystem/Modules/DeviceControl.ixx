@@ -62,7 +62,7 @@ export
 					return (T)(0);
 				}
 
-				if (m_Info.bit != 0xFF)
+				if (m_Info.sizeInBits == 1)
 				{
 					return static_cast<T>(m_State.lock()->ReadBit(m_Info.byteOffset, m_Info.bit));
 				}

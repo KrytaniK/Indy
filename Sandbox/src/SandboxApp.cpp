@@ -4,14 +4,14 @@
 #include <iostream>
 #include <vector>
 
+#include <GLFW/glfw3.h>
+
 import Sandbox;
 import Indy_Core;
 import Indy_Core_InputLayer;
 import Indy_Core_WindowLayer;
 import Indy_Core_Input;
 import Indy_Core_Events;
-
-
 
 namespace Indy
 {
@@ -25,6 +25,7 @@ namespace Indy
 		m_ShouldClose = false;
 
 		m_LayerStack->PushLayer(std::make_shared<WindowLayer>());
+		m_LayerStack->PushLayer(std::make_shared<InputLayer>());
 
 		AD_WindowCreateInfo windowCreateInfo;
 		windowCreateInfo.title = "Test Window";
@@ -39,73 +40,24 @@ namespace Indy
 
 		EventManagerCSR::Notify<ILayerEvent>(&windowCreateEvent);
 
-		m_LayerStack->PushLayer(std::make_shared<InputLayer>());
-
-		DeviceLayout mouseLayout;
-		mouseLayout.displayName = "Mouse";
-		mouseLayout.deviceClass = 0x0000;
-		mouseLayout.layoutClass = 0x0000;
-		mouseLayout.sizeInBytes = 9;
-		mouseLayout.controls = {
-			{"Left Mouse Button", 0x0001, 0x0001, 0, 0, 0},
-			{"Position", 0x0008, 0xFFFF, 0, 0xFF, 2},
-			{"X", 0x0004, 0xFFFF, 0x0000, 0xFF, 0},
-			{"Y", 0x0004, 0xFFFF, 0x0004, 0xFF, 0},
-		};
-
-		DeviceInfo deviceInfo;
-		deviceInfo.displayName = "Default Mouse";
-		deviceInfo.deviceClass = 0x0000;
-		deviceInfo.layoutClass = 0x0000;
-
-		AD_InputCreateDeviceInfo createDeviceInfo;
-		createDeviceInfo.deviceInfo = &deviceInfo;
-
-		AD_InputCreateLayoutInfo createLayoutInfo;
-		createLayoutInfo.layout = &mouseLayout;
-
-		AD_InputWatchControlInfo watchInfo;
-		watchInfo.device = "Default Mouse";
-		watchInfo.control = "Position";
-		watchInfo.callback = [=](DeviceControlContext& ctx)
+		AD_InputWatchControlInfo watchControlInfo;
+		watchControlInfo.deviceClass = 0x0001;
+		watchControlInfo.layoutClass = 0x4B42;
+		watchControlInfo.control = std::to_string(GLFW_KEY_A);
+		watchControlInfo.callback = [=](DeviceControlContext& ctx)
 			{
-				INDY_CORE_INFO("Mouse Position Changed!");
+				INDY_CORE_INFO(
+					"Pressed? {0}",
+					ctx.ReadAs<bool>()
+				);
 			};
 
-		bool value = 1;
-		float x = 37.5f;
-		float pos[] = { x, 283.2f };
-		void* data = &pos;
+		InputLayerEvent watchEvent;
+		watchEvent.targetLayer = "ICL_Input";
+		watchEvent.action = InputLayerAction::WatchControl;
+		watchEvent.layerData = &watchControlInfo;
 
-		AD_InputUpdateInfo input;
-		input.device = "Default Mouse";
-		input.control = "Position";
-		input.newState = &data;
-
-		InputLayerEvent deviceCreateEvent;
-		deviceCreateEvent.targetLayer = "ICL_Input";
-		deviceCreateEvent.action = InputLayerAction::CreateDevice;
-		deviceCreateEvent.layerData = &createDeviceInfo;
-
-		InputLayerEvent layoutCreateEvent;
-		layoutCreateEvent.targetLayer = "ICL_Input";
-		layoutCreateEvent.action = InputLayerAction::CreateLayout;
-		layoutCreateEvent.layerData = &createLayoutInfo;
-
-		InputLayerEvent watchControlEvent;
-		watchControlEvent.targetLayer = "ICL_Input";
-		watchControlEvent.action = InputLayerAction::WatchControl;
-		watchControlEvent.layerData = &watchInfo;
-
-		InputLayerEvent updateControlEvent;
-		updateControlEvent.targetLayer = "ICL_Input";
-		updateControlEvent.action = InputLayerAction::Update;
-		updateControlEvent.layerData = &input;
-
-		EventManagerCSR::Notify<ILayerEvent>(&layoutCreateEvent);
-		EventManagerCSR::Notify<ILayerEvent>(&deviceCreateEvent);
-		EventManagerCSR::Notify<ILayerEvent>(&watchControlEvent);
-		EventManagerCSR::Notify<ILayerEvent>(&updateControlEvent);
+		EventManagerCSR::Notify<ILayerEvent>(&watchEvent);
 	}
 
 	Sandbox::~Sandbox()

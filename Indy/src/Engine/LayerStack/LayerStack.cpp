@@ -18,10 +18,9 @@ namespace Indy
 
 	void LayerStack::Update()
 	{
-		for (size_t i = 0; i < m_Layers.size(); i++)
-		{
-			m_Layers.at(i)->Update();
-		}
+		for (const auto& layer : m_Layers)
+			if (layer)
+				layer->Update();
 	}
 
 	void LayerStack::PushLayer(const std::shared_ptr<ILayer> layer)

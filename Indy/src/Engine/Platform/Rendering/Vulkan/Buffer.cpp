@@ -51,7 +51,7 @@ namespace Engine::VulkanAPI
 
 		void* tempData = nullptr;
 		vkMapMemory(logicalDevice, m_BufferMemory, 0, dataSize, 0, &tempData);
-		memcpy(tempData, srcData, (size_t)dataSize);
+		std::memcpy(tempData, srcData, (size_t)dataSize);
 		this->Unmap();
 	}
 	
@@ -78,7 +78,7 @@ namespace Engine::VulkanAPI
 		}
 
 		void* tempData = static_cast<char*>(m_BufferMapped) + offset;
-		memcpy(tempData, srcData, dataSize);
+		std::memcpy(tempData, srcData, dataSize);
 	}
 
 	void Buffer::CopyTo(VkBuffer dst)

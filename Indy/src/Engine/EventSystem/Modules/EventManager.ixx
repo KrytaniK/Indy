@@ -1,5 +1,6 @@
 module;
 
+#include "Engine/Core/LogMacros.h"
 #include <vector>
 #include <memory>
 #include <functional>
@@ -30,9 +31,9 @@ export namespace Indy
 			size_t startIndex = -1, endIndex = -1;
 			for (size_t i = 0; i < s_TypeIndices.size(); i++)
 			{
-				if (handle.eventID == s_TypeIndices.at(i).first) // compare type_index
+				if (handle.eventID == s_TypeIndices[i].first) // compare type_index
 				{
-					startIndex = (size_t)s_TypeIndices.at(i).second; // Always start at the beginning of this event type's section
+					startIndex = (size_t)s_TypeIndices[i].second; // Always start at the beginning of this event type's section
 
 					if (i + 1 == s_TypeIndices.size())
 						endIndex = (size_t)s_TypeIndices.size(); // Don't extend beyond the vector's capacity
@@ -69,11 +70,11 @@ export namespace Indy
 				//	following type must be adjusted to reflect the addition of a new
 				//	event listener
 				if (handle.index > -1) {
-					s_TypeIndices.at(i).second++;
+					s_TypeIndices[i].second++;
 					continue;
 				}
 
-				if (id == s_TypeIndices.at(i).first) // compare type_index
+				if (id == s_TypeIndices[i].first) // compare type_index
 				{
 					// Before we check for null values, set the handle's index to be the last element in this event type's section.
 					if (i == s_TypeIndices.size() - 1)
@@ -82,7 +83,7 @@ export namespace Indy
 						handle.index = (size_t)s_TypeIndices.at(i + 1).second; // or the start of the next type's section
 
 					// And check for null values in this event type's section of event listeners.
-					for (int32_t j = s_TypeIndices.at(i).second; j < handle.index; j++)
+					for (int32_t j = s_TypeIndices[i].second; j < handle.index; j++)
 					{
 						if (s_EventListeners.at(j) == nullptr)
 							handle.index = j;
@@ -133,11 +134,11 @@ export namespace Indy
 				//	following type must be adjusted to reflect the addition of a new
 				//	event listener
 				if (handle.index > -1) {
-					s_TypeIndices.at(i).second++;
+					s_TypeIndices[i].second++;
 					continue;
 				}
 
-				if (id == s_TypeIndices.at(i).first) // compare type_index
+				if (id == s_TypeIndices[i].first) // compare type_index
 				{
 					// Before we check for null values, set the handle's index to be the last element in this event type's section.
 					if (i == s_TypeIndices.size() - 1)
@@ -146,7 +147,7 @@ export namespace Indy
 						handle.index = (int32_t)s_TypeIndices.at(i + 1).second; // or the start of the next type's section
 
 					// And check for null values in this event type's section of event listeners.
-					for (int32_t j = s_TypeIndices.at(i).second; j < handle.index; j++)
+					for (int32_t j = s_TypeIndices[i].second; j < handle.index; j++)
 					{
 						if (s_EventListeners.at(j) == nullptr)
 							handle.index = j;
@@ -183,28 +184,39 @@ export namespace Indy
 			// Retrieve the EventType's type_index
 			std::type_index id = std::type_index(typeid(EventType));
 
-			// We need both the start and end indices of this event type's flattened listener vector
-			size_t startIndex = 0, endIndex = 0;
-			for (size_t i = 0; i < s_TypeIndices.size(); i++)
+			int compareIndex = -1;
+			uint32_t startIndex = UINT32_MAX, endIndex;
+			for (const auto& typeIndex : s_TypeIndices)
 			{
-				if (id == s_TypeIndices.at(i).first) // compare type_index
-				{
-					startIndex = s_TypeIndices.at(i).second; // Always start at the beginning of this event type's section
+				++compareIndex;
 
-					if (i + 1 == s_TypeIndices.size())
-						endIndex = s_TypeIndices.size(); // Don't extend beyond the vector's capacity
-					else
-						endIndex = (size_t)s_TypeIndices.at(i + 1).second; // Always end at the beginning of the NEXT event type's section
+				// No need to compare types we don't care about.
+				if (id != typeIndex.first)
+					continue;
+
+				// Set start index to the index of this block.
+				// Assume it lasts until the end of the vector.
+				startIndex = typeIndex.second;
+				endIndex = (uint32_t)s_EventListeners.size();
+
+				// If it does last until the end of the vector, we have what we need.
+				if ((size_t)compareIndex + 1 == s_TypeIndices.size())
+					break;
+				else
+				{
+					// Otherwise, end at the start of the next block, if one exists
+					endIndex = s_TypeIndices[(size_t)(compareIndex) + 1].second;
+					break;
 				}
 			}
 
 			// If a start index wasn't found, then no event listeners exist of this type.
-			if (startIndex < 0)
+			if (startIndex == UINT32_MAX)
 				return;
 
 			// Otherwise, we can call all relevant callbacks
 			// Size of flattened listener vector is given by endIndex - startIndex
-			for (size_t j = 0; j < endIndex - startIndex; j++)
+			for (size_t j = 0; j < (size_t)(endIndex - startIndex); j++)
 			{
 				std::shared_ptr<IEventListener> listener;
 				if (event->bubbles)

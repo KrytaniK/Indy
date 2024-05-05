@@ -39,9 +39,7 @@ namespace Indy
 	void InputLayer::onEvent(ILayerEvent* event)
 	{
 		if (event->targetLayer != "ICL_Input")
-		{
 			return;
-		}
 
 		event->propagates = false;
 

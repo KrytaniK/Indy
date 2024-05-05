@@ -21,7 +21,7 @@ namespace Indy
 
 		std::byte* state = m_StateBlock.data() + byteOffset;
 
-		memcpy(state, data, size);
+		std::memcpy(state, data, size);
 	}
 
 	void DeviceState::WriteBit(uint16_t byteOffset, uint8_t bitOffset, bool value)

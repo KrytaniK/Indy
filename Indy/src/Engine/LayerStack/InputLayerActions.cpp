@@ -97,7 +97,7 @@ namespace Indy
 		// Bail if the device manager is invalid
 		if (deviceManager.expired())
 		{
-			INDY_CORE_ERROR("Failed to create device. Bad Device Manager...");
+			INDY_CORE_ERROR("Failed to create layout. Bad Device Manager...");
 			return;
 		}
 
@@ -115,7 +115,7 @@ namespace Indy
 		// Bail if the device manager is invalid
 		if (deviceManager.expired())
 		{
-			INDY_CORE_ERROR("Failed to create device. Bad Device Manager...");
+			INDY_CORE_ERROR("Failed to watch control. Bad Device Manager...");
 			return;
 		}
 
@@ -128,7 +128,7 @@ namespace Indy
 		if (device.expired())
 		{
 			INDY_CORE_ERROR(
-				"Failed to process input. Device does not exists... \n[Device Name] {0}\n[Device Class] {1}\n[Device Layout] {2}",
+				"Failed to watch control. Device does not exists... \n[Device Name] {0}\n[Device Class] {1}\n[Device Layout] {2}",
 				actionData->device,
 				actionData->deviceClass,
 				actionData->layoutClass
