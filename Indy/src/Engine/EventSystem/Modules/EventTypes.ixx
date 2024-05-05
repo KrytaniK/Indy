@@ -15,22 +15,5 @@ export
 			bool bubbles = true;
 			bool propagates = true;
 		};
-
-		struct WindowCreateEvent : IEvent
-		{
-			bool bubbles = false;
-			WindowCreateInfo createInfo;
-		};
-
-		struct WindowDestroyEvent : IEvent
-		{
-			uint8_t id = 0;
-		};
-
-		struct WindowRequestEvent : IEvent
-		{
-			bool bubbles = false;
-			IWindow* window = nullptr;
-		};
 	}
 }

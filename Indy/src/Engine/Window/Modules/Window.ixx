@@ -7,12 +7,12 @@ module;
 
 export module Indy_Core_Window;
 
+export import :WindowManager;
+
 export
 {
 	namespace Indy
 	{
-		class InputManager;
-
 		struct WindowCreateInfo
 		{
 			std::string title = "Indy Engine";
@@ -28,9 +28,18 @@ export
 			bool minimized = false, focused = false, vSyncEnabled = true;
 		};
 
+		// Base Window Handle
+		struct IWindowHandle
+		{
+			std::weak_ptr<IWindow> window;
+			uint8_t index = 0xFF;
+		};
+
 		// Abstract interface for platform-specific window implementation
 		class IWindow
 		{
+			friend class WindowManager;
+
 		public:
 			virtual ~IWindow() = default;
 
@@ -38,6 +47,9 @@ export
 
 			virtual void* NativeWindow() const = 0;
 			virtual const WindowProps& Properties() const = 0;
+
+		private:
+			virtual void SetHandlePointer(IWindowHandle* handle) = 0;
 		};
 
 		// Windows OS Window Implementation
@@ -51,6 +63,9 @@ export
 
 			virtual void* NativeWindow() const override;
 			virtual const WindowProps& Properties() const override;
+
+		private:
+			virtual void SetHandlePointer(IWindowHandle* handle) override;
 
 		private:
 			WindowProps m_Props;

@@ -3,6 +3,7 @@
 #include <utility>
 #include <GLFW/glfw3.h>
 
+import Indy_Core_WindowLayer;
 import Indy_Core_Window;
 import Indy_Core_Events;
 
@@ -33,7 +34,17 @@ namespace Indy
 
 		glfwSetWindowCloseCallback(m_NativeWindow, [](GLFWwindow* window)
 			{
-				
+				IWindowHandle* handle = static_cast<IWindowHandle*>(glfwGetWindowUserPointer(window));
+
+				AD_WindowDestroyInfo destroyInfo;
+				destroyInfo.index = handle->index; // This should be the index of this window.
+
+				WindowLayerEvent closeEvent;
+				closeEvent.targetLayer = "ICL_Window";
+				closeEvent.action = WindowLayerAction::DestroyWindow;
+				closeEvent.layerData = &destroyInfo;
+
+				EventManagerCSR::Notify<ILayerEvent>(&closeEvent);
 			}
 		);
 
@@ -106,5 +117,10 @@ namespace Indy
 	const WindowProps& WindowsWindow::Properties() const
 	{
 		return m_Props;
+	}
+
+	void WindowsWindow::SetHandlePointer(IWindowHandle* handle)
+	{
+		glfwSetWindowUserPointer(m_NativeWindow, handle);
 	}
 }

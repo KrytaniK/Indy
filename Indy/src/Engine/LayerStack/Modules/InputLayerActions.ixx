@@ -20,7 +20,7 @@ export
 		};
 
 		// Input Action data for updating device controls
-		struct InputUpdateInfo : InputActionData
+		struct AD_InputUpdateInfo : InputActionData
 		{
 			uint16_t deviceClass = 0xFFFF; // 2-byte (0-65535) Hex value for device classification (e.g., 0x00 for Pointer, 0x01 for Keyboard).
 			uint16_t layoutClass = 0xFFFF; // 2-byte (0-65535) Hex value for device layout classification, relative to the device classification (e.g., 0x00 for Mouse, 0x01 for Touchpad).
@@ -40,7 +40,7 @@ export
 		};
 
 		// Input Action data for creating devices
-		struct InputCreateDeviceInfo : InputActionData
+		struct AD_InputCreateDeviceInfo : InputActionData
 		{
 			DeviceInfo* deviceInfo = nullptr;
 		};
@@ -53,7 +53,7 @@ export
 		};
 
 		// Input Action data for creating device layouts
-		struct InputCreateLayoutInfo : InputActionData
+		struct AD_InputCreateLayoutInfo : InputActionData
 		{
 			DeviceLayout* layout = nullptr;
 		};
@@ -66,7 +66,7 @@ export
 		};
 
 		// Input Action data for reacting to device state updates
-		struct InputWatchControlInfo : InputActionData
+		struct AD_InputWatchControlInfo : InputActionData
 		{
 			uint16_t deviceClass = 0xFFFF;
 			uint16_t layoutClass = 0xFFFF;

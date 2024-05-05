@@ -7,12 +7,14 @@
 import Sandbox;
 import Indy_Core;
 import Indy_Core_InputLayer;
+import Indy_Core_WindowLayer;
 import Indy_Core_Input;
 import Indy_Core_Events;
 
+
+
 namespace Indy
 {
-
 	std::unique_ptr<Application> CreateApplication()
 	{
 		return std::make_unique<Sandbox>();
@@ -20,6 +22,23 @@ namespace Indy
 
 	Sandbox::Sandbox()
 	{
+		m_ShouldClose = false;
+
+		m_LayerStack->PushLayer(std::make_shared<WindowLayer>());
+
+		AD_WindowCreateInfo windowCreateInfo;
+		windowCreateInfo.title = "Test Window";
+		windowCreateInfo.width = 1200;
+		windowCreateInfo.height = 760;
+		windowCreateInfo.id = 0;
+
+		WindowLayerEvent windowCreateEvent;
+		windowCreateEvent.targetLayer = "ICL_Window";
+		windowCreateEvent.action = WindowLayerAction::OpenWindow;
+		windowCreateEvent.layerData = &windowCreateInfo;
+
+		EventManagerCSR::Notify<ILayerEvent>(&windowCreateEvent);
+
 		m_LayerStack->PushLayer(std::make_shared<InputLayer>());
 
 		DeviceLayout mouseLayout;
@@ -39,13 +58,13 @@ namespace Indy
 		deviceInfo.deviceClass = 0x0000;
 		deviceInfo.layoutClass = 0x0000;
 
-		InputCreateDeviceInfo createDeviceInfo;
+		AD_InputCreateDeviceInfo createDeviceInfo;
 		createDeviceInfo.deviceInfo = &deviceInfo;
 
-		InputCreateLayoutInfo createLayoutInfo;
+		AD_InputCreateLayoutInfo createLayoutInfo;
 		createLayoutInfo.layout = &mouseLayout;
 
-		InputWatchControlInfo watchInfo;
+		AD_InputWatchControlInfo watchInfo;
 		watchInfo.device = "Default Mouse";
 		watchInfo.control = "Position";
 		watchInfo.callback = [=](DeviceControlContext& ctx)
@@ -58,7 +77,7 @@ namespace Indy
 		float pos[] = { x, 283.2f };
 		void* data = &pos;
 
-		InputUpdateInfo input;
+		AD_InputUpdateInfo input;
 		input.device = "Default Mouse";
 		input.control = "Position";
 		input.newState = &data;

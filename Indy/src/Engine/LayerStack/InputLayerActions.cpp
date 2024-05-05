@@ -10,7 +10,7 @@ namespace Indy
 	void LA_InputUpdate::Execute(ILayerData* layerData)
 	{
 		// Extract Input Update Data
-		InputUpdateInfo* actionData = static_cast<InputUpdateInfo*>(layerData);
+		AD_InputUpdateInfo* actionData = static_cast<AD_InputUpdateInfo*>(layerData);
 
 		// Extract Device Manager
 		std::weak_ptr<DeviceManager> deviceManager = actionData->deviceManager;
@@ -71,7 +71,7 @@ namespace Indy
 	void LA_InputCreateDevice::Execute(ILayerData* layerData)
 	{
 		// Extract Input Update Data
-		InputCreateDeviceInfo* actionData = static_cast<InputCreateDeviceInfo*>(layerData);
+		AD_InputCreateDeviceInfo* actionData = static_cast<AD_InputCreateDeviceInfo*>(layerData);
 
 		// Extract Device Manager
 		std::weak_ptr<DeviceManager> deviceManager = actionData->deviceManager;
@@ -89,7 +89,7 @@ namespace Indy
 	void LA_InputCreateLayout::Execute(ILayerData* layerData)
 	{
 		// Extract Input Update Data
-		InputCreateLayoutInfo* actionData = static_cast<InputCreateLayoutInfo*>(layerData);
+		AD_InputCreateLayoutInfo* actionData = static_cast<AD_InputCreateLayoutInfo*>(layerData);
 
 		// Extract Device Manager
 		std::weak_ptr<DeviceManager> deviceManager = actionData->deviceManager;
@@ -107,7 +107,7 @@ namespace Indy
 	void LA_InputWatchControl::Execute(ILayerData* layerData)
 	{
 		// Extract Input Update Data
-		InputWatchControlInfo* actionData = static_cast<InputWatchControlInfo*>(layerData);
+		AD_InputWatchControlInfo* actionData = static_cast<AD_InputWatchControlInfo*>(layerData);
 
 		// Extract Device Manager
 		std::weak_ptr<DeviceManager> deviceManager = actionData->deviceManager;

@@ -6,7 +6,6 @@ module;
 export module Indy_Core_LayerStack;
 
 export import :Layer;
-//export import :WindowLayer;
 
 export
 {
