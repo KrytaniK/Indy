@@ -13,6 +13,8 @@ export
 {
 	namespace Indy
 	{
+		// ----- Layer Action Data -----
+
 		// Input Action Data
 		struct InputActionData : ILayerData
 		{
@@ -32,37 +34,16 @@ export
 			void* newState = nullptr;
 		};
 
-		// Input Layer Action for updating device controls
-		class LA_InputUpdate : public ILayerAction
-		{
-		public:
-			virtual void Execute(ILayerData* layerData) override;
-		};
-
 		// Input Action data for creating devices
 		struct AD_InputCreateDeviceInfo : InputActionData
 		{
 			DeviceInfo* deviceInfo = nullptr;
 		};
 
-		// Input Layer Action for creating devices
-		class LA_InputCreateDevice : public ILayerAction
-		{
-		public:
-			virtual void Execute(ILayerData* layerData) override;
-		};
-
 		// Input Action data for creating device layouts
 		struct AD_InputCreateLayoutInfo : InputActionData
 		{
 			DeviceLayout* layout = nullptr;
-		};
-
-		// Input Layer action for creating device layouts
-		class LA_InputCreateLayout : public ILayerAction
-		{
-		public:
-			virtual void Execute(ILayerData* layerData) override;
 		};
 
 		// Input Action data for reacting to device state updates
@@ -75,6 +56,29 @@ export
 			std::string control = ""; // The name of the target control.
 
 			ControlContextCallback callback;
+		};
+
+		// ----- Layer Actions -----
+
+		// Input Layer Action for updating device controls
+		class LA_InputUpdate : public ILayerAction
+		{
+		public:
+			virtual void Execute(ILayerData* layerData) override;
+		};
+
+		// Input Layer Action for creating devices
+		class LA_InputCreateDevice : public ILayerAction
+		{
+		public:
+			virtual void Execute(ILayerData* layerData) override;
+		};
+
+		// Input Layer action for creating device layouts
+		class LA_InputCreateLayout : public ILayerAction
+		{
+		public:
+			virtual void Execute(ILayerData* layerData) override;
 		};
 
 		// Input Layer Action for 'watching' device controls

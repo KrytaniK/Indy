@@ -48,12 +48,13 @@ export
 			virtual void* NativeWindow() const = 0;
 			virtual const WindowProps& Properties() const = 0;
 
+			virtual void SetExtent(const int& width, const int& height) = 0;
 			virtual void SetFocus(bool isFocused) = 0;
 			virtual void SetVSync(bool vSyncEnabled) = 0;
 			virtual void SetMinimized(bool isMinimized) = 0;
 
 		private:
-			virtual void SetHandlePointer(IWindowHandle* handle) = 0;
+			virtual void SetHandle(IWindowHandle* handle) = 0;
 		};
 
 		// Windows OS Window Implementation
@@ -68,12 +69,13 @@ export
 			virtual void* NativeWindow() const override;
 			virtual const WindowProps& Properties() const override;
 
+			virtual void SetExtent(const int& width, const int& height) { m_Props.width = width; m_Props.height = height; };
 			virtual void SetFocus(bool isFocused) { m_Props.focused = isFocused; };
 			virtual void SetVSync(bool vSyncEnabled) { m_Props.vSyncEnabled = vSyncEnabled; };
 			virtual void SetMinimized(bool isMinimized) { m_Props.minimized = isMinimized; };
 
 		private:
-			virtual void SetHandlePointer(IWindowHandle* handle) override;
+			virtual void SetHandle(IWindowHandle* handle) override;
 
 		private:
 			WindowProps m_Props;

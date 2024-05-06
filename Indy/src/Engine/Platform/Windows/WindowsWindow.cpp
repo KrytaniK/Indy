@@ -1,6 +1,5 @@
 #include "Engine/Core/LogMacros.h"
 
-#include <utility>
 #include <GLFW/glfw3.h>
 
 import Indy_Core_WindowLayer;
@@ -301,7 +300,12 @@ namespace Indy
 
 		glfwSetWindowSizeCallback(m_NativeWindow, [](GLFWwindow* window, int width, int height)
 			{
-				
+				IWindowHandle* handle = static_cast<IWindowHandle*>(glfwGetWindowUserPointer(window));
+
+				if (handle->window.expired())
+					return;
+
+				handle->window.lock()->SetExtent(width, height);
 			}
 		);
 
@@ -427,7 +431,7 @@ namespace Indy
 		return m_Props;
 	}
 
-	void WindowsWindow::SetHandlePointer(IWindowHandle* handle)
+	void WindowsWindow::SetHandle(IWindowHandle* handle)
 	{
 		glfwSetWindowUserPointer(m_NativeWindow, handle);
 	}

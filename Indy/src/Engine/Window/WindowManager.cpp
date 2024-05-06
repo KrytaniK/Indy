@@ -113,7 +113,7 @@ namespace Indy
 			m_Handles[handle.index] = handle;
 
 		// Grant the window access to its own handle.
-		window->SetHandlePointer(&m_Handles[handle.index]);
+		window->SetHandle(&m_Handles[handle.index]);
 
 		// Return the copied window handle.
 		return m_Handles[handle.index];
