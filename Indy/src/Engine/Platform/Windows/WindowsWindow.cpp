@@ -7,6 +7,7 @@ import Indy_Core_Window;
 import Indy_Core_InputLayer;
 import Indy_Core_Input;
 import Indy_Core_Events;
+import Indy_Core_Renderer;
 
 namespace Indy
 {

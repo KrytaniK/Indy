@@ -53,7 +53,8 @@ export
 			virtual void SetVSync(bool vSyncEnabled) = 0;
 			virtual void SetMinimized(bool isMinimized) = 0;
 
-		private:
+		protected:
+			IWindow() = default;
 			virtual void SetHandle(IWindowHandle* handle) = 0;
 		};
 
@@ -74,7 +75,7 @@ export
 			virtual void SetVSync(bool vSyncEnabled) { m_Props.vSyncEnabled = vSyncEnabled; };
 			virtual void SetMinimized(bool isMinimized) { m_Props.minimized = isMinimized; };
 
-		private:
+		protected:
 			virtual void SetHandle(IWindowHandle* handle) override;
 
 		private:

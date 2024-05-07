@@ -27,8 +27,6 @@ export
 
 		class WindowLayer : public ILayer
 		{
-		public: 
-
 		public:
 			virtual void onAttach() override;
 			virtual void onDetach() override;

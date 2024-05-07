@@ -19,6 +19,7 @@ export
 		struct WindowActionData : ILayerData
 		{
 			std::weak_ptr<WindowManager> windowManager;
+			IWindowHandle* windowHandle = nullptr; // Pointer to a base window handle for the requested window.
 		};
 
 		// Layer Data for creating windows
@@ -27,7 +28,6 @@ export
 			std::string title = "Indy Engine";
 			unsigned int width = 1280, height = 760;
 			uint8_t id = 0;
-			IWindowHandle* windowHandle = nullptr;
 		};
 
 		// Layer Data for destroying windows
@@ -40,7 +40,6 @@ export
 		{
 			uint8_t index; // Index of the target window. Used if boolean getActiveWindow is set to false.
 			bool getActiveWindow; // If set to true, requests the window that is currently in focus.
-			IWindowHandle* windowHandle; // Pointer to a base window handle for the requested window.
 		};
 
 		// ----- Layer Actions -----
@@ -51,7 +50,6 @@ export
 		public:
 			virtual void Execute(ILayerData* layerData) override;
 		};
-
 
 		// Layer Action for destroying windows
 		class LA_WindowDestroy : public ILayerAction

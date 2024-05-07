@@ -8,7 +8,7 @@
 
 import Sandbox;
 import Indy_Core_WindowLayer;
-import Indy_Core_Events;
+import Indy_Core_Renderer;
 
 namespace Indy
 {
@@ -23,18 +23,7 @@ namespace Indy
 
 		m_LayerStack->PushLayer(std::make_shared<WindowLayer>());
 
-		AD_WindowCreateInfo windowCreateInfo;
-		windowCreateInfo.title = "Test Window";
-		windowCreateInfo.width = 1200;
-		windowCreateInfo.height = 760;
-		windowCreateInfo.id = 0;
-
-		WindowLayerEvent windowCreateEvent;
-		windowCreateEvent.targetLayer = "ICL_Window";
-		windowCreateEvent.action = WindowLayerAction::OpenWindow;
-		windowCreateEvent.layerData = &windowCreateInfo;
-
-		EventManagerCSR::Notify<ILayerEvent>(&windowCreateEvent);
+		auto vk_Renderer = VulkanRenderer();
 	}
 
 	Sandbox::~Sandbox()
