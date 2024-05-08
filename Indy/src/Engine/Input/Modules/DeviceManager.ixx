@@ -4,6 +4,7 @@ module;
 #include <memory>
 #include <queue>
 #include <string>
+#include <functional>
 
 export module Indy_Core_Input:DeviceManager;
 
@@ -30,11 +31,9 @@ export
 			void AddLayout(const DeviceLayout& layout);
 			void AddDevice(const DeviceInfo& deviceInfo);
 
-			std::weak_ptr<Device> GetDevice(const std::string& displayName);
-			std::weak_ptr<Device> GetDevice(uint16_t deviceClass, uint16_t layoutClass);
+			void UpdateDeviceState(const DeviceInfo* deviceInfo, const std::string& control, std::byte* data);
 
-			std::weak_ptr<Device> GetActiveDevice(uint16_t deviceClass);
-			void SetActiveDevice(uint16_t deviceClass, const std::weak_ptr<Device>& activeDevice);
+			void WatchDeviceControl(const DeviceInfo* deviceInfo, const std::string& control, std::function<void(DeviceControlContext&)>& onValueChange);
 
 		private:
 			std::unique_ptr<DeviceLayout> MatchDeviceLayout(const DeviceInfo& deviceInfo);

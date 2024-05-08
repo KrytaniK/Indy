@@ -19,7 +19,7 @@ export
 	{
 		class DeviceControlContext;
 
-		typedef std::function<void(DeviceControlContext& ctx)> ControlContextCallback;
+		typedef std::function<void(DeviceControlContext&)> ControlContextCallback;
 
 		struct DeviceControlInfo
 		{
@@ -35,28 +35,28 @@ export
 
 		class DeviceControl
 		{
-			friend class Device;
-
 		public:
 			DeviceControl(const DeviceControlInfo& info);
-			DeviceControl(const DeviceControlInfo& info, const std::vector< std::shared_ptr<DeviceControl>>& childControls);
 			~DeviceControl() = default;
-
-			void SetParent(const std::weak_ptr<DeviceControl>& parent);
 
 			const DeviceControlInfo& GetInfo() const;
 
-			std::weak_ptr<DeviceControl> GetChild(const std::string& controlName);
-			std::weak_ptr<DeviceControl> GetChild(uint16_t index);
+			void SetParent(DeviceControl* parent);
+
+			void BindState(DeviceState* state);
+
+			void AddChild(const DeviceControlInfo& childInfo);
 
 			void Update(std::byte* data);
+			void UpdateChild(const std::string& childName, std::byte* data);
 
-			void Watch(ControlContextCallback callback);
+			void Watch(std::function<void(DeviceControlContext&)>& callback);
+			void WatchChild(const std::string& childName, std::function<void(DeviceControlContext&)>& callback);
 
 			template<typename T>
 			T ReadAs()
 			{
-				if (m_State.expired())
+				if (!m_State)
 				{
 					INDY_CORE_ERROR("Could not read data for control [{0}]. Invalid state.");
 					return (T)(0);
@@ -64,22 +64,31 @@ export
 
 				if (m_Info.sizeInBits == 1)
 				{
-					return static_cast<T>(m_State.lock()->ReadBit(m_Info.byteOffset, m_Info.bit));
+					return static_cast<T>(m_State->ReadBit(m_Info.byteOffset, m_Info.bit));
 				}
 
-				return m_State.lock()->Read<T>(m_Info.byteOffset);
+				return m_State->Read<T>(m_Info.byteOffset);
 			}
 
 		private:
-			void AttachTo(std::weak_ptr<DeviceState> state);
+			DeviceControl(const DeviceControl&) = delete; // Remove Copy Constructor.
+
 			void OnValueChange();
 
 		private:
 			DeviceControlInfo m_Info;
+
+			// Associative reference to the owning device's state
+			DeviceState* m_State = nullptr;
+
+			// Associative reference to this control's owning control.
+			DeviceControl* m_ParentControl = nullptr;
+
+			// Vector of child controls, managed by this control.
 			std::vector<std::shared_ptr<DeviceControl>> m_Children;
-			std::vector<ControlContextCallback> m_Listeners;
-			std::weak_ptr<DeviceControl> m_ParentControl;
-			std::weak_ptr<DeviceState> m_State;
+
+			// Event listeners for this control
+			std::vector<std::function<void(DeviceControlContext&)>> m_Listeners;
 		};
 
 		class DeviceControlContext
@@ -95,7 +104,7 @@ export
 			const std::string& Name()
 			{
 				if (!m_Control)
-					return "[Expired]";
+					return "[-- Expired --]";
 
 				return m_Control->GetInfo().displayName;
 			};

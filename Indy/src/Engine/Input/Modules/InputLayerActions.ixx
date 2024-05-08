@@ -3,6 +3,7 @@ module;
 #include <cstdint>
 #include <string>
 #include <memory>
+#include <functional>
 
 export module Indy_Core_InputLayer:Actions;
 
@@ -15,77 +16,90 @@ export
 	{
 		// ----- Layer Action Data -----
 
-		// Input Action Data
-		struct InputActionData : ILayerData
-		{
-			std::weak_ptr<DeviceManager> deviceManager;
-		};
-
 		// Input Action data for updating device controls
-		struct AD_InputUpdateInfo : InputActionData
+		struct ICL_InputData_Update : ILayerData
 		{
-			uint16_t deviceClass = 0xFFFF; // 2-byte (0-65535) Hex value for device classification (e.g., 0x00 for Pointer, 0x01 for Keyboard).
-			uint16_t layoutClass = 0xFFFF; // 2-byte (0-65535) Hex value for device layout classification, relative to the device classification (e.g., 0x00 for Mouse, 0x01 for Touchpad).
-
-			std::string device = ""; // The name of the target device.
-			std::string control = ""; // The name of the target control.
-
-			bool isPartial = true; // Determines whether this update alters device state completely.
+			DeviceInfo* targetDevice;
+			std::string targetControl;
 			void* newState = nullptr;
 		};
 
 		// Input Action data for creating devices
-		struct AD_InputCreateDeviceInfo : InputActionData
+		struct ICL_InputData_CreateDevice : ILayerData
 		{
 			DeviceInfo* deviceInfo = nullptr;
 		};
 
 		// Input Action data for creating device layouts
-		struct AD_InputCreateLayoutInfo : InputActionData
+		struct ICL_InputData_CreateLayout : ILayerData
 		{
 			DeviceLayout* layout = nullptr;
 		};
 
 		// Input Action data for reacting to device state updates
-		struct AD_InputWatchControlInfo : InputActionData
+		struct ICL_InputData_WatchControl : ILayerData
 		{
-			uint16_t deviceClass = 0xFFFF;
-			uint16_t layoutClass = 0xFFFF;
-
-			std::string device = ""; // The name of the target device.
-			std::string control = ""; // The name of the target control.
-
-			ControlContextCallback callback;
+			DeviceInfo* targetDevice;
+			std::string targetControl;
+			std::function<void(DeviceControlContext&)> callback;
 		};
 
 		// ----- Layer Actions -----
 
 		// Input Layer Action for updating device controls
-		class LA_InputUpdate : public ILayerAction
+		class ICL_InputAction_Update : public ILayerAction
 		{
 		public:
+			ICL_InputAction_Update(DeviceManager* deviceManager)
+				: m_DeviceManager(deviceManager) {};
+
 			virtual void Execute(ILayerData* layerData) override;
+
+		private:
+			// Associative reference to the device manager
+			DeviceManager* m_DeviceManager;
 		};
 
 		// Input Layer Action for creating devices
-		class LA_InputCreateDevice : public ILayerAction
+		class ICL_InputAction_CreateDevice : public ILayerAction
 		{
 		public:
+			ICL_InputAction_CreateDevice(DeviceManager* deviceManager)
+				: m_DeviceManager(deviceManager) {};
+			
 			virtual void Execute(ILayerData* layerData) override;
+
+		private:
+			// Associative reference to the device manager
+			DeviceManager* m_DeviceManager;
 		};
 
 		// Input Layer action for creating device layouts
-		class LA_InputCreateLayout : public ILayerAction
+		class ICL_InputAction_CreateLayout : public ILayerAction
 		{
 		public:
+			ICL_InputAction_CreateLayout(DeviceManager* deviceManager)
+				: m_DeviceManager(deviceManager) {};
+
 			virtual void Execute(ILayerData* layerData) override;
+
+		private:
+			// Associative reference to the device manager
+			DeviceManager* m_DeviceManager;
 		};
 
 		// Input Layer Action for 'watching' device controls
-		class LA_InputWatchControl : public ILayerAction
+		class ICL_InputAction_WatchControl : public ILayerAction
 		{
 		public:
+			ICL_InputAction_WatchControl(DeviceManager* deviceManager)
+				: m_DeviceManager(deviceManager) {};
+
 			virtual void Execute(ILayerData* layerData) override;
+
+		private:
+			// Associative reference to the device manager
+			DeviceManager* m_DeviceManager;
 		};
 	}
 }

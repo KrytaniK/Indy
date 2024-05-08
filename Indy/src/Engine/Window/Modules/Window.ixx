@@ -13,6 +13,8 @@ export
 {
 	namespace Indy
 	{
+		class IRenderer;
+
 		struct WindowCreateInfo
 		{
 			std::string title = "Indy Engine";
@@ -24,8 +26,8 @@ export
 		{
 			std::string title;
 			unsigned int width, height;
-			uint8_t id;
-			bool minimized = false, focused = false, vSyncEnabled = true;
+			uint8_t id = 0xFF;
+			bool minimized = false, focused = false;
 		};
 
 		// Base Window Handle
@@ -38,24 +40,13 @@ export
 		// Abstract interface for platform-specific window implementation
 		class IWindow
 		{
-			friend class WindowManager;
-
 		public:
 			virtual ~IWindow() = default;
-
+			
 			virtual void Update() = 0;
 
 			virtual void* NativeWindow() const = 0;
 			virtual const WindowProps& Properties() const = 0;
-
-			virtual void SetExtent(const int& width, const int& height) = 0;
-			virtual void SetFocus(bool isFocused) = 0;
-			virtual void SetVSync(bool vSyncEnabled) = 0;
-			virtual void SetMinimized(bool isMinimized) = 0;
-
-		protected:
-			IWindow() = default;
-			virtual void SetHandle(IWindowHandle* handle) = 0;
 		};
 
 		// Windows OS Window Implementation
@@ -72,11 +63,7 @@ export
 
 			virtual void SetExtent(const int& width, const int& height) { m_Props.width = width; m_Props.height = height; };
 			virtual void SetFocus(bool isFocused) { m_Props.focused = isFocused; };
-			virtual void SetVSync(bool vSyncEnabled) { m_Props.vSyncEnabled = vSyncEnabled; };
 			virtual void SetMinimized(bool isMinimized) { m_Props.minimized = isMinimized; };
-
-		protected:
-			virtual void SetHandle(IWindowHandle* handle) override;
 
 		private:
 			WindowProps m_Props;

@@ -14,56 +14,35 @@ namespace Indy
 			m_Children.reserve(info.childCount);
 	}
 
-	DeviceControl::DeviceControl(const DeviceControlInfo& info, const std::vector< std::shared_ptr<DeviceControl>>& childControls)
-		: m_Info(info), m_Children(childControls)
-	{
-		
-	}
-
-	void DeviceControl::SetParent(const std::weak_ptr<DeviceControl>& parent)
-	{
-		if (!m_ParentControl.expired())
-		{
-			INDY_CORE_ERROR(
-				"Cannot set the parent of control [{0}]. Control is already bound to an existing control [{1}].",
-				m_Info.displayName, m_ParentControl.lock()->GetInfo().displayName);
-		}
-	}
-
 	const DeviceControlInfo& DeviceControl::GetInfo() const
 	{
 		return m_Info;
 	}
 
-	std::weak_ptr<DeviceControl> DeviceControl::GetChild(const std::string& controlName)
+	void DeviceControl::SetParent(DeviceControl* parent)
 	{
-		for (const auto& child : m_Children)
-		{
-			if (child->GetInfo().displayName == controlName)
-				return child;
-		}
-
-		return std::weak_ptr<DeviceControl>();
+		m_ParentControl = parent;
 	}
 
-	std::weak_ptr<DeviceControl> DeviceControl::GetChild(uint16_t index)
+	void DeviceControl::BindState(DeviceState* state)
 	{
-		if (index < m_Children.size())
-			return m_Children[index];
-
-		return std::weak_ptr<DeviceControl>();
-	}
-
-	void DeviceControl::AttachTo(std::weak_ptr<DeviceState> state)
-	{
-		// Make sure the state is not expired
-		if (state.expired())
+		if (m_State)
 		{
-			INDY_CORE_ERROR("Failed to attach control [{0}]. Device State has expired...", m_Info.displayName);
+			INDY_CORE_ERROR("Could not bind state for [{0}]. Already bound to device state.", m_Info.displayName);
 			return;
 		}
 
 		m_State = state;
+	}
+
+	void DeviceControl::AddChild(const DeviceControlInfo& childInfo)
+	{
+		std::shared_ptr<DeviceControl> child = std::make_shared<DeviceControl>(childInfo);
+
+		// Bind child control state to device state
+		child->BindState(m_State);
+
+		m_Children.emplace_back(child);
 	}
 
 	void DeviceControl::OnValueChange()
@@ -74,19 +53,17 @@ namespace Indy
 			callback(ctx);
 
 		// If no parent exists, bail
-		if (m_ParentControl.expired())
+		if (!m_ParentControl)
 			return;
 
 		// Notify all parent watchers
-		m_ParentControl.lock()->OnValueChange();
+		m_ParentControl->OnValueChange();
 	}
-
-	
 
 	void DeviceControl::Update(std::byte* data)
 	{
 		// Can't update state if it's invalid
-		if (m_State.expired())
+		if (!m_State)
 		{
 			INDY_CORE_ERROR("Could not set control state [{0}]. Invalid device state.", m_Info.displayName);
 			return;
@@ -95,15 +72,41 @@ namespace Indy
 		// If this control updates a bit
 		// Data will always be converted to a boolean value of 0 or 1 before writing to state.
 		if (m_Info.bit != 0xFF)
-			m_State.lock()->WriteBit(m_Info.byteOffset, m_Info.bit, (*data != std::byte{0}));
+			m_State->WriteBit(m_Info.byteOffset, m_Info.bit, (*data != std::byte{0}));
 		else // Otherwise, update the control state.
-			m_State.lock()->Write(m_Info.byteOffset, data, m_Info.sizeInBytes);
+			m_State->Write(m_Info.byteOffset, data, m_Info.sizeInBytes);
 
 		OnValueChange();
 	}
 
-	void DeviceControl::Watch(ControlContextCallback callback)
+	void DeviceControl::UpdateChild(const std::string& childName, std::byte* data)
+	{
+		for (const auto& child : m_Children)
+		{
+			if (child->GetInfo().displayName == childName)
+			{
+				child->Update(data);
+				return;
+			}
+		}
+	}
+
+	void DeviceControl::Watch(std::function<void(DeviceControlContext&)>& callback)
 	{
 		m_Listeners.emplace_back(callback);
 	}
+
+	void DeviceControl::WatchChild(const std::string& childName, std::function<void(DeviceControlContext&)>& callback)
+	{
+		for (const auto& child : m_Children)
+		{
+			if (child->GetInfo().displayName == childName)
+			{
+				child->Watch(callback);
+				return;
+			}
+		}
+	}
+
+
 }

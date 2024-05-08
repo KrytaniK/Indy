@@ -33,6 +33,7 @@ namespace Indy
 				&& device->GetInfo().layoutClass == deviceInfo.layoutClass)
 			{
 				INDY_CORE_WARN("WARNING: Could not build device [{0}]. Device already exists. Potential Reconnect?", deviceInfo.displayName);
+
 				// In the future, This might set the primary input device,
 				//	and/or dispatch events notifying of a device reconnect.
 				return;
@@ -57,52 +58,46 @@ namespace Indy
 		);
 	}
 
-	std::weak_ptr<Device> DeviceManager::GetDevice(const std::string& displayName)
+	void DeviceManager::UpdateDeviceState(const DeviceInfo* deviceInfo, const std::string& control, std::byte* data)
 	{
+		if (!deviceInfo)
+			INDY_CORE_ERROR("Could not update device state. Device is null.");
+
+		if (!data)
+			INDY_CORE_ERROR("Could not update device state. Data is null.");
+
 		for (const auto& device : m_Devices)
 		{
-			if (device->GetInfo().displayName == displayName)
+			if (device->GetInfo().displayName == deviceInfo->displayName ||
+				(device->GetInfo().deviceClass == deviceInfo->deviceClass &&
+					device->GetInfo().layoutClass == deviceInfo->layoutClass)
+				)
 			{
-				return device;
+				if (!control.empty())
+					device->UpdateControlState(control, data);
+				else
+					device->UpdateDeviceState(data);
 			}
 		}
-
-		return std::weak_ptr<Device>();
 	}
 
-	std::weak_ptr<Device> DeviceManager::GetDevice(uint16_t deviceClass, uint16_t layoutClass)
+	void DeviceManager::WatchDeviceControl(const DeviceInfo* deviceInfo, const std::string& control, std::function<void(DeviceControlContext&)>& onValueChange)
 	{
+		if (!deviceInfo)
+			INDY_CORE_ERROR("Could not watch device control. Device is null.");
+
+		if (control.empty())
+			INDY_CORE_ERROR("Could not watch device control. No control specified.");
+
 		for (const auto& device : m_Devices)
 		{
-			if (device->GetInfo().deviceClass == deviceClass && device->GetInfo().layoutClass == layoutClass)
+			if (device->GetInfo().displayName == deviceInfo->displayName ||
+				(device->GetInfo().deviceClass == deviceInfo->deviceClass &&
+					device->GetInfo().layoutClass == deviceInfo->layoutClass)
+				)
 			{
-				return device;
+				device->WatchControl(control, onValueChange);
 			}
-		}
-
-		return std::weak_ptr<Device>();
-	}
-
-	std::weak_ptr<Device> DeviceManager::GetActiveDevice(uint16_t deviceClass)
-	{
-		for (const auto& device : m_ActiveDevices)
-		{
-			if (device.first == deviceClass)
-				return device.second;
-		}
-
-		return std::weak_ptr<Device>();
-	}
-
-	void DeviceManager::SetActiveDevice(uint16_t deviceClass, const std::weak_ptr<Device>& activeDevice)
-	{
-		if (deviceClass != activeDevice.lock()->GetInfo().deviceClass)
-			return;
-
-		for (auto& device : m_ActiveDevices)
-		{
-			if (device.first == deviceClass)
-				device.second = activeDevice;
 		}
 	}
 

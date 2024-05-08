@@ -23,7 +23,7 @@ namespace Indy
 	{
 		for (const auto& window : m_Windows)
 		{
-			if (window)
+			if (window && !window->Properties().minimized)
 				window->Update();
 		}
 	}
@@ -58,7 +58,7 @@ namespace Indy
 		return m_Handles[0];
 	}
 
-	IWindowHandle& WindowManager::AddWindow(const WindowCreateInfo& createInfo)
+	IWindowHandle& WindowManager::AddWindow(WindowCreateInfo& createInfo)
 	{
 		// Ensure We're not attempting to recreate an existing window
 		uint8_t index = 0;
@@ -77,32 +77,43 @@ namespace Indy
 		}
 
 		IWindowHandle handle;
-		std::shared_ptr<IWindow> window;
 
+		// Find out where the index will be
+		if (m_EmptyWindows.empty())
+		{
+			handle.index = (uint8_t)m_Windows.size();
+		}
+		else
+		{
+			handle.index = m_EmptyWindows.front();
+			m_EmptyWindows.pop();
+		}
+
+		// We need to attach the index to the createInfo.
+		createInfo.id = handle.index;
+
+		// Create Platform-Specific Window
+		std::shared_ptr<IWindow> window;
 	#ifdef ENGINE_PLATFORM_WINDOWS
 		window = std::make_shared<WindowsWindow>(createInfo);
 	#else
 		INDY_CORE_ERROR("Could not create window: Unsupported Platform!");
 	#endif // ENGINE_PLATFORM_WINDOWS
 
-		// If we have empty window slots
-		if (!m_EmptyWindows.empty())
-		{
-			// Pull the next empty index
-			handle.index = m_EmptyWindows.front();
-			m_EmptyWindows.pop();
-
-			// Set the window at that index
-			m_Windows[handle.index] = window;
-		}
+		if (handle.index == (uint8_t)m_Windows.size())
+			m_Windows.emplace_back(window);
 		else
 		{
-			// place the window at the end of the vector
-			handle.index = (uint8_t)m_Windows.size();
-			m_Windows.emplace_back(window);
+			if (m_Windows[handle.index])
+			{
+				INDY_CORE_ERROR("Failed to insert window at index [{0}]. Window exists!", handle.index);
+				return m_Handles[handle.index];
+			}
+
+			m_Windows[handle.index] = window;
 		}
 
-		// Store a weak pointer to the window on the handle
+		// Store a weak pointer to the window on the handle and increment the window count
 		handle.window = window;
 		m_WindowCount++;
 
@@ -111,9 +122,6 @@ namespace Indy
 			m_Handles.emplace_back(handle); // Force reallocation if we have more windows than the preallocated amount
 		else
 			m_Handles[handle.index] = handle;
-
-		// Grant the window access to its own handle.
-		window->SetHandle(&m_Handles[handle.index]);
 
 		// Return the copied window handle.
 		return m_Handles[handle.index];

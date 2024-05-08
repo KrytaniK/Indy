@@ -12,14 +12,14 @@ namespace Indy
 	VulkanRenderer::VulkanRenderer()
 	{
 		// Generate Window Data
-		AD_WindowCreateInfo createInfo;
+		ICL_WindowData_Create createInfo;
 		createInfo.title = "Test Window";
 		createInfo.width = 1200;
 		createInfo.height = 760;
 		createInfo.id = 0;
 
 		// Generate Window Create Event
-		WindowLayerEvent windowCreateEvent;
+		ICL_WindowEvent windowCreateEvent;
 		windowCreateEvent.targetLayer = "ICL_Window";
 		windowCreateEvent.action = WindowLayerAction::OpenWindow;
 		windowCreateEvent.layerData = &createInfo;
@@ -28,14 +28,14 @@ namespace Indy
 		EventManagerCSR::Notify<ILayerEvent>(&windowCreateEvent);
 
 		// Retrieve Window Handle
-		if (!createInfo.windowHandle || createInfo.windowHandle->window.expired())
+		if (!createInfo.handle || createInfo.handle->window.expired())
 		{
 			INDY_CORE_ERROR("Failed to initialized Vulkan Renderer. Invalid window handle.");
 			return;
 		}
 		else
 		{
-			m_WindowHandle = createInfo.windowHandle;
+			m_WindowHandle = createInfo.handle;
 		}
 		
 		// Initialize

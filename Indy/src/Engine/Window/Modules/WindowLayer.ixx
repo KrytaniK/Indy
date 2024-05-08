@@ -20,7 +20,7 @@ export
 	{
 		enum class WindowLayerAction : uint8_t { None = 0xFF, RequestWindow = 0x00, OpenWindow, DestroyWindow };
 
-		struct WindowLayerEvent : ILayerEvent
+		struct ICL_WindowEvent : ILayerEvent
 		{
 			WindowLayerAction action = WindowLayerAction::None;
 		};

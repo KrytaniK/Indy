@@ -6,72 +6,39 @@ import Indy_Core_WindowLayer;
 
 namespace Indy
 {
-	void LA_WindowRequest::Execute(ILayerData* layerData)
+	void ICL_WindowAction_Request::Execute(ILayerData* layerData)
 	{
-		AD_WindowRequestInfo* windowRequestInfo = static_cast<AD_WindowRequestInfo*>(layerData);
+		ICL_WindowData_Request* actionData = static_cast<ICL_WindowData_Request*>(layerData);
 
-		if (windowRequestInfo->windowManager.expired())
+		if (actionData->getActiveWindow)
 		{
-			INDY_CORE_ERROR(
-				"Could not create window [{0}]. Bad Window Manager", 
-				windowRequestInfo->index
-			);
+			actionData->handle = &m_WindowManager->GetActiveWindow();
 			return;
 		}
 
-		std::shared_ptr<WindowManager> windowManager = windowRequestInfo->windowManager.lock();
-
-		if (windowRequestInfo->getActiveWindow)
-		{
-			windowRequestInfo->windowHandle = &windowManager->GetActiveWindow();
-			return;
-		}
-
-		windowRequestInfo->windowHandle = &windowManager->GetWindow(windowRequestInfo->index);
+		actionData->handle = &m_WindowManager->GetWindow(actionData->index);
 	}
 
-	void LA_WindowCreate::Execute(ILayerData* layerData)
+	void ICL_WindowAction_Create::Execute(ILayerData* layerData)
 	{
-		AD_WindowCreateInfo* windowCreateInfo = static_cast<AD_WindowCreateInfo*>(layerData);
-
-		if (windowCreateInfo->windowManager.expired())
-		{
-			INDY_CORE_ERROR(
-				"Could not create window [{0}]. Bad Window Manager",
-				windowCreateInfo->title
-			);
-			return;
-		}
-
-		std::shared_ptr<WindowManager> windowManager = windowCreateInfo->windowManager.lock();
+		ICL_WindowData_Create* actionData = static_cast<ICL_WindowData_Create*>(layerData);
 
 		// Copy layer action data into window create info
 		WindowCreateInfo createInfo;
-		createInfo.title = windowCreateInfo->title;
-		createInfo.width = windowCreateInfo->width;
-		createInfo.height = windowCreateInfo->height;
-		createInfo.id = windowCreateInfo->id;
+		createInfo.title = actionData->title;
+		createInfo.width = actionData->width;
+		createInfo.height = actionData->height;
+		createInfo.id = actionData->id;
 
 		// Create window and attach the handle
-		windowCreateInfo->windowHandle = &windowManager->AddWindow(createInfo);
+		actionData->handle = &m_WindowManager->AddWindow(createInfo);
 	}
 
-	void LA_WindowDestroy::Execute(ILayerData* layerData)
+	void ICL_WindowAction_Destroy::Execute(ILayerData* layerData)
 	{
-		AD_WindowDestroyInfo* windowDestroyInfo = static_cast<AD_WindowDestroyInfo*>(layerData);
+		ICL_WindowData_Destroy* actionData = static_cast<ICL_WindowData_Destroy*>(layerData);
 
-		if (windowDestroyInfo->windowManager.expired())
-		{
-			INDY_CORE_ERROR(
-				"Could not create window [{0}]. Bad Window Manager",
-				windowDestroyInfo->index
-			);
-			return;
-		}
-
-		std::shared_ptr<WindowManager> windowManager = windowDestroyInfo->windowManager.lock();
-
-		windowManager->DestroyWindow(windowDestroyInfo->index);
+		m_WindowManager->DestroyWindow(actionData->index);
 	}
 
 }

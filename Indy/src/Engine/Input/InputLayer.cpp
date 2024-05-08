@@ -4,7 +4,6 @@
 import Indy_Core_Events;
 import Indy_Core_LayerStack;
 import Indy_Core_InputLayer;
-import Indy_Core_Input;
 
 namespace Indy
 {
@@ -15,10 +14,10 @@ namespace Indy
 
 		// Correspond to enum class values.
 		m_LayerActions.resize(4);
-		m_LayerActions[0] = std::make_unique<LA_InputUpdate>();
-		m_LayerActions[1] = std::make_unique<LA_InputCreateDevice>();
-		m_LayerActions[2] = std::make_unique<LA_InputCreateLayout>();
-		m_LayerActions[3] = std::make_unique<LA_InputWatchControl>();
+		m_LayerActions[0] = std::make_unique<ICL_InputAction_Update>(m_DeviceManager.get());
+		m_LayerActions[1] = std::make_unique<ICL_InputAction_CreateLayout>(m_DeviceManager.get());
+		m_LayerActions[2] = std::make_unique<ICL_InputAction_CreateDevice>(m_DeviceManager.get());
+		m_LayerActions[3] = std::make_unique<ICL_InputAction_WatchControl>(m_DeviceManager.get());
 
 		// Attach event handles
 		m_EventHandles.emplace_back(
@@ -38,20 +37,14 @@ namespace Indy
 
 	void InputLayer::onEvent(ILayerEvent* event)
 	{
+
 		if (event->targetLayer != "ICL_Input")
 			return;
 
 		event->propagates = false;
 
-		// Cast to Input Layer Event
-		InputLayerEvent* inputEvent = static_cast<InputLayerEvent*>(event);
-
-		// Attach the device manager to the action data
-		InputActionData* actionData = static_cast<InputActionData*>(inputEvent->layerData);
-		actionData->deviceManager = m_DeviceManager;
-
 		// Based on which action is specified, execute said action
-		uint8_t action = static_cast<uint8_t>(inputEvent->action);
-		m_LayerActions[action]->Execute(actionData);
+		uint8_t action = static_cast<uint8_t>(((ICL_InputEvent*)event)->action);
+		m_LayerActions[action]->Execute(event->layerData);
 	}
 }

@@ -3,6 +3,7 @@ module;
 #include <string>
 #include <memory>
 #include <vector>
+#include <functional>
 
 export module Indy_Core_Input:Device;
 
@@ -34,17 +35,16 @@ export
 		class Device
 		{
 		public:
-			Device(const DeviceInfo& info, const uint16_t stateSize, const std::vector<std::shared_ptr<DeviceControl>>& controls);
+			Device(const DeviceInfo& info, const uint16_t stateSize);
 			~Device() = default;
 
 			const DeviceInfo& GetInfo() const;
 
-			std::weak_ptr<DeviceControl> GetControl(const std::string controlName);
-			std::weak_ptr<DeviceControl> GetControl(const uint16_t controlIndex);
+			void AddControl(std::shared_ptr<DeviceControl>& control);
+			void WatchControl(const std::string& controlName, std::function<void(DeviceControlContext&)>& callback);
 
-			std::weak_ptr<DeviceState> GetState();
-
-			void Update(std::byte* newState);
+			void UpdateDeviceState(std::byte* newState);
+			void UpdateControlState(const std::string& controlName, std::byte* data);
 
 		private:
 			DeviceInfo m_Info;

@@ -6,29 +6,27 @@ namespace Indy
 {
 	std::shared_ptr<Device> DeviceBuilder::Build(const DeviceInfo& deviceInfo, const DeviceLayout& deviceLayout)
 	{
-		// Create temporary vectors for storing controls.
-		std::vector<std::shared_ptr<DeviceControl>> controls;
-		std::vector<std::shared_ptr<DeviceControl>> childControls;
+		// Create the device
+		std::shared_ptr<Device> device = std::make_shared<Device>(deviceInfo, deviceLayout.sizeInBytes);
 
 		// Build the device controls, only one level deep
 		for (size_t i = 0; i < deviceLayout.controls.size();)
 		{
-			childControls.clear();
-
 			// Temp control info
 			DeviceControlInfo controlInfo = deviceLayout.controls[i];
+
+			// Create Base Control
+			std::shared_ptr<DeviceControl> baseControl = std::make_shared<DeviceControl>(controlInfo);
+
+			// Attach control to device
+			device->AddControl(baseControl);
 
 			// Create child controls
 			if (controlInfo.childCount > 0)
 			{
-				childControls.reserve(controlInfo.childCount);
-
 				for (uint8_t j = 1; j <= controlInfo.childCount; j++)
 				{
-					// Create a child control and pass ownership to this control.
-					childControls.emplace_back(
-						std::make_shared<DeviceControl>(deviceLayout.controls[i + j])
-					);
+					baseControl->AddChild(deviceLayout.controls[i + j]);
 				}
 
 				i += (size_t)(controlInfo.childCount + 1);
@@ -37,11 +35,9 @@ namespace Indy
 			{
 				i++;
 			}
-
-			controls.emplace_back(std::make_shared<DeviceControl>(controlInfo, childControls));
 		}
 
-		return std::make_shared<Device>(deviceInfo, deviceLayout.sizeInBytes, controls);
+		return device;
 	}
 
 	std::vector<std::shared_ptr<Device>> DeviceBuilder::Build(const std::vector<std::pair<const DeviceInfo&, const DeviceLayout&>>& blueprints)

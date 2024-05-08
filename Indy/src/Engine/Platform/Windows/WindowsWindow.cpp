@@ -13,6 +13,11 @@ namespace Indy
 {
 	WindowsWindow::WindowsWindow(const WindowCreateInfo& createInfo)
 	{
+		m_Props.title = createInfo.title;
+		m_Props.width = createInfo.width;
+		m_Props.height = createInfo.height;
+		m_Props.id = createInfo.id;
+
 		// GLFW Mouse ----------------------------------------------------------
 
 		#pragma region GLFW Mouse Device Creation
@@ -44,20 +49,20 @@ namespace Indy
 			{"Scroll Y", sizeof(double), sizeof(double) * 8, 5, 0, 0},
 		};
 
-		AD_InputCreateLayoutInfo glfwCreateLayoutData;
+		ICL_InputData_CreateLayout glfwCreateLayoutData;
 		glfwCreateLayoutData.layout = &glfwMouseLayout;
 
-		AD_InputCreateDeviceInfo glfwCreateDeviceData;
+		ICL_InputData_CreateDevice glfwCreateDeviceData;
 		glfwCreateDeviceData.deviceInfo = &glfwMouseInfo;
 
-		InputLayerEvent glfwCreateLayoutEvent;
+		ICL_InputEvent glfwCreateLayoutEvent;
 		glfwCreateLayoutEvent.targetLayer = "ICL_Input";
-		glfwCreateLayoutEvent.action = InputLayerAction::CreateLayout;
+		glfwCreateLayoutEvent.action = ICL_Action::CreateLayout;
 		glfwCreateLayoutEvent.layerData = &glfwCreateLayoutData;
 
-		InputLayerEvent glfwCreateDeviceEvent;
+		ICL_InputEvent glfwCreateDeviceEvent;
 		glfwCreateDeviceEvent.targetLayer = "ICL_Input";
-		glfwCreateDeviceEvent.action = InputLayerAction::CreateDevice;
+		glfwCreateDeviceEvent.action = ICL_Action::CreateDevice;
 		glfwCreateDeviceEvent.layerData = &glfwCreateDeviceData;
 
 		EventManagerCSR::Notify<ILayerEvent>(&glfwCreateLayoutEvent);
@@ -68,9 +73,6 @@ namespace Indy
 		// GLFW Keyboard -------------------------------------------------------
 
 		#pragma region GLFW Keyboard Device Creation
-
-
-
 
 		DeviceInfo glfwKeyboardInfo;
 		glfwKeyboardInfo.displayName = "GLFW Keyboard";
@@ -237,20 +239,20 @@ namespace Indy
 			{std::to_string(GLFW_KEY_MENU),			0, 1, 14, 6, 0},
 		};
 
-		AD_InputCreateLayoutInfo glfwCreateKeyLayoutData;
+		ICL_InputData_CreateLayout glfwCreateKeyLayoutData;
 		glfwCreateKeyLayoutData.layout = &glfwKeyboardLayout;
 
-		AD_InputCreateDeviceInfo glfwCreateKeyboardData;
+		ICL_InputData_CreateDevice glfwCreateKeyboardData;
 		glfwCreateKeyboardData.deviceInfo = &glfwKeyboardInfo;
 
-		InputLayerEvent glfwCreateKeyLayoutEvent;
+		ICL_InputEvent glfwCreateKeyLayoutEvent;
 		glfwCreateKeyLayoutEvent.targetLayer = "ICL_Input";
-		glfwCreateKeyLayoutEvent.action = InputLayerAction::CreateLayout;
+		glfwCreateKeyLayoutEvent.action = ICL_Action::CreateLayout;
 		glfwCreateKeyLayoutEvent.layerData = &glfwCreateKeyLayoutData;
 
-		InputLayerEvent glfwCreateKeyboardEvent;
+		ICL_InputEvent glfwCreateKeyboardEvent;
 		glfwCreateKeyboardEvent.targetLayer = "ICL_Input";
-		glfwCreateKeyboardEvent.action = InputLayerAction::CreateDevice;
+		glfwCreateKeyboardEvent.action = ICL_Action::CreateDevice;
 		glfwCreateKeyboardEvent.layerData = &glfwCreateKeyboardData;
 
 		EventManagerCSR::Notify<ILayerEvent>(&glfwCreateKeyLayoutEvent);
@@ -272,6 +274,8 @@ namespace Indy
 			return;
 		}
 
+		glfwSetWindowUserPointer(m_NativeWindow, this);
+
 		// ------------------------------------------------------------------------
 		// GLFW Window Event Callbacks --------------------------------------------
 		// ------------------------------------------------------------------------
@@ -285,12 +289,15 @@ namespace Indy
 
 		glfwSetWindowCloseCallback(m_NativeWindow, [](GLFWwindow* window)
 			{
-				IWindowHandle* handle = static_cast<IWindowHandle*>(glfwGetWindowUserPointer(window));
+				WindowsWindow* _this = static_cast<WindowsWindow*>(glfwGetWindowUserPointer(window));
 
-				AD_WindowDestroyInfo destroyInfo;
-				destroyInfo.index = handle->index; // This should be the index of this window.
+				if (!_this)
+					return;
 
-				WindowLayerEvent closeEvent;
+				ICL_WindowData_Destroy destroyInfo;
+				destroyInfo.index = _this->Properties().id; // This should be the index of this window.
+
+				ICL_WindowEvent closeEvent;
 				closeEvent.targetLayer = "ICL_Window";
 				closeEvent.action = WindowLayerAction::DestroyWindow;
 				closeEvent.layerData = &destroyInfo;
@@ -301,27 +308,42 @@ namespace Indy
 
 		glfwSetWindowSizeCallback(m_NativeWindow, [](GLFWwindow* window, int width, int height)
 			{
-				IWindowHandle* handle = static_cast<IWindowHandle*>(glfwGetWindowUserPointer(window));
+				WindowsWindow* _this = static_cast<WindowsWindow*>(glfwGetWindowUserPointer(window));
 
-				if (handle->window.expired())
+				if (!_this)
 					return;
 
-				handle->window.lock()->SetExtent(width, height);
+				_this->SetExtent(width, height);
 			}
 		);
 
 		glfwSetWindowFocusCallback(m_NativeWindow, [](GLFWwindow* window, int focused)
 			{
-				IWindowHandle* handle = static_cast<IWindowHandle*>(glfwGetWindowUserPointer(window));
+				WindowsWindow* _this = static_cast<WindowsWindow*>(glfwGetWindowUserPointer(window));
 
-				if (handle->window.expired())
+				if (!_this)
 					return;
 
-				handle->window.lock()->SetFocus(focused);
+				_this->SetFocus(focused);
 			}
 		);
 
-		glfwSetWindowPosCallback(m_NativeWindow, [](GLFWwindow* window, int xpos, int ypos){});
+		glfwSetWindowIconifyCallback(m_NativeWindow, [](GLFWwindow* window, int iconified)
+			{
+				WindowsWindow* _this = static_cast<WindowsWindow*>(glfwGetWindowUserPointer(window));
+
+				if (!_this)
+					return;
+
+				_this->SetMinimized((bool)iconified);
+			}
+		);
+
+		glfwSetWindowPosCallback(m_NativeWindow, [](GLFWwindow* window, int xpos, int ypos)
+			{
+				/* TODO: Implement */
+			}
+		);
 
 		// -----------------------------------------------------------------------
 		// GLFW Mouse Event Callbacks --------------------------------------------
@@ -331,15 +353,18 @@ namespace Indy
 			{
 				double scroll[] = { xoffset, yoffset };
 
-				AD_InputUpdateInfo scrollData;
-				scrollData.deviceClass = 0x0000; // "Pointer"
-				scrollData.layoutClass = 0x4D53; // "GLFW Mouse"
-				scrollData.control = "Mouse Scroll";
+				DeviceInfo device;
+				device.deviceClass = 0x0000; // "Pointer"
+				device.layoutClass = 0x4D53; // "GLFW Mouse"
+
+				ICL_InputData_Update scrollData;
+				scrollData.targetDevice = &device;
+				scrollData.targetControl = "Mouse Scroll";
 				scrollData.newState = &scroll;
 
-				InputLayerEvent inputEvent;
+				ICL_InputEvent inputEvent;
 				inputEvent.targetLayer = "ICL_Input";
-				inputEvent.action = InputLayerAction::Update;
+				inputEvent.action = ICL_Action::Update;
 				inputEvent.layerData = &scrollData;
 
 				EventManagerCSR::Notify<ILayerEvent>(&inputEvent);
@@ -350,15 +375,18 @@ namespace Indy
 			{
 				double position[] = { xpos, ypos };
 
-				AD_InputUpdateInfo posData;
-				posData.deviceClass = 0x0000; // "Pointer"
-				posData.layoutClass = 0x4D53; // "GLFW Mouse"
-				posData.control = "Mouse Position";
+				DeviceInfo device;
+				device.deviceClass = 0x0000; // "Pointer"
+				device.layoutClass = 0x4D53; // "GLFW Mouse"
+
+				ICL_InputData_Update posData;
+				posData.targetDevice = &device;
+				posData.targetControl = "Mouse Position";
 				posData.newState = &position;
 
-				InputLayerEvent inputEvent;
+				ICL_InputEvent inputEvent;
 				inputEvent.targetLayer = "ICL_Input";
-				inputEvent.action = InputLayerAction::Update;
+				inputEvent.action = ICL_Action::Update;
 				inputEvent.layerData = &posData;
 
 				EventManagerCSR::Notify<ILayerEvent>(&inputEvent);
@@ -367,15 +395,18 @@ namespace Indy
 
 		glfwSetMouseButtonCallback(m_NativeWindow, [](GLFWwindow* window, int button, int action, int mods)
 			{
-				AD_InputUpdateInfo mouseData;
-				mouseData.deviceClass = 0x0000; // "Pointer"
-				mouseData.layoutClass = 0x4D53; // "GLFW Mouse"
-				mouseData.control = std::to_string(button);
+				DeviceInfo device;
+				device.deviceClass = 0x0000; // "Pointer"
+				device.layoutClass = 0x4D53; // "GLFW Mouse"
+
+				ICL_InputData_Update mouseData;
+				mouseData.targetDevice = &device;
+				mouseData.targetControl = std::to_string(button);
 				mouseData.newState = &action;
 
-				InputLayerEvent inputEvent;
+				ICL_InputEvent inputEvent;
 				inputEvent.targetLayer = "ICL_Input";
-				inputEvent.action = InputLayerAction::Update;
+				inputEvent.action = ICL_Action::Update;
 				inputEvent.layerData = &mouseData;
 
 				EventManagerCSR::Notify<ILayerEvent>(&inputEvent);
@@ -392,15 +423,18 @@ namespace Indy
 				if (action == GLFW_REPEAT)
 					return;
 
-				AD_InputUpdateInfo keyData;
-				keyData.deviceClass = 0x0001; // "Keyboard"
-				keyData.layoutClass = 0x4B42; // "GLFW Keyboard"
-				keyData.control = std::to_string(key);
+				DeviceInfo device;
+				device.deviceClass = 0x0001; // "Keyboard"
+				device.layoutClass = 0x4B42; // "GLFW Keyboard"
+
+				ICL_InputData_Update keyData;
+				keyData.targetDevice = &device;
+				keyData.targetControl = std::to_string(key);
 				keyData.newState = &action;
 
-				InputLayerEvent inputEvent;
+				ICL_InputEvent inputEvent;
 				inputEvent.targetLayer = "ICL_Input";
-				inputEvent.action = InputLayerAction::Update;
+				inputEvent.action = ICL_Action::Update;
 				inputEvent.layerData = &keyData;
 
 				EventManagerCSR::Notify<ILayerEvent>(&inputEvent);
@@ -430,10 +464,5 @@ namespace Indy
 	const WindowProps& WindowsWindow::Properties() const
 	{
 		return m_Props;
-	}
-
-	void WindowsWindow::SetHandle(IWindowHandle* handle)
-	{
-		glfwSetWindowUserPointer(m_NativeWindow, handle);
 	}
 }

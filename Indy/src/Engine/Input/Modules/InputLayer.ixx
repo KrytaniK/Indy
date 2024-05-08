@@ -8,17 +8,17 @@ export module Indy_Core_InputLayer;
 export import :Actions;
 
 import Indy_Core_LayerStack;
-import Indy_Core_Input;
+export import Indy_Core_Input;
 
 export
 {
 	namespace Indy
 	{
-		enum class InputLayerAction : uint8_t { None = 0xFF, Update = 0x00, CreateDevice, CreateLayout, WatchControl };
+		enum class ICL_Action : uint8_t { None = 0xFF, Update = 0x00, CreateLayout, CreateDevice, WatchControl };
 
-		struct InputLayerEvent : ILayerEvent
+		struct ICL_InputEvent : ILayerEvent
 		{
-			InputLayerAction action = InputLayerAction::None;
+			ICL_Action action = ICL_Action::None;
 		};
 
 		class InputLayer : public ILayer

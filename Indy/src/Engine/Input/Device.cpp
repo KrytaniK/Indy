@@ -7,63 +7,40 @@ import Indy_Core_Input;
 
 namespace Indy
 {
-	Device::Device(const DeviceInfo& info, const uint16_t stateSize, const std::vector<std::shared_ptr<DeviceControl>>& controls)
-		: m_Info(info), m_State(std::make_shared<DeviceState>(stateSize)), m_Controls(controls)
-	{
-		for (const auto& control : m_Controls)
-		{
-			control->AttachTo(m_State);
-
-			if (control->GetInfo().childCount > 0)
-			{
-				for (const auto& child : control->m_Children)
-				{
-					child->AttachTo(m_State);
-				}
-			}
-		}
-	}
+	Device::Device(const DeviceInfo& info, const uint16_t stateSize)
+		: m_Info(info), m_State(std::make_shared<DeviceState>(stateSize))
+	{}
 
 	const DeviceInfo& Device::GetInfo() const
 	{
 		return m_Info;
 	}
 
-	std::weak_ptr<DeviceControl> Device::GetControl(const std::string controlName)
+	void Device::AddControl(std::shared_ptr<DeviceControl>& control)
+	{
+		// Bind control state to device state
+		control->BindState(m_State.get());
+
+		m_Controls.emplace_back(control);
+	}
+
+	void Device::WatchControl(const std::string& controlName, std::function<void(DeviceControlContext&)>& callback)
 	{
 		for (const auto& control : m_Controls)
 		{
 			if (control->GetInfo().displayName == controlName)
-				return control;
-
-			if (control->GetInfo().childCount > 0)
 			{
-				for (const auto& child : control->m_Children)
-				{
-					if (child->GetInfo().displayName == controlName)
-						return child;
-				}
+				control->Watch(callback);
+				return;
+			}
+			else
+			{
+				control->WatchChild(controlName, callback);
 			}
 		}
-
-		INDY_CORE_WARN("Requested control [{0}] does not exist...", controlName);
-		return std::weak_ptr<DeviceControl>();
 	}
 
-	std::weak_ptr<DeviceControl> Device::GetControl(const uint16_t controlIndex)
-	{
-		if (controlIndex < m_Controls.size())
-			return m_Controls[controlIndex];
-
-		return std::weak_ptr<DeviceControl>();
-	}
-
-	std::weak_ptr<DeviceState> Device::GetState()
-	{
-		return m_State;
-	}
-
-	void Device::Update(std::byte* newState)
+	void Device::UpdateDeviceState(std::byte* newState)
 	{
 		// Bail if state is invalid
 		if (!m_State)
@@ -80,6 +57,27 @@ namespace Indy
 		// Write device state
 		m_State->Write(0, newState, m_State->Size());
 		return;
+	}
+
+	void Device::UpdateControlState(const std::string& controlName, std::byte* data)
+	{
+		// First search 
+		for (const auto& control : m_Controls)
+		{
+			if (control->GetInfo().displayName == controlName)
+			{
+				// Only update target control if the names match
+				control->Update(data);
+				return;
+			}
+			else
+			{
+				// Otherwise, attempt to update any child controls.
+				// NOTE: This could potentially update multiple controls if there are more than one child controls
+				//		with the same name.
+				control->UpdateChild(controlName, data);
+			}
+		}
 	}
 
 }

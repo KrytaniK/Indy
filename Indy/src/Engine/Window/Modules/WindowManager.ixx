@@ -26,7 +26,7 @@ export
 			IWindowHandle& GetWindow(uint8_t index);
 			IWindowHandle& GetActiveWindow();
 
-			IWindowHandle& AddWindow(const WindowCreateInfo& createInfo);
+			IWindowHandle& AddWindow(WindowCreateInfo& createInfo);
 
 			void DestroyWindow(uint8_t index);
 
