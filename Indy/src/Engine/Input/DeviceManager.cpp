@@ -4,7 +4,6 @@
 #include <vector>
 
 import Indy_Core_Input;
-import Indy_Core_Events;
 
 namespace Indy
 {
@@ -19,7 +18,21 @@ namespace Indy
 
 	void DeviceManager::AddLayout(const DeviceLayout& layout)
 	{
+		// Add the layout
 		m_Layouts.emplace_back(layout);
+
+		if (m_DeviceQueue.empty())
+			return;
+
+		// If we have any devices that haven't been created, check for
+		// a match with the new layout.
+		size_t count = 0, limit = m_DeviceQueue.size();
+		while (!m_DeviceQueue.empty() && count < limit)
+		{
+			AddDevice(m_DeviceQueue.front());
+			m_DeviceQueue.pop();
+			count++;
+		}
 	}
 
 	void DeviceManager::AddDevice(const DeviceInfo& deviceInfo)

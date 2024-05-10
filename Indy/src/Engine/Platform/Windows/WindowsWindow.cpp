@@ -7,7 +7,6 @@ import Indy_Core_Window;
 import Indy_Core_InputLayer;
 import Indy_Core_Input;
 import Indy_Core_Events;
-import Indy_Core_Renderer;
 
 namespace Indy
 {
@@ -65,8 +64,8 @@ namespace Indy
 		glfwCreateDeviceEvent.action = ICL_Action::CreateDevice;
 		glfwCreateDeviceEvent.layerData = &glfwCreateDeviceData;
 
-		EventManagerCSR::Notify<ILayerEvent>(&glfwCreateLayoutEvent);
-		EventManagerCSR::Notify<ILayerEvent>(&glfwCreateDeviceEvent);
+		Events<ILayerEvent>::Notify(&glfwCreateLayoutEvent);
+		Events<ILayerEvent>::Notify(&glfwCreateDeviceEvent);
 
 		#pragma endregion
 
@@ -255,8 +254,8 @@ namespace Indy
 		glfwCreateKeyboardEvent.action = ICL_Action::CreateDevice;
 		glfwCreateKeyboardEvent.layerData = &glfwCreateKeyboardData;
 
-		EventManagerCSR::Notify<ILayerEvent>(&glfwCreateKeyLayoutEvent);
-		EventManagerCSR::Notify<ILayerEvent>(&glfwCreateKeyboardEvent);
+		Events<ILayerEvent>::Notify(&glfwCreateKeyLayoutEvent);
+		Events<ILayerEvent>::Notify(&glfwCreateKeyboardEvent);
 
 		#pragma endregion
 
@@ -302,7 +301,7 @@ namespace Indy
 				closeEvent.action = WindowLayerAction::DestroyWindow;
 				closeEvent.layerData = &destroyInfo;
 
-				EventManagerCSR::Notify<ILayerEvent>(&closeEvent);
+				Events<ILayerEvent>::Notify(&closeEvent);
 			}
 		);
 
@@ -367,7 +366,7 @@ namespace Indy
 				inputEvent.action = ICL_Action::Update;
 				inputEvent.layerData = &scrollData;
 
-				EventManagerCSR::Notify<ILayerEvent>(&inputEvent);
+				Events<ILayerEvent>::Notify(&inputEvent);
 			}
 		);
 
@@ -389,7 +388,7 @@ namespace Indy
 				inputEvent.action = ICL_Action::Update;
 				inputEvent.layerData = &posData;
 
-				EventManagerCSR::Notify<ILayerEvent>(&inputEvent);
+				Events<ILayerEvent>::Notify(&inputEvent);
 			}
 		);
 
@@ -409,7 +408,7 @@ namespace Indy
 				inputEvent.action = ICL_Action::Update;
 				inputEvent.layerData = &mouseData;
 
-				EventManagerCSR::Notify<ILayerEvent>(&inputEvent);
+				Events<ILayerEvent>::Notify(&inputEvent);
 			}
 		);
 
@@ -437,7 +436,7 @@ namespace Indy
 				inputEvent.action = ICL_Action::Update;
 				inputEvent.layerData = &keyData;
 
-				EventManagerCSR::Notify<ILayerEvent>(&inputEvent);
+				Events<ILayerEvent>::Notify(&inputEvent);
 			}
 		);
 	}

@@ -25,7 +25,7 @@ namespace Indy
 		windowCreateEvent.layerData = &createInfo;
 
 		// Dispatch Window Create Event
-		EventManagerCSR::Notify<ILayerEvent>(&windowCreateEvent);
+		Events<ILayerEvent>::Notify(&windowCreateEvent);
 
 		// Retrieve Window Handle
 		if (!createInfo.handle || createInfo.handle->window.expired())

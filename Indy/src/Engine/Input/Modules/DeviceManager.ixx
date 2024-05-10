@@ -8,8 +8,6 @@ module;
 
 export module Indy_Core_Input:DeviceManager;
 
-import Indy_Core_Events;
-
 import :DeviceBuilder;
 import :Device;
 
@@ -17,11 +15,6 @@ export
 {
 	namespace Indy
 	{
-		struct DeviceDetectEvent : IEvent
-		{
-			DeviceInfo deviceInfo;
-		};
-
 		class DeviceManager
 		{
 		public:

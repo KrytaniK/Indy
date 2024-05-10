@@ -1,9 +1,9 @@
 #include "Engine/Core/LogMacros.h"
 #include <memory>
 
-import Indy_Core_Events;
 import Indy_Core_LayerStack;
 import Indy_Core_InputLayer;
+import Indy_Core_Events;
 
 namespace Indy
 {
@@ -19,10 +19,8 @@ namespace Indy
 		m_LayerActions[2] = std::make_unique<ICL_InputAction_CreateDevice>(m_DeviceManager.get());
 		m_LayerActions[3] = std::make_unique<ICL_InputAction_WatchControl>(m_DeviceManager.get());
 
-		// Attach event handles
-		m_EventHandles.emplace_back(
-			EventManagerCSR::AddEventListener<InputLayer, ILayerEvent>(this, &InputLayer::onEvent)
-		);
+		// Attach layer event handle (no need to store delegate for this event)
+		Events<ILayerEvent>::Subscribe<InputLayer>(this, &InputLayer::onEvent);
 	}
 
 	void InputLayer::onDetach()

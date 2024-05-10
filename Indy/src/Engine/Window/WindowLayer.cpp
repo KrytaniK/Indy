@@ -34,9 +34,7 @@ namespace Indy
 		m_LayerActions[2] = std::make_unique<ICL_WindowAction_Destroy>(m_WindowManager.get());
 
 		// Bind Event Listener
-		m_EventHandles.emplace_back(
-			EventManagerCSR::AddEventListener<WindowLayer, ILayerEvent>(this, &WindowLayer::onEvent)
-		);
+		Events<ILayerEvent>::Subscribe<WindowLayer>(this, &WindowLayer::onEvent);
 	}
 
 	void WindowLayer::onDetach() 

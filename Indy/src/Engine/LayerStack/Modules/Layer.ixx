@@ -34,11 +34,7 @@ export
 		class ILayer
 		{
 		public:
-			virtual ~ILayer()
-			{
-				for (const auto& handle : m_EventHandles)
-					EventManagerCSR::RemoveEventListener(handle);
-			};
+			virtual ~ILayer() = default;
 
 		public:
 			virtual void onAttach() = 0;
@@ -49,7 +45,6 @@ export
 			virtual void onEvent(ILayerEvent* event) = 0;
 
 		protected:
-			std::vector<IEventHandle> m_EventHandles;
 			std::vector<std::unique_ptr<ILayerAction>> m_LayerActions;
 		};
 	}
