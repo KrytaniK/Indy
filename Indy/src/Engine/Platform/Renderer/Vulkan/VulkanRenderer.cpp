@@ -79,7 +79,8 @@ namespace Indy
 
 	void VulkanRenderer::Init()
 	{
-		// Attach renderer to window (effectively enabling the renderer)
+		// Bind Render() to window's onUpdate event handler.
+		m_WindowHandle->window.lock()->onUpdate.Subscribe<VulkanRenderer>(this, &VulkanRenderer::Render);
 
 		// Generate vkInstance
 

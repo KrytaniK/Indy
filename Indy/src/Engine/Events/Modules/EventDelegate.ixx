@@ -1,5 +1,7 @@
 module;
 
+#include "Engine/Core/LogMacros.h"
+
 #include <functional>
 #include <cstdint>
 
@@ -25,7 +27,16 @@ export
 				this->func = [instance, callback]() { (instance->*callback)(); };
 			}
 
-			void Exec() const { this->func(); };
+			void Exec() const { 
+
+				if (!this->func)
+				{
+					INDY_CORE_ERROR("No function bound to event delegate.");
+					return;
+				}
+
+				this->func(); 
+			};
 
 		public:
 			uint32_t id;
@@ -51,7 +62,16 @@ export
 				this->func = [instance, callback](EventType* event) { (instance->*callback)(event); };
 			}
 
-			void Exec(EventType* event) const { this->func(event); };
+			void Exec(EventType* event) const { 
+
+				if (!this->func)
+				{
+					INDY_CORE_ERROR("No function bound to event delegate.");
+					return;
+				}
+
+				this->func(event); 
+			};
 
 		public:
 			uint32_t id;

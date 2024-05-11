@@ -9,6 +9,8 @@ import Indy_Core_WindowLayer;
 import Indy_Core_InputLayer;
 import Indy_Core_Renderer;
 
+import Indy_Core_Events;
+
 namespace Indy
 {
 	struct MyEvent 
@@ -28,7 +30,7 @@ namespace Indy
 		m_LayerStack->PushLayer(std::make_shared<WindowLayer>());
 		m_LayerStack->PushLayer(std::make_shared<InputLayer>());
 
-		auto renderer = VulkanRenderer();
+		m_Renderer = std::make_unique<VulkanRenderer>();
 	}
 
 	Sandbox::~Sandbox()

@@ -9,6 +9,8 @@ export module Indy_Core_Window;
 
 export import :WindowManager;
 
+import Indy_Core_Events;
+
 export
 {
 	namespace Indy
@@ -47,6 +49,8 @@ export
 
 			virtual void* NativeWindow() const = 0;
 			virtual const WindowProps& Properties() const = 0;
+
+			EventHandler onUpdate;
 		};
 
 		// Windows OS Window Implementation

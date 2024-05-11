@@ -451,6 +451,8 @@ namespace Indy
 
 	void WindowsWindow::Update()
 	{
+		onUpdate();
+
 		// GLFW Window Input Events
 		glfwPollEvents();
 	}
