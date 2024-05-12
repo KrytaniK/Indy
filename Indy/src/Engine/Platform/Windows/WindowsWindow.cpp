@@ -1,12 +1,11 @@
-#include "Engine/Core/LogMacros.h"
+#include <Engine/Core/LogMacros.h>
 
 #include <GLFW/glfw3.h>
 
-import Indy_Core_WindowLayer;
-import Indy_Core_Window;
-import Indy_Core_InputLayer;
-import Indy_Core_Input;
-import Indy_Core_Events;
+import Indy.WindowsWindow;
+import Indy.Window;
+import Indy.Input;
+import Indy.Events;
 
 namespace Indy
 {
@@ -17,10 +16,71 @@ namespace Indy
 		m_Props.height = createInfo.height;
 		m_Props.id = createInfo.id;
 
-		// GLFW Mouse ----------------------------------------------------------
+		CreateGLFWMouseInterface();
+		CreateGLFWKeyboardInterface();
 
-		#pragma region GLFW Mouse Device Creation
+		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+		m_NativeWindow = glfwCreateWindow(createInfo.width, createInfo.height, createInfo.title.c_str(), NULL, NULL);
 
+		if (m_NativeWindow == nullptr)
+		{
+			INDY_CORE_CRITICAL("[WindowsWindow] GLFW Window creation failed!");
+			return;
+		}
+
+		glfwSetWindowUserPointer(m_NativeWindow, this);
+
+		SetGLFWCallbacks();
+	}
+
+	WindowsWindow::~WindowsWindow()
+	{
+		glfwSetWindowUserPointer(m_NativeWindow, nullptr);
+
+		if (m_NativeWindow)
+			glfwDestroyWindow(m_NativeWindow);
+	}
+
+	void WindowsWindow::Update()
+	{
+		// Don't update if we weren't properly initialized
+		if (!m_NativeWindow)
+			return;
+
+		onUpdate();
+
+		// GLFW Window Input Events
+		glfwPollEvents();
+	}
+
+	void* WindowsWindow::NativeWindow() const
+	{
+		return m_NativeWindow;
+	}
+
+	const WindowProps& WindowsWindow::Properties() const
+	{
+		return m_Props;
+	}
+
+	void WindowsWindow::SetExtent(const int& width, const int& height)
+	{
+		m_Props.width = width;
+		m_Props.height = height;
+	}
+
+	void WindowsWindow::SetFocus(bool isFocused)
+	{
+		m_Props.focused = isFocused;
+	}
+
+	void WindowsWindow::SetMinimized(bool isMinimized)
+	{
+		m_Props.minimized = isMinimized;
+	}
+
+	void WindowsWindow::CreateGLFWMouseInterface()
+	{
 		DeviceInfo glfwMouseInfo;
 		glfwMouseInfo.displayName = "GLFW Mouse";
 		glfwMouseInfo.deviceClass = 0x0000; // 0x0000 represents a "Pointer" device, such as a touchpad or a mouse. TODO: Implement a better way to handle this.
@@ -66,13 +126,10 @@ namespace Indy
 
 		Events<ILayerEvent>::Notify(&glfwCreateLayoutEvent);
 		Events<ILayerEvent>::Notify(&glfwCreateDeviceEvent);
+	}
 
-		#pragma endregion
-
-		// GLFW Keyboard -------------------------------------------------------
-
-		#pragma region GLFW Keyboard Device Creation
-
+	void WindowsWindow::CreateGLFWKeyboardInterface()
+	{
 		DeviceInfo glfwKeyboardInfo;
 		glfwKeyboardInfo.displayName = "GLFW Keyboard";
 		glfwKeyboardInfo.deviceClass = 0x0001; // 0x0001 represents a "Keyboard" device, such as a touchpad or a mouse. TODO: Implement a better way to handle this.
@@ -114,7 +171,7 @@ namespace Indy
 			{std::to_string(GLFW_KEY_L),			0, 1, 2, 5, 0},
 			{std::to_string(GLFW_KEY_M),			0, 1, 2, 6, 0},
 			{std::to_string(GLFW_KEY_N),			0, 1, 2, 7, 0},
-			
+
 			// Byte 4,
 			{std::to_string(GLFW_KEY_O),			0, 1, 3, 0, 0},
 			{std::to_string(GLFW_KEY_P),			0, 1, 3, 1, 0},
@@ -256,25 +313,10 @@ namespace Indy
 
 		Events<ILayerEvent>::Notify(&glfwCreateKeyLayoutEvent);
 		Events<ILayerEvent>::Notify(&glfwCreateKeyboardEvent);
+	}
 
-		#pragma endregion
-
-		// ---------------------------------------------------------------------
-		// GLFW Native Window Setup --------------------------------------------
-		// ---------------------------------------------------------------------
-
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-
-		m_NativeWindow = glfwCreateWindow(createInfo.width, createInfo.height, createInfo.title.c_str(), NULL, NULL);
-
-		if (m_NativeWindow == nullptr)
-		{
-			INDY_CORE_CRITICAL("[WindowsWindow] GLFW Window creation failed!");
-			return;
-		}
-
-		glfwSetWindowUserPointer(m_NativeWindow, this);
-
+	void WindowsWindow::SetGLFWCallbacks()
+	{
 		// ------------------------------------------------------------------------
 		// GLFW Window Event Callbacks --------------------------------------------
 		// ------------------------------------------------------------------------
@@ -439,31 +481,5 @@ namespace Indy
 				Events<ILayerEvent>::Notify(&inputEvent);
 			}
 		);
-	}
-
-	WindowsWindow::~WindowsWindow()
-	{
-		glfwSetWindowUserPointer(m_NativeWindow, nullptr);
-
-		if (m_NativeWindow)
-			glfwDestroyWindow(m_NativeWindow);
-	}
-
-	void WindowsWindow::Update()
-	{
-		onUpdate();
-
-		// GLFW Window Input Events
-		glfwPollEvents();
-	}
-
-	void* WindowsWindow::NativeWindow() const
-	{
-		return m_NativeWindow;
-	}
-
-	const WindowProps& WindowsWindow::Properties() const
-	{
-		return m_Props;
 	}
 }

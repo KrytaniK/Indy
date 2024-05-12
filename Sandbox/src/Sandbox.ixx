@@ -2,9 +2,9 @@ module;
 
 export module Sandbox;
 
-export import Indy_Core;
+import Indy.Application;
 
-import Indy_Core_Renderer;
+import Indy.VulkanRenderer;
 
 export {
 	namespace Indy

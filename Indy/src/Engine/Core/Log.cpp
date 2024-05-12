@@ -1,7 +1,9 @@
+#ifdef ENGINE_DEBUG
+
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
-import Indy_Core;
+import Indy.Log;
 
 namespace Indy
 {
@@ -43,3 +45,5 @@ namespace Indy
 		return s_Logger;
 	}
 }
+
+#endif
