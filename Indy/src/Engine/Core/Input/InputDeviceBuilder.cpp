@@ -1,22 +1,23 @@
 #include <memory>
+#include <vector>
 
 import Indy.Input;
 
 namespace Indy
 {
-	std::shared_ptr<Device> DeviceBuilder::Build(const DeviceInfo& deviceInfo, const DeviceLayout& deviceLayout)
+	std::shared_ptr<InputDevice> InputDeviceBuilder::Build(const InputDeviceInfo& deviceInfo, const InputLayout& deviceLayout)
 	{
 		// Create the device
-		std::shared_ptr<Device> device = std::make_shared<Device>(deviceInfo, deviceLayout.sizeInBytes);
+		std::shared_ptr<InputDevice> device = std::make_shared<InputDevice>(deviceInfo, deviceLayout.sizeInBytes);
 
 		// Build the device controls, only one level deep
 		for (size_t i = 0; i < deviceLayout.controls.size();)
 		{
 			// Temp control info
-			DeviceControlInfo controlInfo = deviceLayout.controls[i];
+			InputControlInfo controlInfo = deviceLayout.controls[i];
 
 			// Create Base Control
-			std::shared_ptr<DeviceControl> baseControl = std::make_shared<DeviceControl>(controlInfo);
+			InputControl baseControl(controlInfo);
 
 			// Attach control to device
 			device->AddControl(baseControl);
@@ -26,7 +27,7 @@ namespace Indy
 			{
 				for (uint8_t j = 1; j <= controlInfo.childCount; j++)
 				{
-					baseControl->AddChild(deviceLayout.controls[i + j]);
+					baseControl.AddChild(deviceLayout.controls[i + j]);
 				}
 
 				i += (size_t)(controlInfo.childCount + 1);
@@ -40,9 +41,9 @@ namespace Indy
 		return device;
 	}
 
-	std::vector<std::shared_ptr<Device>> DeviceBuilder::Build(const std::vector<std::pair<const DeviceInfo&, const DeviceLayout&>>& blueprints)
+	std::vector<std::shared_ptr<InputDevice>> InputDeviceBuilder::Build(const std::vector<std::pair<const InputDeviceInfo&, const InputLayout&>>& blueprints)
 	{
-		std::vector<std::shared_ptr<Device>> devices;
+		std::vector<std::shared_ptr<InputDevice>> devices;
 		devices.reserve(blueprints.size());
 
 		for (const auto& deviceBlueprint : blueprints)

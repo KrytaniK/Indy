@@ -1,10 +1,12 @@
 module;
 
+#include <memory>
+
 export module Sandbox;
 
 import Indy.Application;
-
-import Indy.VulkanRenderer;
+import Indy.Input;
+import Indy.Window;
 
 export {
 	namespace Indy
@@ -13,12 +15,13 @@ export {
 		{
 		public:
 			Sandbox();
-			~Sandbox();
+			virtual ~Sandbox() override;
 
+			virtual void Start() override;
 			virtual void Run() override;
 
 		private:
-			std::unique_ptr<VulkanRenderer> m_Renderer;
+			std::unique_ptr<WindowManager> m_WindowManager;
 		};
 	}
 }

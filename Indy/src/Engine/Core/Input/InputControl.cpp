@@ -6,7 +6,7 @@ import Indy.Input;
 
 namespace Indy
 {
-	DeviceControl::DeviceControl(const DeviceControlInfo& info)
+	InputControl::InputControl(const InputControlInfo& info)
 		: m_Info(info)
 	{
 		// Reserve enough space to store child controls
@@ -14,17 +14,17 @@ namespace Indy
 			m_Children.reserve(info.childCount);
 	}
 
-	const DeviceControlInfo& DeviceControl::GetInfo() const
+	const InputControlInfo& InputControl::GetInfo() const
 	{
 		return m_Info;
 	}
 
-	void DeviceControl::SetParent(DeviceControl* parent)
+	void InputControl::SetParent(InputControl* parent)
 	{
 		m_ParentControl = parent;
 	}
 
-	void DeviceControl::BindState(DeviceState* state)
+	void InputControl::BindState(InputState* state)
 	{
 		if (m_State)
 		{
@@ -35,20 +35,20 @@ namespace Indy
 		m_State = state;
 	}
 
-	void DeviceControl::AddChild(const DeviceControlInfo& childInfo)
+	void InputControl::AddChild(const InputControlInfo& childInfo)
 	{
-		std::shared_ptr<DeviceControl> child = std::make_shared<DeviceControl>(childInfo);
+		InputControl child(childInfo);
 
 		// Bind child control state to device state
-		child->BindState(m_State);
+		child.BindState(m_State);
 
 		m_Children.emplace_back(child);
 	}
 
-	void DeviceControl::OnValueChange()
+	void InputControl::OnValueChange()
 	{
 		// Notify all control watchers
-		DeviceControlContext ctx(this);
+		InputControlContext ctx(this);
 		for (const auto& callback : m_Listeners)
 			callback(ctx);
 
@@ -60,7 +60,7 @@ namespace Indy
 		m_ParentControl->OnValueChange();
 	}
 
-	void DeviceControl::Update(std::byte* data)
+	void InputControl::Update(std::byte* data)
 	{
 		// Can't update state if it's invalid
 		if (!m_State)
@@ -79,30 +79,30 @@ namespace Indy
 		OnValueChange();
 	}
 
-	void DeviceControl::UpdateChild(const std::string& childName, std::byte* data)
+	void InputControl::UpdateChild(const std::string& childName, std::byte* data)
 	{
-		for (const auto& child : m_Children)
+		for (auto& child : m_Children)
 		{
-			if (child->GetInfo().displayName == childName)
+			if (child.GetInfo().displayName == childName)
 			{
-				child->Update(data);
+				child.Update(data);
 				return;
 			}
 		}
 	}
 
-	void DeviceControl::Watch(std::function<void(DeviceControlContext&)>& callback)
+	void InputControl::Watch(std::function<void(InputControlContext&)>& callback)
 	{
 		m_Listeners.emplace_back(callback);
 	}
 
-	void DeviceControl::WatchChild(const std::string& childName, std::function<void(DeviceControlContext&)>& callback)
+	void InputControl::WatchChild(const std::string& childName, std::function<void(InputControlContext&)>& callback)
 	{
-		for (const auto& child : m_Children)
+		for (auto& child : m_Children)
 		{
-			if (child->GetInfo().displayName == childName)
+			if (child.GetInfo().displayName == childName)
 			{
-				child->Watch(callback);
+				child.Watch(callback);
 				return;
 			}
 		}

@@ -11,16 +11,25 @@ namespace Indy
 {
 	WindowsWindow::WindowsWindow(const WindowCreateInfo& createInfo)
 	{
-		m_Props.title = createInfo.title;
-		m_Props.width = createInfo.width;
-		m_Props.height = createInfo.height;
-		m_Props.id = createInfo.id;
+		if (!glfwInit())
+		{
+			INDY_CORE_CRITICAL("Could not initialize GLFW!");
+			return;
+		}
+		
+		glfwSetErrorCallback([](int error, const char* description)
+			{
+				INDY_CORE_ERROR("GLFW Error ({0}): {1}", error, description);
+			}
+		);
 
+		// These need to be loaded on application start rather than explicitly created
 		CreateGLFWMouseInterface();
 		CreateGLFWKeyboardInterface();
 
+		// GLFW Window Initialization
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-		m_NativeWindow = glfwCreateWindow(createInfo.width, createInfo.height, createInfo.title.c_str(), NULL, NULL);
+		m_NativeWindow = glfwCreateWindow(createInfo.width, createInfo.height, createInfo.title.c_str(), nullptr, nullptr);
 
 		if (m_NativeWindow == nullptr)
 		{
@@ -28,13 +37,36 @@ namespace Indy
 			return;
 		}
 
+		// Set window user pointer and callbacks
 		glfwSetWindowUserPointer(m_NativeWindow, this);
+		SetGLFWWindowCallbacks();
 
-		SetGLFWCallbacks();
+		// Attach window properties
+		m_Props.title = createInfo.title;
+		m_Props.width = createInfo.width;
+		m_Props.height = createInfo.height;
+		m_Props.id = createInfo.id;
+		m_Props.renderApi = createInfo.renderApi;
+
+		// Initialize input for this window
+		std::vector<std::string> deviceNames = { "GLFW Mouse", "GLFW Keyboard" };
+		m_InputContext = std::make_shared<InputContext>(Input::GetDeviceManager(), deviceNames);
+
+		m_InputContext->OnValueChange("GLFW Mouse", std::to_string(GLFW_MOUSE_BUTTON_LEFT), [=](InputControlContext& ctx) { INDY_CORE_INFO("Left Mouse Button Pressed for [{0}]", m_Props.title); });
+
+		// Create the renderer
+		m_Renderer = CreateRenderer(m_Props.renderApi);
 	}
 
 	WindowsWindow::~WindowsWindow()
 	{
+		// Regular destruction stuff
+
+		if (!m_NativeWindow)
+			return;
+
+		// GLFW destruction stuff (if a valid window exists)
+
 		glfwSetWindowUserPointer(m_NativeWindow, nullptr);
 
 		if (m_NativeWindow)
@@ -47,7 +79,7 @@ namespace Indy
 		if (!m_NativeWindow)
 			return;
 
-		onUpdate();
+		m_Renderer->Render();
 
 		// GLFW Window Input Events
 		glfwPollEvents();
@@ -79,14 +111,128 @@ namespace Indy
 		m_Props.minimized = isMinimized;
 	}
 
+	void WindowsWindow::SetGLFWWindowCallbacks()
+	{
+		// ------------------------------------------------------------------------
+		// GLFW Window Event Callbacks --------------------------------------------
+		// ------------------------------------------------------------------------
+
+		// GLFW FramebufferResize Callback
+		glfwSetFramebufferSizeCallback(m_NativeWindow, [](GLFWwindow* window, int width, int height)
+			{
+
+			}
+		);
+
+		glfwSetWindowCloseCallback(m_NativeWindow, [](GLFWwindow* window)
+			{
+				WindowsWindow* _this = static_cast<WindowsWindow*>(glfwGetWindowUserPointer(window));
+
+				if (_this->m_NativeWindow)
+				{
+					glfwSetWindowUserPointer(_this->m_NativeWindow, nullptr);
+					glfwDestroyWindow(_this->m_NativeWindow);
+					_this->m_NativeWindow = nullptr;
+				}
+			}
+		);
+
+		glfwSetWindowSizeCallback(m_NativeWindow, [](GLFWwindow* window, int width, int height)
+			{
+				WindowsWindow* _this = static_cast<WindowsWindow*>(glfwGetWindowUserPointer(window));
+
+				if (!_this)
+					return;
+
+				_this->SetExtent(width, height);
+			}
+		);
+
+		glfwSetWindowFocusCallback(m_NativeWindow, [](GLFWwindow* window, int focused)
+			{
+				WindowsWindow* _this = static_cast<WindowsWindow*>(glfwGetWindowUserPointer(window));
+
+				if (!_this)
+					return;
+
+				_this->SetFocus(focused);
+			}
+		);
+
+		glfwSetWindowIconifyCallback(m_NativeWindow, [](GLFWwindow* window, int iconified)
+			{
+				WindowsWindow* _this = static_cast<WindowsWindow*>(glfwGetWindowUserPointer(window));
+
+				if (!_this)
+					return;
+
+				_this->SetMinimized((bool)iconified);
+			}
+		);
+
+		glfwSetWindowPosCallback(m_NativeWindow, [](GLFWwindow* window, int xpos, int ypos)
+			{
+				/* TODO: Implement */
+			}
+		);
+
+		// -----------------------------------------------------------------------
+		// GLFW Mouse Event Callbacks --------------------------------------------
+		// -----------------------------------------------------------------------
+
+		glfwSetScrollCallback(m_NativeWindow, [](GLFWwindow* window, double xoffset, double yoffset)
+			{
+				WindowsWindow* _this = static_cast<WindowsWindow*>(glfwGetWindowUserPointer(window));
+
+				double scroll[] = { xoffset, yoffset };
+
+				_this->m_InputContext->UpdateControl("GLFW Mouse", "Scroll", &scroll);
+			}
+		);
+
+		glfwSetCursorPosCallback(m_NativeWindow, [](GLFWwindow* window, double xpos, double ypos)
+			{
+				WindowsWindow* _this = static_cast<WindowsWindow*>(glfwGetWindowUserPointer(window));
+
+				double position[] = { xpos, ypos };
+
+				_this->m_InputContext->UpdateControl("GLFW Mouse", "Position", &position);
+			}
+		);
+
+		glfwSetMouseButtonCallback(m_NativeWindow, [](GLFWwindow* window, int button, int action, int mods)
+			{
+				WindowsWindow* _this = static_cast<WindowsWindow*>(glfwGetWindowUserPointer(window));
+
+				_this->m_InputContext->UpdateControl("GLFW Mouse", std::to_string(button), &action);
+			}
+		);
+
+		// --------------------------------------------------------------------------
+		// GLFW Keyboard Event Callbacks --------------------------------------------
+		// --------------------------------------------------------------------------
+
+		glfwSetKeyCallback(m_NativeWindow, [](GLFWwindow* window, int key, int scancode, int action, int mods)
+			{
+				// Not sure how to deal with repeat keys just yet.
+				if (action == GLFW_REPEAT)
+					return;
+
+				WindowsWindow* _this = static_cast<WindowsWindow*>(glfwGetWindowUserPointer(window));
+
+				_this->m_InputContext->UpdateControl("GLFW Keyboard", std::to_string(key), &action);
+			}
+		);
+	}
+
 	void WindowsWindow::CreateGLFWMouseInterface()
 	{
-		DeviceInfo glfwMouseInfo;
+		InputDeviceInfo glfwMouseInfo;
 		glfwMouseInfo.displayName = "GLFW Mouse";
 		glfwMouseInfo.deviceClass = 0x0000; // 0x0000 represents a "Pointer" device, such as a touchpad or a mouse. TODO: Implement a better way to handle this.
 		glfwMouseInfo.layoutClass = 0x4D53; // 0x4D53 would represent the uint16_t conversion from "GLMS". TODO: Implement function for this.
 
-		DeviceLayout glfwMouseLayout;
+		InputLayout glfwMouseLayout;
 		glfwMouseLayout.displayName = "GLFW Mouse";
 		glfwMouseLayout.deviceClass = 0x0000;
 		glfwMouseLayout.layoutClass = 0x4D53;
@@ -100,42 +246,25 @@ namespace Indy
 			{std::to_string(GLFW_MOUSE_BUTTON_6), 0, 1, 0, 5, 0},
 			{std::to_string(GLFW_MOUSE_BUTTON_7), 0, 1, 0, 6, 0},
 			{std::to_string(GLFW_MOUSE_BUTTON_8), 0, 1, 0, 7, 0},
-			{"Mouse Position", sizeof(double) * 2, sizeof(double) * 2 * 8, 1, 0xFF, 2},
-			{"Mouse X", sizeof(double), sizeof(double) * 8, 1, 0, 0},
-			{"Mouse Y", sizeof(double), sizeof(double) * 8, 5, 0, 0},
-			{"Mouse Scroll", sizeof(double) * 2, sizeof(double) * 2 * 8, 1, 0xFF, 2},
-			{"Scroll X", sizeof(double), sizeof(double) * 8, 1, 0, 0},
-			{"Scroll Y", sizeof(double), sizeof(double) * 8, 5, 0, 0},
+			{"Position", sizeof(double) * 2, sizeof(double) * 2 * 8, 1, 0xFF, 2},
+			{"X", sizeof(double), sizeof(double) * 8, 1, 0, 0},
+			{"Y", sizeof(double), sizeof(double) * 8, 5, 0, 0},
+			{"Scroll", sizeof(double) * 2, sizeof(double) * 2 * 8, 1, 0xFF, 2},
+			{"X", sizeof(double), sizeof(double) * 8, 1, 0, 0},
+			{"Y", sizeof(double), sizeof(double) * 8, 5, 0, 0},
 		};
 
-		ICL_InputData_CreateLayout glfwCreateLayoutData;
-		glfwCreateLayoutData.layout = &glfwMouseLayout;
-
-		ICL_InputData_CreateDevice glfwCreateDeviceData;
-		glfwCreateDeviceData.deviceInfo = &glfwMouseInfo;
-
-		ICL_InputEvent glfwCreateLayoutEvent;
-		glfwCreateLayoutEvent.targetLayer = "ICL_Input";
-		glfwCreateLayoutEvent.action = ICL_Action::CreateLayout;
-		glfwCreateLayoutEvent.layerData = &glfwCreateLayoutData;
-
-		ICL_InputEvent glfwCreateDeviceEvent;
-		glfwCreateDeviceEvent.targetLayer = "ICL_Input";
-		glfwCreateDeviceEvent.action = ICL_Action::CreateDevice;
-		glfwCreateDeviceEvent.layerData = &glfwCreateDeviceData;
-
-		Events<ILayerEvent>::Notify(&glfwCreateLayoutEvent);
-		Events<ILayerEvent>::Notify(&glfwCreateDeviceEvent);
+		Input::CreateDevice(glfwMouseInfo, glfwMouseLayout);
 	}
 
 	void WindowsWindow::CreateGLFWKeyboardInterface()
 	{
-		DeviceInfo glfwKeyboardInfo;
+		InputDeviceInfo glfwKeyboardInfo;
 		glfwKeyboardInfo.displayName = "GLFW Keyboard";
 		glfwKeyboardInfo.deviceClass = 0x0001; // 0x0001 represents a "Keyboard" device, such as a touchpad or a mouse. TODO: Implement a better way to handle this.
 		glfwKeyboardInfo.layoutClass = 0x4B42; // 0x474C would represent the uint16_t conversion from "GLFW". TODO: Implement function for this.
 
-		DeviceLayout glfwKeyboardLayout;
+		InputLayout glfwKeyboardLayout;
 		glfwKeyboardLayout.displayName = "GLFW Keyboard";
 		glfwKeyboardLayout.deviceClass = 0x0001;
 		glfwKeyboardLayout.layoutClass = 0x4B42;
@@ -256,32 +385,32 @@ namespace Indy
 			{std::to_string(GLFW_KEY_BACKSLASH),	0, 1, 10, 7, 0},
 
 			// Byte 12
-			{std::to_string(GLFW_KEY_RIGHT_BRACKET),0, 1, 11, 0, 0},
+			{std::to_string(GLFW_KEY_RIGHT_BRACKET),	0, 1, 11, 0, 0},
 			{std::to_string(GLFW_KEY_GRAVE_ACCENT),	0, 1, 11, 1, 0},
 			{std::to_string(GLFW_KEY_WORLD_1),		0, 1, 11, 2, 0},
 			{std::to_string(GLFW_KEY_WORLD_2),		0, 1, 11, 3, 0},
 			{std::to_string(GLFW_KEY_ESCAPE),		0, 1, 11, 4, 0},
-			{std::to_string(GLFW_KEY_ENTER),		0, 1, 11, 5, 0},
+			{std::to_string(GLFW_KEY_ENTER),			0, 1, 11, 5, 0},
 			{std::to_string(GLFW_KEY_TAB),			0, 1, 11, 6, 0},
-			{std::to_string(GLFW_KEY_BACKSPACE),	0, 1, 11, 7, 0},
+			{std::to_string(GLFW_KEY_BACKSPACE),		0, 1, 11, 7, 0},
 
 			// Byte 13
 			{std::to_string(GLFW_KEY_INSERT),		0, 1, 12, 0, 0},
 			{std::to_string(GLFW_KEY_DELETE),		0, 1, 12, 1, 0},
-			{std::to_string(GLFW_KEY_RIGHT),		0, 1, 12, 2, 0},
+			{std::to_string(GLFW_KEY_RIGHT),			0, 1, 12, 2, 0},
 			{std::to_string(GLFW_KEY_LEFT),			0, 1, 12, 3, 0},
 			{std::to_string(GLFW_KEY_DOWN),			0, 1, 12, 4, 0},
 			{std::to_string(GLFW_KEY_PAGE_UP),		0, 1, 12, 5, 0},
-			{std::to_string(GLFW_KEY_PAGE_DOWN),	0, 1, 12, 6, 0},
+			{std::to_string(GLFW_KEY_PAGE_DOWN),		0, 1, 12, 6, 0},
 			{std::to_string(GLFW_KEY_HOME),			0, 1, 12, 7, 0},
 
 			// Byte 14
 			{std::to_string(GLFW_KEY_END),			0, 1, 13, 0, 0},
-			{std::to_string(GLFW_KEY_CAPS_LOCK),	0, 1, 13, 1, 0},
+			{std::to_string(GLFW_KEY_CAPS_LOCK),		0, 1, 13, 1, 0},
 			{std::to_string(GLFW_KEY_SCROLL_LOCK),	0, 1, 13, 2, 0},
 			{std::to_string(GLFW_KEY_NUM_LOCK),		0, 1, 13, 3, 0},
 			{std::to_string(GLFW_KEY_PRINT_SCREEN),	0, 1, 13, 4, 0},
-			{std::to_string(GLFW_KEY_PAUSE),		0, 1, 13, 5, 0},
+			{std::to_string(GLFW_KEY_PAUSE),			0, 1, 13, 5, 0},
 			{std::to_string(GLFW_KEY_LEFT_SHIFT),	0, 1, 13, 6, 0},
 			{std::to_string(GLFW_KEY_LEFT_CONTROL),	0, 1, 13, 7, 0},
 
@@ -289,197 +418,12 @@ namespace Indy
 			{std::to_string(GLFW_KEY_LEFT_ALT),		0, 1, 14, 0, 0},
 			{std::to_string(GLFW_KEY_LEFT_SUPER),	0, 1, 14, 1, 0},
 			{std::to_string(GLFW_KEY_RIGHT_SHIFT),	0, 1, 14, 2, 0},
-			{std::to_string(GLFW_KEY_RIGHT_CONTROL),0, 1, 14, 3, 0},
-			{std::to_string(GLFW_KEY_RIGHT_ALT),	0, 1, 14, 4, 0},
+			{std::to_string(GLFW_KEY_RIGHT_CONTROL), 0, 1, 14, 3, 0},
+			{std::to_string(GLFW_KEY_RIGHT_ALT),		0, 1, 14, 4, 0},
 			{std::to_string(GLFW_KEY_RIGHT_SUPER),	0, 1, 14, 5, 0},
 			{std::to_string(GLFW_KEY_MENU),			0, 1, 14, 6, 0},
 		};
 
-		ICL_InputData_CreateLayout glfwCreateKeyLayoutData;
-		glfwCreateKeyLayoutData.layout = &glfwKeyboardLayout;
-
-		ICL_InputData_CreateDevice glfwCreateKeyboardData;
-		glfwCreateKeyboardData.deviceInfo = &glfwKeyboardInfo;
-
-		ICL_InputEvent glfwCreateKeyLayoutEvent;
-		glfwCreateKeyLayoutEvent.targetLayer = "ICL_Input";
-		glfwCreateKeyLayoutEvent.action = ICL_Action::CreateLayout;
-		glfwCreateKeyLayoutEvent.layerData = &glfwCreateKeyLayoutData;
-
-		ICL_InputEvent glfwCreateKeyboardEvent;
-		glfwCreateKeyboardEvent.targetLayer = "ICL_Input";
-		glfwCreateKeyboardEvent.action = ICL_Action::CreateDevice;
-		glfwCreateKeyboardEvent.layerData = &glfwCreateKeyboardData;
-
-		Events<ILayerEvent>::Notify(&glfwCreateKeyLayoutEvent);
-		Events<ILayerEvent>::Notify(&glfwCreateKeyboardEvent);
-	}
-
-	void WindowsWindow::SetGLFWCallbacks()
-	{
-		// ------------------------------------------------------------------------
-		// GLFW Window Event Callbacks --------------------------------------------
-		// ------------------------------------------------------------------------
-
-		// GLFW FramebufferResize Callback
-		glfwSetFramebufferSizeCallback(m_NativeWindow, [](GLFWwindow* window, int width, int height)
-			{
-
-			}
-		);
-
-		glfwSetWindowCloseCallback(m_NativeWindow, [](GLFWwindow* window)
-			{
-				WindowsWindow* _this = static_cast<WindowsWindow*>(glfwGetWindowUserPointer(window));
-
-				if (!_this)
-					return;
-
-				ICL_WindowData_Destroy destroyInfo;
-				destroyInfo.index = _this->Properties().id; // This should be the index of this window.
-
-				ICL_WindowEvent closeEvent;
-				closeEvent.targetLayer = "ICL_Window";
-				closeEvent.action = WindowLayerAction::DestroyWindow;
-				closeEvent.layerData = &destroyInfo;
-
-				Events<ILayerEvent>::Notify(&closeEvent);
-			}
-		);
-
-		glfwSetWindowSizeCallback(m_NativeWindow, [](GLFWwindow* window, int width, int height)
-			{
-				WindowsWindow* _this = static_cast<WindowsWindow*>(glfwGetWindowUserPointer(window));
-
-				if (!_this)
-					return;
-
-				_this->SetExtent(width, height);
-			}
-		);
-
-		glfwSetWindowFocusCallback(m_NativeWindow, [](GLFWwindow* window, int focused)
-			{
-				WindowsWindow* _this = static_cast<WindowsWindow*>(glfwGetWindowUserPointer(window));
-
-				if (!_this)
-					return;
-
-				_this->SetFocus(focused);
-			}
-		);
-
-		glfwSetWindowIconifyCallback(m_NativeWindow, [](GLFWwindow* window, int iconified)
-			{
-				WindowsWindow* _this = static_cast<WindowsWindow*>(glfwGetWindowUserPointer(window));
-
-				if (!_this)
-					return;
-
-				_this->SetMinimized((bool)iconified);
-			}
-		);
-
-		glfwSetWindowPosCallback(m_NativeWindow, [](GLFWwindow* window, int xpos, int ypos)
-			{
-				/* TODO: Implement */
-			}
-		);
-
-		// -----------------------------------------------------------------------
-		// GLFW Mouse Event Callbacks --------------------------------------------
-		// -----------------------------------------------------------------------
-
-		glfwSetScrollCallback(m_NativeWindow, [](GLFWwindow* window, double xoffset, double yoffset)
-			{
-				double scroll[] = { xoffset, yoffset };
-
-				DeviceInfo device;
-				device.deviceClass = 0x0000; // "Pointer"
-				device.layoutClass = 0x4D53; // "GLFW Mouse"
-
-				ICL_InputData_Update scrollData;
-				scrollData.targetDevice = &device;
-				scrollData.targetControl = "Mouse Scroll";
-				scrollData.newState = &scroll;
-
-				ICL_InputEvent inputEvent;
-				inputEvent.targetLayer = "ICL_Input";
-				inputEvent.action = ICL_Action::Update;
-				inputEvent.layerData = &scrollData;
-
-				Events<ILayerEvent>::Notify(&inputEvent);
-			}
-		);
-
-		glfwSetCursorPosCallback(m_NativeWindow, [](GLFWwindow* window, double xpos, double ypos)
-			{
-				double position[] = { xpos, ypos };
-
-				DeviceInfo device;
-				device.deviceClass = 0x0000; // "Pointer"
-				device.layoutClass = 0x4D53; // "GLFW Mouse"
-
-				ICL_InputData_Update posData;
-				posData.targetDevice = &device;
-				posData.targetControl = "Mouse Position";
-				posData.newState = &position;
-
-				ICL_InputEvent inputEvent;
-				inputEvent.targetLayer = "ICL_Input";
-				inputEvent.action = ICL_Action::Update;
-				inputEvent.layerData = &posData;
-
-				Events<ILayerEvent>::Notify(&inputEvent);
-			}
-		);
-
-		glfwSetMouseButtonCallback(m_NativeWindow, [](GLFWwindow* window, int button, int action, int mods)
-			{
-				DeviceInfo device;
-				device.deviceClass = 0x0000; // "Pointer"
-				device.layoutClass = 0x4D53; // "GLFW Mouse"
-
-				ICL_InputData_Update mouseData;
-				mouseData.targetDevice = &device;
-				mouseData.targetControl = std::to_string(button);
-				mouseData.newState = &action;
-
-				ICL_InputEvent inputEvent;
-				inputEvent.targetLayer = "ICL_Input";
-				inputEvent.action = ICL_Action::Update;
-				inputEvent.layerData = &mouseData;
-
-				Events<ILayerEvent>::Notify(&inputEvent);
-			}
-		);
-
-		// --------------------------------------------------------------------------
-		// GLFW Keyboard Event Callbacks --------------------------------------------
-		// --------------------------------------------------------------------------
-
-		glfwSetKeyCallback(m_NativeWindow, [](GLFWwindow* window, int key, int scancode, int action, int mods)
-			{
-				// Not sure how to deal with repeat keys just yet.
-				if (action == GLFW_REPEAT)
-					return;
-
-				DeviceInfo device;
-				device.deviceClass = 0x0001; // "Keyboard"
-				device.layoutClass = 0x4B42; // "GLFW Keyboard"
-
-				ICL_InputData_Update keyData;
-				keyData.targetDevice = &device;
-				keyData.targetControl = std::to_string(key);
-				keyData.newState = &action;
-
-				ICL_InputEvent inputEvent;
-				inputEvent.targetLayer = "ICL_Input";
-				inputEvent.action = ICL_Action::Update;
-				inputEvent.layerData = &keyData;
-
-				Events<ILayerEvent>::Notify(&inputEvent);
-			}
-		);
+		Input::CreateDevice(glfwKeyboardInfo, glfwKeyboardLayout);
 	}
 }

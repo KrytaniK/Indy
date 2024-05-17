@@ -20,4 +20,21 @@ import Indy.Log;
 	#define INDY_WARN(...)         Indy::ClientLoggingContext::Get()->warn(__VA_ARGS__)
 	#define INDY_ERROR(...)        Indy::ClientLoggingContext::Get()->error(__VA_ARGS__)
 	#define INDY_CRITICAL(...)     Indy::ClientLoggingContext::Get()->critical(__VA_ARGS__)
+
+#else
+
+	// Core Log Macros
+	#define INDY_CORE_TRACE(...)
+	#define INDY_CORE_INFO(...)
+	#define INDY_CORE_WARN(...)
+	#define INDY_CORE_ERROR(...)
+	#define INDY_CORE_CRITICAL(...)
+
+	// Client Log Macros
+	#define INDY_TRACE(...)
+	#define INDY_INFO(...)
+	#define INDY_WARN(...)
+	#define INDY_ERROR(...)
+	#define INDY_CRITICAL(...)
+
 #endif

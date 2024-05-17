@@ -58,39 +58,39 @@ export
 		template<typename EventType, class C>
 		std::shared_ptr<EventDelegate> EventHandler::Subscribe(C* instance, void(C::* callback)(EventType*))
 		{
-			std::shared_ptr<EventDelegate> sharedDelegate = std::make_shared<EventDelegate>(delegateCount++);
-			sharedDelegate->Bind<EventType, C>(instance, callback);
+			std::shared_ptr<EventDelegate> shared_delegate = std::make_shared<EventDelegate>(delegateCount++);
+			shared_delegate->Bind<EventType, C>(instance, callback);
 
-			m_Listeners.emplace_back(sharedDelegate);
-			return sharedDelegate;
+			m_Listeners.emplace_back(shared_delegate);
+			return shared_delegate;
 		}
 
 		template<class C>
 		std::shared_ptr<EventDelegate> EventHandler::Subscribe(C* instance, void(C::* callback)())
 		{
-			std::shared_ptr<EventDelegate> sharedDelegate = std::make_shared<EventDelegate>(delegateCount++);
-			sharedDelegate->Bind<C>(instance, callback);
+			std::shared_ptr<EventDelegate> shared_delegate = std::make_shared<EventDelegate>(delegateCount++);
+			shared_delegate->Bind<C>(instance, callback);
 
-			m_Listeners.emplace_back(sharedDelegate);
-			return sharedDelegate;
+			m_Listeners.emplace_back(shared_delegate);
+			return shared_delegate;
 		}
 
 		template<typename EventType>
 		std::shared_ptr<EventDelegate> EventHandler::Subscribe(const std::function<void(EventType*)>& callback)
 		{
-			static_assert(std::is_base_of<IEvent, EventType>::value, "[Events] Template parameter <EventType> must derive from base <IEvent>.");
+			static_assert(std::is_base_of_v<IEvent, EventType>, "[Events] Template parameter <EventType> must derive from base <IEvent>.");
 
-			std::shared_ptr<EventDelegate> sharedDelegate = std::make_shared<EventDelegate>(delegateCount++);
-			sharedDelegate->Bind<EventType>(callback);
+			std::shared_ptr<EventDelegate> shared_delegate = std::make_shared<EventDelegate>(delegateCount++);
+			shared_delegate->Bind<EventType>(callback);
 
-			m_Listeners.emplace_back(sharedDelegate);
-			return sharedDelegate;
+			m_Listeners.emplace_back(shared_delegate);
+			return shared_delegate;
 		}
 
 		template<typename EventType>
 		void EventHandler::operator()(EventType* event)
 		{
-			static_assert(std::is_base_of<IEvent, EventType>::value, "[Events] Template parameter <EventType> must derive from base <IEvent>.");
+			static_assert(std::is_base_of_v<IEvent, EventType>, "[Events] Template parameter <EventType> must derive from base <IEvent>.");
 
 			Notify(event);
 		}

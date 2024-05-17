@@ -25,7 +25,7 @@ export
 		class ILayerAction
 		{
 		public:
-			~ILayerAction() {};
+			virtual ~ILayerAction() = default;
 
 			virtual void Execute(ILayerData* layerData) = 0;
 		};

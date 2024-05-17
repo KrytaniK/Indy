@@ -17,7 +17,7 @@ export
 		template<typename EventType>
 		class Events
 		{
-			static_assert(std::is_base_of<IEvent, EventType>::value, "[Events] Template parameter <EventType> must derive from base <IEvent>.");
+			static_assert(std::is_base_of_v<IEvent, EventType>, "[Events] Template parameter <EventType> must derive from base <IEvent>.");
 
 		public:
 			inline static void Notify(IEvent* event)

@@ -8,17 +8,17 @@ module;
 #include <memory>
 #include <functional>
 
-export module Indy.Input:DeviceControl;
+export module Indy.Input:Control;
 
-import :DeviceState;
+import :State;
 
 export
 {
 	namespace Indy
 	{
-		class DeviceControlContext;
+		class InputControlContext;
 
-		struct DeviceControlInfo
+		struct InputControlInfo
 		{
 			std::string displayName;
 			uint16_t sizeInBytes = 0xFFFF; // Control size in bytes
@@ -30,42 +30,41 @@ export
 			uint8_t childCount = 0x00; // 1-byte integer (0-255) representing the number of child controls.
 		};
 
-		class DeviceControl
+		class InputControl
 		{
 		public:
-			DeviceControl(const DeviceControlInfo& info);
-			~DeviceControl() = default;
+			InputControl(const InputControlInfo& info);
+			~InputControl() = default;
 
-			const DeviceControlInfo& GetInfo() const;
-			void SetParent(DeviceControl* parent);
-			void BindState(DeviceState* state);
-			void AddChild(const DeviceControlInfo& childInfo);
+			const InputControlInfo& GetInfo() const;
+			void SetParent(InputControl* parent);
+			void BindState(InputState* state);
+			void AddChild(const InputControlInfo& childInfo);
 			void Update(std::byte* data);
 			void UpdateChild(const std::string& childName, std::byte* data);
 
-			void Watch(std::function<void(DeviceControlContext&)>& callback);
-			void WatchChild(const std::string& childName, std::function<void(DeviceControlContext&)>& callback);
+			void Watch(std::function<void(InputControlContext&)>& callback);
+			void WatchChild(const std::string& childName, std::function<void(InputControlContext&)>& callback);
 
 			template<typename T>
 			T ReadAs();
 
 		private:
-			DeviceControl(const DeviceControl&) = delete; // Remove Copy Constructor.
 			void OnValueChange();
 
 		private:
-			DeviceControlInfo m_Info;
-			DeviceState* m_State = nullptr; // Associative reference to the owning device's state
-			DeviceControl* m_ParentControl = nullptr; // Associative reference to this control's owning control.
-			std::vector<std::shared_ptr<DeviceControl>> m_Children; // Vector of child controls, managed by this control.
-			std::vector<std::function<void(DeviceControlContext&)>> m_Listeners; // Event listeners for this control
+			InputControlInfo m_Info;
+			InputState* m_State = nullptr; // Associative reference to the owning device's state
+			InputControl* m_ParentControl = nullptr; // Associative reference to this control's owning control.
+			std::vector<InputControl> m_Children; // Vector of child controls, managed by this control.
+			std::vector<std::function<void(InputControlContext&)>> m_Listeners; // Event listeners for this control
 		};
 
-		class DeviceControlContext
+		class InputControlContext
 		{
 		public:
-			DeviceControlContext(DeviceControl* control);
-			~DeviceControlContext() = default;
+			InputControlContext(InputControl* control);
+			~InputControlContext() = default;
 
 			const std::string& Name();
 
@@ -73,14 +72,14 @@ export
 			T ReadAs();
 
 		private:
-			DeviceControl* m_Control;
+			InputControl* m_Control;
 		};
 
 		// Template Definitions
 		// --------------------
 
 		template<typename T>
-		T DeviceControl::ReadAs()
+		T InputControl::ReadAs()
 		{
 			if (!m_State)
 			{
@@ -96,12 +95,12 @@ export
 			return m_State->Read<T>(m_Info.byteOffset);
 		}
 
-		DeviceControlContext::DeviceControlContext(DeviceControl* control)
+		InputControlContext::InputControlContext(InputControl* control)
 		{
 			m_Control = control;
 		};
 
-		const std::string& DeviceControlContext::Name()
+		const std::string& InputControlContext::Name()
 		{
 			if (!m_Control)
 				return "[-- Expired --]";
@@ -110,7 +109,7 @@ export
 		};
 
 		template<typename T>
-		T DeviceControlContext::ReadAs()
+		T InputControlContext::ReadAs()
 		{
 			if (!m_Control)
 				return T();

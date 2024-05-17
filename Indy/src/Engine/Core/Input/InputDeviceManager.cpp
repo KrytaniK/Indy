@@ -7,16 +7,16 @@ import Indy.Input;
 
 namespace Indy
 {
-	DeviceManager::DeviceManager()
+	InputDeviceManager::InputDeviceManager()
 	{
-		m_DeviceBuilder = std::make_unique<DeviceBuilder>();
+		m_DeviceBuilder = std::make_unique<InputDeviceBuilder>();
 
 		// Reserve enough space up front to refrain from unnecessary reallocations
 		m_Devices.reserve(50);
 		m_Layouts.reserve(50);
 	}
 
-	void DeviceManager::AddLayout(const DeviceLayout& layout)
+	void InputDeviceManager::AddLayout(const InputLayout& layout)
 	{
 		// Add the layout
 		m_Layouts.emplace_back(layout);
@@ -35,7 +35,7 @@ namespace Indy
 		}
 	}
 
-	void DeviceManager::AddDevice(const DeviceInfo& deviceInfo)
+	void InputDeviceManager::AddDevice(const InputDeviceInfo& deviceInfo)
 	{
 		// Check against all existing devices.
 		for (const auto& device : m_Devices)
@@ -54,7 +54,7 @@ namespace Indy
 		}
 
 		// Match device with a device layout
-		std::unique_ptr<DeviceLayout> layout = MatchDeviceLayout(deviceInfo);
+		std::unique_ptr<InputLayout> layout = MatchDeviceLayout(deviceInfo);
 
 		// If no matching layout was found, set aside for when new layouts
 		//	are registered.
@@ -65,56 +65,72 @@ namespace Indy
 			return;
 		}
 
+		INDY_CORE_TRACE("Building Device [{0}]", deviceInfo.displayName);
 		// Build and store device
 		m_Devices.emplace_back(
 			m_DeviceBuilder->Build(deviceInfo, *layout)
 		);
 	}
 
-	void DeviceManager::UpdateDeviceState(const DeviceInfo* deviceInfo, const std::string& control, std::byte* data)
+	const std::shared_ptr<InputDevice>& InputDeviceManager::GetDevice(const InputDeviceInfo& deviceInfo) const
 	{
-		if (!deviceInfo)
-			INDY_CORE_ERROR("Could not update device state. Device is null.");
-
-		if (!data)
-			INDY_CORE_ERROR("Could not update device state. Data is null.");
-
 		for (const auto& device : m_Devices)
 		{
-			if (device->GetInfo().displayName == deviceInfo->displayName ||
-				(device->GetInfo().deviceClass == deviceInfo->deviceClass &&
-					device->GetInfo().layoutClass == deviceInfo->layoutClass)
+			if (device->GetInfo().displayName == deviceInfo.displayName ||
+				(device->GetInfo().deviceClass == deviceInfo.deviceClass &&
+					device->GetInfo().layoutClass == deviceInfo.layoutClass)
 				)
 			{
-				if (!control.empty())
-					device->UpdateControlState(control, data);
-				else
-					device->UpdateDeviceState(data);
+				return device;
 			}
 		}
+
+		return nullptr;
 	}
 
-	void DeviceManager::WatchDeviceControl(const DeviceInfo* deviceInfo, const std::string& control, std::function<void(DeviceControlContext&)>& onValueChange)
+	void InputDeviceManager::UpdateDeviceState(const InputDeviceInfo& deviceInfo, const std::string& control, std::byte* data)
 	{
-		if (!deviceInfo)
-			INDY_CORE_ERROR("Could not watch device control. Device is null.");
+		if (!data)
+		{
+			INDY_CORE_ERROR("Could not update device state. Data is null.");
+			return;
+		}
+
+		std::shared_ptr<InputDevice> device = GetDevice(deviceInfo);
+
+		if (device == nullptr)
+		{
+			INDY_CORE_ERROR("Could not update device state. No device found.");
+			return;
+		}
+
+		if (!control.empty())
+			device->UpdateControlState(control, data);
+		else
+			device->UpdateDeviceState(data);
+	}
+
+	void InputDeviceManager::WatchDeviceControl(const InputDeviceInfo& deviceInfo, const std::string& control, std::function<void(InputControlContext&)>& onValueChange)
+	{
 
 		if (control.empty())
-			INDY_CORE_ERROR("Could not watch device control. No control specified.");
-
-		for (const auto& device : m_Devices)
 		{
-			if (device->GetInfo().displayName == deviceInfo->displayName ||
-				(device->GetInfo().deviceClass == deviceInfo->deviceClass &&
-					device->GetInfo().layoutClass == deviceInfo->layoutClass)
-				)
-			{
-				device->WatchControl(control, onValueChange);
-			}
+			INDY_CORE_ERROR("Could not watch device control. No control specified.");
+			return;
 		}
+
+		std::shared_ptr<InputDevice> device = GetDevice(deviceInfo);
+
+		if (device == nullptr)
+		{
+			INDY_CORE_ERROR("Could not watch device control. No device found.");
+			return;
+		}
+
+		device->WatchControl(control, onValueChange);
 	}
 
-	std::unique_ptr<DeviceLayout> DeviceManager::MatchDeviceLayout(const DeviceInfo& deviceInfo)
+	std::unique_ptr<InputLayout> InputDeviceManager::MatchDeviceLayout(const InputDeviceInfo& deviceInfo)
 	{
 		float highestPercentMatch = 0.0f;
 		float percentMatch = 0.0f;
@@ -123,7 +139,7 @@ namespace Indy
 
 		// Perform an exhaustive search through all known device layouts.
 		int compareIndex = -1;
-		for (const DeviceLayout& layout : m_Layouts)
+		for (const InputLayout& layout : m_Layouts)
 		{
 			++compareIndex;
 			percentMatch = 0.0f;
@@ -148,7 +164,6 @@ namespace Indy
 			{
 				highestPercentMatch = percentMatch;
 				matchIndex = compareIndex;
-				continue;
 			}
 		}
 
@@ -157,6 +172,6 @@ namespace Indy
 			return nullptr;
 
 		// Return a copy of the layout with the highest match percentage
-		return std::make_unique<DeviceLayout>(m_Layouts[matchIndex]);
+		return std::make_unique<InputLayout>(m_Layouts[matchIndex]);
 	}
 }

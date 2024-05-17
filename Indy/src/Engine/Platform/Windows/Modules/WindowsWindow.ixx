@@ -1,10 +1,12 @@
 module;
 
+#include <functional>
 #include <GLFW/glfw3.h>
 
 export module Indy.WindowsWindow;
 
 import Indy.Window;
+import Indy.Input;
 
 export
 {
@@ -26,10 +28,11 @@ export
 			virtual void SetFocus(bool isFocused);
 			virtual void SetMinimized(bool isMinimized);
 
+
 		private:
+			void SetGLFWWindowCallbacks();
 			void CreateGLFWMouseInterface();
 			void CreateGLFWKeyboardInterface();
-			void SetGLFWCallbacks();
 
 		private:
 			WindowProps m_Props;

@@ -3,21 +3,20 @@ module;
 #include <Engine/Core/LogMacros.h>
 
 #include <vector>
-#include <iostream>
 #include <typeindex>
 
-export module Indy.Input:DeviceState;
+export module Indy.Input:State;
 
 export
 {
 	namespace Indy
 	{
-		class DeviceState
+		class InputState
 		{
 		public:
-			DeviceState(const size_t& size);
+			InputState(const size_t& size);
 
-			~DeviceState() = default;
+			~InputState() = default;
 
 			template<typename T>
 			void Write(uint16_t byteOffset, T value);
@@ -40,7 +39,7 @@ export
 		// --------------------
 
 		template<typename T>
-		void DeviceState::Write(uint16_t byteOffset, T value)
+		void InputState::Write(uint16_t byteOffset, T value)
 		{
 			if (byteOffset + sizeof(value) > m_StateBlock.size())
 			{
@@ -57,7 +56,7 @@ export
 		}
 
 		template<typename T>
-		T DeviceState::Read(uint16_t byteOffset)
+		T InputState::Read(uint16_t byteOffset)
 		{
 			if (byteOffset + sizeof(T) > m_StateBlock.size())
 			{

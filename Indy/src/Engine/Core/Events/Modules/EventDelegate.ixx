@@ -44,7 +44,7 @@ export
 		template<typename EventType>
 		void EventDelegate::Bind(const std::function<void(EventType*)>& callback)
 		{
-			static_assert(std::is_base_of<IEvent, EventType>::value, "[Events] Template parameter <EventType> must derive from base <IEvent>.");
+			static_assert(std::is_base_of_v<IEvent, EventType>, "[Events] Template parameter <EventType> must derive from base <IEvent>.");
 
 			m_EventFunc = [callback](IEvent* event) { callback(static_cast<EventType*>(event)); };
 
@@ -53,15 +53,15 @@ export
 		template<class C>
 		void EventDelegate::Bind(C* instance, void(C::* callback)())
 		{
-			m_BaseFunc = [&instance, callback]() { (instance->*callback)(); };
+			m_BaseFunc = [instance, callback]() { (instance->*callback)(); };
 		}
 
 		template<typename EventType, class C>
 		void EventDelegate::Bind(C* instance, void(C::* callback)(EventType*))
 		{
-			static_assert(std::is_base_of<IEvent, EventType>::value, "[Events] Template parameter <EventType> must derive from base <IEvent>.");
+			static_assert(std::is_base_of_v<IEvent, EventType>, "[Events] Template parameter <EventType> must derive from base <IEvent>.");
 
-			m_EventFunc = [&instance, callback](IEvent* event) { (instance->*callback)(static_cast<EventType*>(event)); };
+			m_EventFunc = [instance, callback](IEvent* event) { (instance->*callback)(static_cast<EventType*>(event)); }; 
 
 		}
 	}

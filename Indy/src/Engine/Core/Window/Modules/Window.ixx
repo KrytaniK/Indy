@@ -2,10 +2,12 @@ module;
 
 #include <string>
 #include <memory>
+#include <functional>
 
 export module Indy.Window:IWindow;
 
-import Indy.Events;
+import Indy.Renderer;
+import Indy.Input;
 
 export
 {
@@ -15,6 +17,7 @@ export
 		{
 			std::string title = "Indy Engine";
 			unsigned int width = 1280, height = 760;
+			RenderAPI renderApi = RenderAPI::None;
 			uint8_t id = 0;
 		};
 
@@ -23,16 +26,8 @@ export
 			std::string title;
 			unsigned int width, height;
 			uint8_t id = 0xFF;
+			RenderAPI renderApi = RenderAPI::None;
 			bool minimized = false, focused = false;
-		};
-
-		class IWindow;
-
-		// Base Window Handle
-		struct IWindowHandle
-		{
-			std::weak_ptr<IWindow> window;
-			uint8_t index = 0xFF;
 		};
 
 		// Abstract interface for platform-specific window implementation
@@ -46,7 +41,9 @@ export
 			virtual void* NativeWindow() const = 0;
 			virtual const WindowProps& Properties() const = 0;
 
-			EventHandler onUpdate;
+		protected:
+			std::shared_ptr<InputContext> m_InputContext;
+			std::unique_ptr<IRenderer> m_Renderer;
 		};
 	}
 }

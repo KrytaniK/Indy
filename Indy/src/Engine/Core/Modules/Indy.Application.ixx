@@ -1,6 +1,7 @@
 module;
 
 #include <memory>
+#include <string>
 
 export module Indy.Application;
 
@@ -18,7 +19,10 @@ export {
 			// For use in main (EntryPoint.cpp); Handles the internal main loop
 			void StartAndRun();
 
-			// Automatically gets called repeatedly until m_ShouldClose is true
+			// Application startup method. Called before the main loop
+			virtual void Start() = 0;
+
+			// Application's main loop.
 			virtual void Run() = 0;
 
 			// Helper functions for layer operations via CreateApplication
@@ -36,6 +40,25 @@ export {
 			// Controls application lifetime. Setting this to true terminates the program
 			bool m_ShouldClose = true;
 		};
+
+		// Template Definitions
+
+		template<typename T>
+		void Application::PushLayer()
+		{
+			static_assert(std::is_base_of_v<ILayer, T>);
+
+			m_LayerStack->PushLayer(std::make_shared<T>());
+		}
+
+		template<typename T>
+		void Application::PushOverlay()
+		{
+			static_assert(std::is_base_of_v<ILayer, T>);
+
+			m_LayerStack->PushOverlay(std::make_shared<T>());
+		}
+
 	}
 }
 

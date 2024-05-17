@@ -4,12 +4,12 @@ import Indy.Input;
 
 namespace Indy
 {
-	DeviceState::DeviceState(const size_t& size)
+	InputState::InputState(const size_t& size)
 	{
 		m_StateBlock.resize(size);
 	}
 
-	void DeviceState::Write(uint16_t byteOffset, std::byte* data, size_t size)
+	void InputState::Write(uint16_t byteOffset, std::byte* data, size_t size)
 	{
 		if (byteOffset + size > m_StateBlock.size())
 		{
@@ -22,7 +22,7 @@ namespace Indy
 		std::memcpy(state, data, size);
 	}
 
-	void DeviceState::WriteBit(uint16_t byteOffset, uint8_t bitOffset, bool value)
+	void InputState::WriteBit(uint16_t byteOffset, uint8_t bitOffset, bool value)
 	{
 		if (byteOffset > m_StateBlock.size())
 		{
@@ -36,7 +36,7 @@ namespace Indy
 			m_StateBlock[byteOffset] &= ~(std::byte{1} << bitOffset); // Set bit to 0
 	}
 
-	int DeviceState::ReadBit(uint16_t byteOffset, uint8_t bit)
+	int InputState::ReadBit(uint16_t byteOffset, uint8_t bit)
 	{
 		if (byteOffset > m_StateBlock.size())
 		{
