@@ -1,12 +1,6 @@
-module;
-
-#include <memory>
-
 export module Sandbox;
 
 import Indy.Application;
-import Indy.Input;
-import Indy.Window;
 
 export {
 	namespace Indy
@@ -14,14 +8,12 @@ export {
 		class Sandbox : public Application
 		{
 		public:
-			Sandbox();
+			Sandbox(const ApplicationCreateInfo& createInfo);
 			virtual ~Sandbox() override;
 
-			virtual void Start() override;
-			virtual void Run() override;
-
-		private:
-			std::unique_ptr<WindowManager> m_WindowManager;
+			virtual void OnLoad() override;
+			virtual void OnUpdate() override;
+			virtual void OnUnload() override;
 		};
 	}
 }

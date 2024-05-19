@@ -1,28 +1,17 @@
 #include <Engine/Core/LogMacros.h>
 
 #include <memory>
-#include <string>
-#include <vector>
 
 import Sandbox;
 
 import Indy.Application;
-import Indy.Window;
-import Indy.Input;
-import Indy.Renderer;
-
-std::unique_ptr<Indy::Application> CreateApplication()
-{
-	std::unique_ptr<Indy::Application> app = std::make_unique<Indy::Sandbox>();
-
-	return app;
-};
 
 namespace Indy
 {
-	Sandbox::Sandbox()
+	Sandbox::Sandbox(const ApplicationCreateInfo& createInfo)
+		: Application(createInfo)
 	{
-		m_ShouldClose = false;
+		m_ShouldClose = true;
 	}
 
 	Sandbox::~Sandbox()
@@ -30,23 +19,36 @@ namespace Indy
 		
 	}
 
-	void Sandbox::Start()
+	void Sandbox::OnLoad()
 	{
-		INDY_INFO("Sandbox Start");
-
-		m_WindowManager = std::make_unique<WindowManager>();
-
-		WindowCreateInfo primary{ "Primary Window", 1260, 720, RenderAPI::Vulkan, 0 };
-		WindowCreateInfo secondary{ "Secondary Window", 1260, 720, RenderAPI::Vulkan, 1 };
-		WindowCreateInfo tertiary{ "Tertiary Window", 1260, 720, RenderAPI::Vulkan, 2 };
-
-		m_WindowManager->AddWindow(primary);
-		m_WindowManager->AddWindow(secondary);
-		m_WindowManager->AddWindow(tertiary);
+		// Load resources from disk
 	}
 
-	void Sandbox::Run()
+	void Sandbox::OnUpdate()
 	{
-		m_WindowManager->Update();
+		// Fixed Update ("Tick")
+		// Update
+		// Late Update
+		// Render
+	}
+
+	void Sandbox::OnUnload()
+	{
+		// Unload all resources
+		// Cleanup phase
 	}
 }
+
+std::unique_ptr<Indy::Application> CreateApplication()
+{
+	Indy::ApplicationCreateInfo createInfo;
+	createInfo.name = "Sandbox";
+	createInfo.features = {
+		"Input",
+		"Window"
+	};
+
+	std::unique_ptr<Indy::Application> app = std::make_unique<Indy::Sandbox>(createInfo);
+
+	return app;
+};

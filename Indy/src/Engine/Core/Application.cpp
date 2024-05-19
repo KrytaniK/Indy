@@ -1,13 +1,25 @@
 #include <memory>
 
+#include "LogMacros.h"
+
 import Indy.Application;
 import Indy.Layers;
 
 namespace Indy
 {
-	Application::Application()
+	const Application& Application::Get()
 	{
+		return *Application::s_Instance;
+	}
+
+	Application::Application(const ApplicationCreateInfo& createInfo)
+	{
+		m_Info.name = createInfo.name;
+
 		m_LayerStack = std::make_unique<LayerStack>();
+
+		m_DeviceManager = std::make_unique<InputDeviceManager>();
+		m_WindowManager = std::make_unique<WindowManager>();
 	}
 
 	Application::~Application()
@@ -17,30 +29,18 @@ namespace Indy
 
 	void Application::StartAndRun()
 	{
-		Start();
+		OnLoad();
 
-		// Application is meant to execute once
-		if (m_ShouldClose)
+		if (m_ShouldClose) // Application is meant to execute once
 		{
-			Run();
-			return;
+			OnUpdate();
+		}
+		else // Application is meant to run continuously
+		{
+			while (!m_ShouldClose)
+				OnUpdate();
 		}
 
-		// Application is meant to run continuously
-		while (!m_ShouldClose)
-		{
-			m_LayerStack->Update();
-			Run();
-		}
-	}
-
-	void Application::PushLayer(const std::shared_ptr<ILayer>& layer)
-	{
-		m_LayerStack->PushLayer(layer);
-	}
-
-	void Application::PushOverlay(const std::shared_ptr<ILayer>& overlay)
-	{
-		m_LayerStack->PushOverlay(overlay);
+		OnUnload();
 	}
 }
