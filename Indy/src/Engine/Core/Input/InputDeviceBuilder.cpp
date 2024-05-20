@@ -1,5 +1,6 @@
 #include <memory>
 #include <vector>
+#include <unordered_map>
 
 import Indy.Input;
 
@@ -10,6 +11,7 @@ namespace Indy
 		// Create the device
 		std::shared_ptr<InputDevice> device = std::make_shared<InputDevice>(deviceInfo, deviceLayout.sizeInBytes);
 
+		uint32_t controlCount = 0;
 		// Build the device controls, only one level deep
 		for (size_t i = 0; i < deviceLayout.controls.size();)
 		{
@@ -27,10 +29,11 @@ namespace Indy
 			{
 				for (uint8_t j = 1; j <= controlInfo.childCount; j++)
 				{
+
 					baseControl.AddChild(deviceLayout.controls[i + j]);
 				}
 
-				i += (size_t)(controlInfo.childCount + 1);
+				i += static_cast<size_t>(controlInfo.childCount + 1);
 			}
 			else
 			{

@@ -31,8 +31,6 @@ export
 
 		private:
 			void SetGLFWWindowCallbacks();
-			void CreateGLFWMouseInterface();
-			void CreateGLFWKeyboardInterface();
 
 		private:
 			WindowProps m_Props;

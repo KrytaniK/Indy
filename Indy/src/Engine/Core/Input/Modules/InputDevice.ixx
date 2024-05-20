@@ -3,7 +3,6 @@ module;
 #include <string>
 #include <memory>
 #include <vector>
-#include <functional>
 
 export module Indy.Input:Device;
 
@@ -21,7 +20,7 @@ export
 			uint16_t deviceClass = 0xFFFF; // 2-byte hex value (0-65535) used to classify a device.
 			uint16_t layoutClass = 0xFFFF; // 2-byte hex value (0-65535) used to classify a layout.
 			uint16_t sizeInBytes = 0x0000; // 2-byte hex value (0-65535) used to store the total memory size of this layout
-			std::vector<InputControlInfo> controls; // Specific control information
+			std::vector<InputControlInfo> controls; // ordered control information
 		};
 
 		// Describes a physical input device
@@ -41,7 +40,6 @@ export
 			const InputDeviceInfo& GetInfo() const;
 
 			void AddControl(InputControl control);
-			void WatchControl(const std::string& controlName, std::function<void(InputControlContext&)>& callback);
 
 			void UpdateDeviceState(std::byte* newState);
 			void UpdateControlState(const std::string& controlName, std::byte* data);

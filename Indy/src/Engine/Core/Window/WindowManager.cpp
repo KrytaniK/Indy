@@ -1,8 +1,8 @@
 #include <Engine/Core/LogMacros.h>
 
 #include <memory>
-#include <string>
 
+import Indy.Application;
 import Indy.Window;
 import Indy.WindowsWindow;
 
@@ -23,7 +23,7 @@ namespace Indy
 	{
 		for (uint8_t i = 0; i < m_WindowCount; i++)
 		{
-			// If there is no window, or it's minimized
+			// If there is no window, or it's minimized, don't update
 			if (!m_Windows[i] || m_Windows[i]->Properties().minimized)
 				continue;
 
@@ -39,7 +39,7 @@ namespace Indy
 		}
 	}
 
-	const IWindow* WindowManager::GetWindow(uint8_t index) const
+	IWindow* WindowManager::GetWindow(uint8_t index) const
 	{
 		if (index >= m_WindowCount)
 		{
@@ -53,7 +53,7 @@ namespace Indy
 		return m_Windows[index].get();
 	}
 
-	const IWindow* WindowManager::GetActiveWindow() const
+	IWindow* WindowManager::GetActiveWindow() const
 	{
 		uint8_t index = 0;
 		for (const auto& window : m_Windows)

@@ -5,13 +5,22 @@
 import Sandbox;
 
 import Indy.Application;
+import Indy.Events;
+import Indy.Window;
 
 namespace Indy
 {
 	Sandbox::Sandbox(const ApplicationCreateInfo& createInfo)
 		: Application(createInfo)
 	{
-		m_ShouldClose = true;
+		m_ShouldClose = false;
+
+		WindowCreateInfo firstInfo = { "First", 1280, 760, 0 };
+
+		WindowCreateEvent event;
+		event.createInfo = &firstInfo;
+
+		Events<WindowCreateEvent>::Notify(&event);
 	}
 
 	Sandbox::~Sandbox()
@@ -22,6 +31,7 @@ namespace Indy
 	void Sandbox::OnLoad()
 	{
 		// Load resources from disk
+		
 	}
 
 	void Sandbox::OnUpdate()
@@ -29,7 +39,6 @@ namespace Indy
 		// Fixed Update ("Tick")
 		// Update
 		// Late Update
-		// Render
 	}
 
 	void Sandbox::OnUnload()
@@ -42,11 +51,7 @@ namespace Indy
 std::unique_ptr<Indy::Application> CreateApplication()
 {
 	Indy::ApplicationCreateInfo createInfo;
-	createInfo.name = "Sandbox";
-	createInfo.features = {
-		"Input",
-		"Window"
-	};
+	createInfo.name = "Sandbox App";
 
 	std::unique_ptr<Indy::Application> app = std::make_unique<Indy::Sandbox>(createInfo);
 

@@ -24,20 +24,6 @@ namespace Indy
 		m_Controls.emplace_back(control);
 	}
 
-	void InputDevice::WatchControl(const std::string& controlName, std::function<void(InputControlContext&)>& callback)
-	{
-		for (auto& control : m_Controls)
-		{
-			if (control.GetInfo().displayName == controlName)
-			{
-				control.Watch(callback);
-				return;
-			}
-
-			control.WatchChild(controlName, callback);
-		}
-	}
-
 	void InputDevice::UpdateDeviceState(std::byte* newState)
 	{
 		// Bail if state is invalid

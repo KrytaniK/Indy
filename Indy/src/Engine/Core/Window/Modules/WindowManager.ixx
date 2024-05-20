@@ -12,6 +12,7 @@ export
 {
 	namespace Indy
 	{
+
 		class WindowManager
 		{
 		public:
@@ -20,8 +21,8 @@ export
 
 			void Update();
 
-			const IWindow* GetWindow(uint8_t index) const;
-			const IWindow* GetActiveWindow() const;
+			IWindow* GetWindow(uint8_t index) const;
+			IWindow* GetActiveWindow() const;
 
 			void AddWindow(WindowCreateInfo& createInfo);
 

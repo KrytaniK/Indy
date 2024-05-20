@@ -1,13 +1,15 @@
 #include <memory>
 
-#include "LogMacros.h"
-
 import Indy.Application;
 import Indy.Layers;
+import Indy.Input;
+import Indy.Window;
 
 namespace Indy
 {
-	const Application& Application::Get()
+	Application* Application::s_Instance = nullptr;
+
+	Application& Application::Get()
 	{
 		return *Application::s_Instance;
 	}
@@ -16,10 +18,15 @@ namespace Indy
 	{
 		m_Info.name = createInfo.name;
 
-		m_LayerStack = std::make_unique<LayerStack>();
+		Application::s_Instance = this;
 
-		m_DeviceManager = std::make_unique<InputDeviceManager>();
-		m_WindowManager = std::make_unique<WindowManager>();
+		m_LayerStack = std::make_unique<LayerStack>();
+		m_InputSystem = std::make_unique<InputSystem>();
+		m_WindowSystem = std::make_unique<WindowSystem>();
+
+		OnLoad_Event.Subscribe<Application>(this, &Application::OnLoad);
+		OnUpdate_Event.Subscribe<Application>(this, &Application::OnUpdate);
+		OnUnload_Event.Subscribe<Application>(this, &Application::OnUnload);
 	}
 
 	Application::~Application()
@@ -29,18 +36,20 @@ namespace Indy
 
 	void Application::StartAndRun()
 	{
-		OnLoad();
+		OnLoad_Event.Notify();
 
 		if (m_ShouldClose) // Application is meant to execute once
 		{
-			OnUpdate();
+			OnUpdate_Event.Notify();
 		}
 		else // Application is meant to run continuously
 		{
 			while (!m_ShouldClose)
-				OnUpdate();
+			{
+				OnUpdate_Event.Notify();
+			}
 		}
 
-		OnUnload();
+		OnUnload_Event.Notify();
 	}
 }

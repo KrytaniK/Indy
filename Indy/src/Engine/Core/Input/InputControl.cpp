@@ -19,11 +19,6 @@ namespace Indy
 		return m_Info;
 	}
 
-	void InputControl::SetParent(InputControl* parent)
-	{
-		m_ParentControl = parent;
-	}
-
 	void InputControl::BindState(InputState* state)
 	{
 		if (m_State)
@@ -45,21 +40,6 @@ namespace Indy
 		m_Children.emplace_back(child);
 	}
 
-	void InputControl::OnValueChange()
-	{
-		// Notify all control watchers
-		InputControlContext ctx(this);
-		for (const auto& callback : m_Listeners)
-			callback(ctx);
-
-		// If no parent exists, bail
-		if (!m_ParentControl)
-			return;
-
-		// Notify all parent watchers
-		m_ParentControl->OnValueChange();
-	}
-
 	void InputControl::Update(std::byte* data)
 	{
 		// Can't update state if it's invalid
@@ -72,11 +52,9 @@ namespace Indy
 		// If this control updates a bit
 		// Data will always be converted to a boolean value of 0 or 1 before writing to state.
 		if (m_Info.bit != 0xFF)
-			m_State->WriteBit(m_Info.byteOffset, m_Info.bit, (*data != std::byte{0}));
+			m_State->WriteBit(m_Info.byteOffset, m_Info.bit, (*data != std::byte{ 0 }));
 		else // Otherwise, update the control state.
 			m_State->Write(m_Info.byteOffset, data, m_Info.sizeInBytes);
-
-		OnValueChange();
 	}
 
 	void InputControl::UpdateChild(const std::string& childName, std::byte* data)
@@ -90,23 +68,4 @@ namespace Indy
 			}
 		}
 	}
-
-	void InputControl::Watch(std::function<void(InputControlContext&)>& callback)
-	{
-		m_Listeners.emplace_back(callback);
-	}
-
-	void InputControl::WatchChild(const std::string& childName, std::function<void(InputControlContext&)>& callback)
-	{
-		for (auto& child : m_Children)
-		{
-			if (child.GetInfo().displayName == childName)
-			{
-				child.Watch(callback);
-				return;
-			}
-		}
-	}
-
-
 }

@@ -27,21 +27,22 @@ export {
 		class Application
 		{
 		public:
-			static const Application& Get();
+			static Application& Get();
 
 		private:
-			inline static Application* s_Instance;
+			static Application* s_Instance;
 
 		public:
 			Application(const ApplicationCreateInfo& appInfo);
-			virtual ~Application();
-
-			virtual void OnLoad() = 0;
-			virtual void OnUpdate() = 0;
-			virtual void OnUnload() = 0;
+			virtual ~Application() ;
 
 			// For use in main (EntryPoint.cpp); Handles the internal main loop
 			void StartAndRun();
+
+		private:
+			virtual void OnLoad() = 0;
+			virtual void OnUpdate() = 0;
+			virtual void OnUnload() = 0;
 
 		public:
 			EventHandler OnLoad_Event;
@@ -58,8 +59,8 @@ export {
 			bool m_ShouldClose = true;
 
 		private:
-			std::unique_ptr<InputDeviceManager> m_DeviceManager;
-			std::unique_ptr<WindowManager> m_WindowManager;
+			std::unique_ptr<InputSystem> m_InputSystem;
+			std::unique_ptr<WindowSystem> m_WindowSystem;
 		};
 
 	}

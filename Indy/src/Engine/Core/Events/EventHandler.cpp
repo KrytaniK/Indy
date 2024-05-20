@@ -7,6 +7,12 @@ import Indy.Events;
 
 namespace Indy
 {
+	EventHandler::EventHandler()
+	{
+		m_DelegateCount = 0;
+		m_Listeners.reserve(25);
+	}
+
 	void EventHandler::Notify(IEvent* event)
 	{
 		if (!event->bubbles)
@@ -53,7 +59,7 @@ namespace Indy
 
 	std::shared_ptr<EventDelegate> EventHandler::Subscribe(const std::function<void()>& callback)
 	{
-		std::shared_ptr<EventDelegate> sharedDelegate = std::make_shared<EventDelegate>(delegateCount++);
+		std::shared_ptr<EventDelegate> sharedDelegate = std::make_shared<EventDelegate>(m_DelegateCount++);
 		sharedDelegate->Bind(callback);
 
 		m_Listeners.emplace_back(sharedDelegate);
@@ -62,8 +68,8 @@ namespace Indy
 
 	std::shared_ptr<EventDelegate> EventHandler::Subscribe(EventDelegate& eventDelegate)
 	{
-		eventDelegate.m_ID = delegateCount++;
-		std::shared_ptr<EventDelegate> sharedDelegate(&eventDelegate);
+		eventDelegate.m_ID = m_DelegateCount++;
+		std::shared_ptr<EventDelegate> sharedDelegate = std::make_shared<EventDelegate>(eventDelegate);
 
 		m_Listeners.emplace_back(sharedDelegate);
 		return sharedDelegate;
@@ -71,7 +77,7 @@ namespace Indy
 
 	void EventHandler::Subscribe(std::shared_ptr<EventDelegate>& eventDelegate)
 	{
-		eventDelegate->m_ID = delegateCount++;
+		eventDelegate->m_ID = m_DelegateCount++;
 		m_Listeners.emplace_back(eventDelegate);
 	}
 
@@ -109,30 +115,5 @@ namespace Indy
 
 		// Remove last element (which should now be the target
 		m_Listeners.pop_back();
-	}
-
-	void EventHandler::operator()()
-	{
-		Notify();
-	}
-
-	void EventHandler::operator()(bool bubbles)
-	{
-		Notify(bubbles);
-	}
-
-	void EventHandler::operator+=(EventDelegate& eventDelegate)
-	{
-		Subscribe(eventDelegate);
-	}
-
-	void EventHandler::operator+=(const std::function<void()>& callback)
-	{
-		Subscribe(callback);
-	}
-
-	void EventHandler::operator-=(const EventDelegate& eventDelegate)
-	{
-		UnSubscribe(eventDelegate);
 	}
 }

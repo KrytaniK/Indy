@@ -3,8 +3,8 @@ module;
 #include <vector>
 #include <memory>
 #include <queue>
-#include <functional>
 #include <string>
+#include <unordered_map>
 
 export module Indy.Input:DeviceManager;
 
@@ -28,8 +28,6 @@ export
 			const std::shared_ptr<InputDevice>& GetDevice(const InputDeviceInfo& deviceInfo) const;
 
 			void UpdateDeviceState(const InputDeviceInfo& deviceInfo, const std::string& control, std::byte* data);
-
-			void WatchDeviceControl(const InputDeviceInfo& deviceInfo, const std::string& control, std::function<void(InputControlContext&)>& onValueChange);
 
 		private:
 			std::unique_ptr<InputLayout> MatchDeviceLayout(const InputDeviceInfo& deviceInfo);

@@ -110,26 +110,6 @@ namespace Indy
 			device->UpdateDeviceState(data);
 	}
 
-	void InputDeviceManager::WatchDeviceControl(const InputDeviceInfo& deviceInfo, const std::string& control, std::function<void(InputControlContext&)>& onValueChange)
-	{
-
-		if (control.empty())
-		{
-			INDY_CORE_ERROR("Could not watch device control. No control specified.");
-			return;
-		}
-
-		std::shared_ptr<InputDevice> device = GetDevice(deviceInfo);
-
-		if (device == nullptr)
-		{
-			INDY_CORE_ERROR("Could not watch device control. No device found.");
-			return;
-		}
-
-		device->WatchControl(control, onValueChange);
-	}
-
 	std::unique_ptr<InputLayout> InputDeviceManager::MatchDeviceLayout(const InputDeviceInfo& deviceInfo)
 	{
 		float highestPercentMatch = 0.0f;

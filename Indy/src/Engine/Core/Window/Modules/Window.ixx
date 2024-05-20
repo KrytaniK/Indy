@@ -17,7 +17,6 @@ export
 		{
 			std::string title = "Indy Engine";
 			unsigned int width = 1280, height = 760;
-			RenderAPI renderApi = RenderAPI::None;
 			uint8_t id = 0;
 		};
 
@@ -26,7 +25,6 @@ export
 			std::string title;
 			unsigned int width, height;
 			uint8_t id = 0xFF;
-			RenderAPI renderApi = RenderAPI::None;
 			bool minimized = false, focused = false;
 		};
 
@@ -40,10 +38,6 @@ export
 
 			virtual void* NativeWindow() const = 0;
 			virtual const WindowProps& Properties() const = 0;
-
-		protected:
-			std::shared_ptr<InputContext> m_InputContext;
-			std::unique_ptr<IRenderer> m_Renderer;
 		};
 	}
 }
