@@ -1,8 +1,15 @@
 #include <memory>
 
+// Remove
+#include <GLFW/glfw3.h>
+#include <string>
+
+#include "Engine/Core/LogMacros.h"
+
 import Indy.Application;
 import Indy.Input;
 import Indy.Events;
+import Indy.Profiler;
 
 namespace Indy
 {
@@ -10,7 +17,7 @@ namespace Indy
 
 	InputSystem::InputSystem()
 	{
-		m_DeviceManager = std::make_unique<InputDeviceManager>();
+		m_DeviceManager = std::make_unique<DeviceManager>();
 
 		// Sync Application Events
 		Application& app = Application::Get();
@@ -18,20 +25,78 @@ namespace Indy
 		app.OnUnload_Event.Subscribe<InputSystem>(this, &InputSystem::OnUnload);
 
 		// Bind Event Handles
-	}
-
-	InputSystem::~InputSystem()
-	{
-		
+		Events<Input::Event>::Subscribe<InputSystem>(this, &InputSystem::OnInput);
 	}
 
 	void InputSystem::OnLoad()
 	{
-		
+		// Remove
+		DeviceInfo glfwMouseInfo;
+		glfwMouseInfo.displayName = "GLFW Mouse";
+		glfwMouseInfo.deviceClass = 0x0000;
+		glfwMouseInfo.layoutID = 0x4D53;
+		glfwMouseInfo.id = 0;
+
+		Layout glfwMouseLayout;
+		glfwMouseLayout.displayName = "GLFW Mouse";
+		glfwMouseLayout.deviceClass = 0x0000;
+		glfwMouseLayout.id = 0x4D53;
+		glfwMouseLayout.sizeInBytes = (sizeof(double) * 4) + 1;
+		glfwMouseLayout.controls = {
+			{std::to_string(GLFW_MOUSE_BUTTON_1), "Left Mouse Button", 0, 0, 1, 0, 0, 0},
+			{std::to_string(GLFW_MOUSE_BUTTON_2), "Right Mouse Button", 1, 0, 1, 0, 1, 0},
+			{std::to_string(GLFW_MOUSE_BUTTON_3), "Middle Mouse Button", 2, 0, 1, 0, 2, 0},
+			{std::to_string(GLFW_MOUSE_BUTTON_4), "", 3, 0, 1, 0, 3, 0},
+			{std::to_string(GLFW_MOUSE_BUTTON_5), "", 4, 0, 1, 0, 4, 0},
+			{std::to_string(GLFW_MOUSE_BUTTON_6), "", 5, 0, 1, 0, 5, 0},
+			{std::to_string(GLFW_MOUSE_BUTTON_7), "", 6, 0, 1, 0, 6, 0},
+			{std::to_string(GLFW_MOUSE_BUTTON_8), "", 7, 0, 1, 0, 7, 0},
+			{"Position", "", 8,		sizeof(double) * 2,		sizeof(double) * 2 * 8,		1, 0xFF, 2},
+			{"X",		"", 9,		sizeof(double),			sizeof(double) * 8,			1, 0,		0},
+			{"Y",		"", 10,		sizeof(double),			sizeof(double) * 8,			5, 0,		0},
+			{"Scroll",	"", 11,		sizeof(double) * 2,		sizeof(double) * 2 * 8,		1, 0xFF, 2},
+			{"X",		"", 12,		sizeof(double),			sizeof(double) * 8,			1, 0,		0},
+			{"Y",		"", 13,		sizeof(double),			sizeof(double) * 8,			5, 0,		0},
+		};
+
+		m_DeviceManager->AddLayout(glfwMouseLayout);
+		m_DeviceManager->AddDevice(glfwMouseInfo);
 	}
 
 	void InputSystem::OnUnload()
 	{
 		
 	}
+
+	void InputSystem::OnInput(Input::Event* event)
+	{
+		Device* device = nullptr;
+
+		if (event->device_id.has_value())
+			device = m_DeviceManager->GetDevice(event->device_id.value());
+		else
+			device = m_DeviceManager->GetDevice(event->device_name);
+
+		if (!device)
+		{
+			INDY_CORE_ERROR("Could not process input: Bad device.");
+			return;
+		}
+
+		Control* control = nullptr;
+
+		if (event->control_id.has_value())
+			control = device->GetControl(event->control_id.value());
+		else
+			control = device->GetControl(event->control_alias);
+
+		if (!control)
+		{
+			INDY_CORE_ERROR("Could not process input: Bad control.");
+			return;
+		}
+
+		control->Update(static_cast<std::byte*>(event->data));
+	}
+
 }

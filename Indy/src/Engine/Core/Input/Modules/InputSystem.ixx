@@ -15,14 +15,16 @@ export
 		{
 		public:
 			InputSystem();
-			virtual ~InputSystem();
+			~InputSystem() = default;
 
 		private:
-			virtual void OnLoad();
-			virtual void OnUnload();
+			void OnLoad();
+			void OnUnload();
+
+			void OnInput(Input::Event* event);
 
 		private:
-			std::unique_ptr<InputDeviceManager> m_DeviceManager;
+			std::unique_ptr<Input::DeviceManager> m_DeviceManager;
 		};
 	}
 }

@@ -7,6 +7,7 @@ import Sandbox;
 import Indy.Application;
 import Indy.Events;
 import Indy.Window;
+import Indy.Input;
 
 namespace Indy
 {

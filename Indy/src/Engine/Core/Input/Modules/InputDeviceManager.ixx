@@ -1,9 +1,7 @@
 module;
 
-#include <vector>
-#include <memory>
-#include <queue>
 #include <string>
+#include <memory>
 #include <unordered_map>
 
 export module Indy.Input:DeviceManager;
@@ -14,32 +12,29 @@ import :Control;
 
 export
 {
-	namespace Indy
+	namespace Indy::Input
 	{
-		class InputDeviceManager
+		class DeviceManager
 		{
 		public:
-			InputDeviceManager();
-			~InputDeviceManager() = default;
+			DeviceManager();
+			~DeviceManager() = default;
 
-			void AddLayout(const InputLayout& layout);
+			void AddLayout(const Layout& layout);
 
-			void AddDevice(const InputDeviceInfo& deviceInfo);
-			const std::shared_ptr<InputDevice>& GetDevice(const InputDeviceInfo& deviceInfo) const;
+			void AddDevice(const DeviceInfo& deviceInfo);
 
-			void UpdateDeviceState(const InputDeviceInfo& deviceInfo, const std::string& control, std::byte* data);
-
-		private:
-			std::unique_ptr<InputLayout> MatchDeviceLayout(const InputDeviceInfo& deviceInfo);
+			Device* GetDevice(const uint32_t& id);
+			Device* GetDevice(const std::string& name);
+			Device* GetDevice(const DeviceInfo& info);
 
 		private:
-			std::unique_ptr<InputDeviceBuilder> m_DeviceBuilder;
+			const Layout* MatchDeviceLayout(const DeviceInfo& deviceInfo);
 
-			std::vector<std::pair<uint16_t, std::weak_ptr<InputDevice>>> m_ActiveDevices;
-			std::vector<std::shared_ptr<InputDevice>> m_Devices;
-			std::vector<InputLayout> m_Layouts;
-
-			std::queue<InputDeviceInfo> m_DeviceQueue;
+		private:
+			std::unique_ptr<DeviceBuilder> m_DeviceBuilder;
+			std::unordered_map<uint16_t, std::unordered_map<uint32_t, Device>> m_DeviceMap;
+			std::unordered_map<uint16_t, std::unordered_map<uint16_t, Layout>> m_LayoutMap;
 		};
 	}
 }

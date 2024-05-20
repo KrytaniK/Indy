@@ -3,6 +3,8 @@ module;
 #include <string>
 #include <memory>
 #include <vector>
+#include <cstdint>
+#include <unordered_map>
 
 export module Indy.Input:Device;
 
@@ -11,42 +13,45 @@ import :Control;
 
 export
 {
-	namespace Indy
+	namespace Indy::Input
 	{
 		// Describes the memory layout of a physical input device.
-		struct InputLayout
+		struct Layout
 		{
 			std::string displayName;
 			uint16_t deviceClass = 0xFFFF; // 2-byte hex value (0-65535) used to classify a device.
-			uint16_t layoutClass = 0xFFFF; // 2-byte hex value (0-65535) used to classify a layout.
+			uint16_t id = 0xFFFF; // 2-byte hex value (0-65535) used to classify a layout.
 			uint16_t sizeInBytes = 0x0000; // 2-byte hex value (0-65535) used to store the total memory size of this layout
-			std::vector<InputControlInfo> controls; // ordered control information
+			std::vector<ControlInfo> controls; // ordered control information
 		};
 
 		// Describes a physical input device
-		struct InputDeviceInfo
+		struct DeviceInfo
 		{
 			std::string displayName;
+			uint32_t id = 0xFFFFFFFF;
 			uint16_t deviceClass = 0xFFFF; // 2-byte hex value (0-65535) used to classify a device.
-			uint16_t layoutClass = 0xFFFF; // [Optional] 2-byte hex value (0-65535) used to classify the desired layout.
+			uint16_t layoutID = 0xFFFF; // [Optional] 2-byte hex value (0-65535) used to classify the desired layout.
 		};
 
-		class InputDevice
+		class Device
 		{
 		public:
-			InputDevice(const InputDeviceInfo& info, const uint16_t stateSize);
-			~InputDevice() = default;
+			Device(const DeviceInfo& info, const uint16_t stateSize);
+			~Device() = default;
 
-			const InputDeviceInfo& GetInfo() const;
+			const std::string& GetName() const; 
+			const uint32_t& GetID() const;
 
-			void AddControl(InputControl control);
+			Control* AddControl(const ControlInfo& controlInfo);
+			Control* GetControl(const uint32_t& id);
+			Control* GetControl(const std::string& alias);
 
-			void UpdateDeviceState(std::byte* newState);
-			void UpdateControlState(const std::string& controlName, std::byte* data);
+			void UpdateState(std::byte* newState);
 
 		private:
-			InputDeviceInfo m_Info;
-			std::vector<InputControl> m_Controls;
+			DeviceInfo m_Info;
+			std::unordered_map<uint32_t, std::shared_ptr<Control>> m_Controls;
 			std::shared_ptr<InputState> m_State;
 		};
 	}

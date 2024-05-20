@@ -4,8 +4,7 @@ module;
 
 #include <stdint.h>
 #include <string>
-#include <vector>
-#include <memory>
+#include <unordered_map>
 
 export module Indy.Input:Control;
 
@@ -13,15 +12,15 @@ import :State;
 
 export
 {
-	namespace Indy
+	namespace Indy::Input
 	{
-		struct InputControlInfo
+		struct ControlInfo
 		{
 			std::string displayName; // Display name for this control
-			std::vector<std::string> aliases; // alternative display names for this control
-			uint32_t id; // unique ID for this control
+			std::string alias; // alternative display name for this control
+			uint32_t id = 0xFFFFFFFF; // unique ID for this control
 
-			uint16_t sizeInBytes = 0xFFFF; // Control size in bytes
+			uint16_t sizeInBytes = 0xFFFF; // Control size in bytes 
 			uint16_t sizeInBits = 0xFFFF; // Control size in bits
 
 			uint16_t byteOffset = 0xFFFF; // Byte offset of this control in device state
@@ -30,25 +29,30 @@ export
 			uint8_t childCount = 0x00; // 1-byte integer (0-255) representing the number of child controls.
 		};
 
-		class InputControl
+		class Control
 		{
 		public:
-			InputControl(const InputControlInfo& info);
-			~InputControl() = default;
+			Control(const ControlInfo& info);
+			~Control() = default;
 
-			const InputControlInfo& GetInfo() const;
+			const std::string& GetName() const;
+			const std::string& GetAlias() const;
+			const uint32_t GetID() const;
 
-			void BindState(InputState* state);
+			Control* Get();
+			Control* GetChild(const uint32_t& id);
+			Control* GetChild(const std::string& alias);
 
-			void AddChild(const InputControlInfo& childInfo);
+			void BindState(const std::shared_ptr<InputState>& state);
+
+			void AddChild(const ControlInfo& childInfo);
 
 			void Update(std::byte* data);
-			void UpdateChild(const std::string& childName, std::byte* data);
 
 		private:
-			InputControlInfo m_Info;
-			InputState* m_State = nullptr; // Associative reference to the owning device's state
-			std::vector<InputControl> m_Children; // Vector of child controls, managed by this control.
+			ControlInfo m_Info;
+			std::shared_ptr<InputState> m_State;
+			std::unordered_map<uint32_t, std::shared_ptr<Control>> m_Children;
 		};
 	}
 }

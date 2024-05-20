@@ -1,157 +1,128 @@
 #include <Engine/Core/LogMacros.h>
 
 #include <memory>
-#include <vector>
+#include <unordered_map>
 
 import Indy.Input;
 
-namespace Indy
+namespace Indy::Input
 {
-	InputDeviceManager::InputDeviceManager()
+	DeviceManager::DeviceManager()
 	{
-		m_DeviceBuilder = std::make_unique<InputDeviceBuilder>();
-
-		// Reserve enough space up front to refrain from unnecessary reallocations
-		m_Devices.reserve(50);
-		m_Layouts.reserve(50);
+		m_DeviceBuilder = std::make_unique<DeviceBuilder>();
 	}
 
-	void InputDeviceManager::AddLayout(const InputLayout& layout)
+	void DeviceManager::AddLayout(const Layout& layout)
 	{
-		// Add the layout
-		m_Layouts.emplace_back(layout);
-
-		if (m_DeviceQueue.empty())
-			return;
-
-		// If we have any devices that haven't been created, check for
-		// a match with the new layout.
-		size_t count = 0, limit = m_DeviceQueue.size();
-		while (!m_DeviceQueue.empty() && count < limit)
+		if (m_LayoutMap[layout.deviceClass].contains(layout.id))
 		{
-			AddDevice(m_DeviceQueue.front());
-			m_DeviceQueue.pop();
-			count++;
-		}
-	}
-
-	void InputDeviceManager::AddDevice(const InputDeviceInfo& deviceInfo)
-	{
-		// Check against all existing devices.
-		for (const auto& device : m_Devices)
-		{
-			// If specified device class and layout class match an existing device,
-			//	odds are the device is the same. No need to build again
-			if (device->GetInfo().deviceClass == deviceInfo.deviceClass
-				&& device->GetInfo().layoutClass == deviceInfo.layoutClass)
-			{
-				INDY_CORE_WARN("WARNING: Could not build device [{0}]. Device already exists. Potential Reconnect?", deviceInfo.displayName);
-
-				// In the future, This might set the primary input device,
-				//	and/or dispatch events notifying of a device reconnect.
-				return;
-			}
-		}
-
-		// Match device with a device layout
-		std::unique_ptr<InputLayout> layout = MatchDeviceLayout(deviceInfo);
-
-		// If no matching layout was found, set aside for when new layouts
-		//	are registered.
-		if (!layout)
-		{
-			INDY_CORE_WARN("WARNING: No matching layout was found for device [{0}]", deviceInfo.displayName);
-			m_DeviceQueue.push(deviceInfo);
+			INDY_CORE_ERROR("Could not register Input Device Layout with classification [{0}]. Layout already exists!", layout.id);
 			return;
 		}
 
-		INDY_CORE_TRACE("Building Device [{0}]", deviceInfo.displayName);
-		// Build and store device
-		m_Devices.emplace_back(
-			m_DeviceBuilder->Build(deviceInfo, *layout)
-		);
+		m_LayoutMap[layout.deviceClass].insert({ layout.id, layout });
 	}
 
-	const std::shared_ptr<InputDevice>& InputDeviceManager::GetDevice(const InputDeviceInfo& deviceInfo) const
+	void DeviceManager::AddDevice(const DeviceInfo& deviceInfo)
 	{
-		for (const auto& device : m_Devices)
+		if (m_DeviceMap[deviceInfo.deviceClass].contains(deviceInfo.id))
 		{
-			if (device->GetInfo().displayName == deviceInfo.displayName ||
-				(device->GetInfo().deviceClass == deviceInfo.deviceClass &&
-					device->GetInfo().layoutClass == deviceInfo.layoutClass)
-				)
+			INDY_CORE_ERROR("Could not add device. Device with ID [{0}] already exists!", deviceInfo.id);
+			return;
+		}
+
+		const Layout* layout = MatchDeviceLayout(deviceInfo);
+
+		if (!m_DeviceMap.contains(deviceInfo.deviceClass))
+		{
+			// Create the device map for this classification of device.
+			std::unordered_map<uint32_t, Device> devices;
+			devices.insert({deviceInfo.id, m_DeviceBuilder->Build(deviceInfo, *layout)});
+
+			// Insert the device classification map into the device registry map.
+			m_DeviceMap.insert({ deviceInfo.deviceClass, devices });
+			return;
+		}
+
+		Device device = m_DeviceBuilder->Build(deviceInfo, *layout);
+		m_DeviceMap[deviceInfo.deviceClass].insert({ deviceInfo.id, device });
+	}
+
+	Device* DeviceManager::GetDevice(const uint32_t& id)
+	{
+		for (auto& classPair : m_DeviceMap)
+		{
+			for (auto& pair : classPair.second)
 			{
-				return device;
+				if (pair.first == id)
+					return &pair.second;
 			}
 		}
 
 		return nullptr;
 	}
 
-	void InputDeviceManager::UpdateDeviceState(const InputDeviceInfo& deviceInfo, const std::string& control, std::byte* data)
+	Device* DeviceManager::GetDevice(const std::string& name)
 	{
-		if (!data)
+		for (auto& classPair : m_DeviceMap)
 		{
-			INDY_CORE_ERROR("Could not update device state. Data is null.");
-			return;
+			for (auto& pair : classPair.second)
+			{
+				if (pair.second.GetName() == name)
+					return &pair.second;
+			}
 		}
 
-		std::shared_ptr<InputDevice> device = GetDevice(deviceInfo);
-
-		if (device == nullptr)
-		{
-			INDY_CORE_ERROR("Could not update device state. No device found.");
-			return;
-		}
-
-		if (!control.empty())
-			device->UpdateControlState(control, data);
-		else
-			device->UpdateDeviceState(data);
+		return nullptr;
 	}
 
-	std::unique_ptr<InputLayout> InputDeviceManager::MatchDeviceLayout(const InputDeviceInfo& deviceInfo)
+	Device* DeviceManager::GetDevice(const DeviceInfo& deviceInfo)
 	{
-		float highestPercentMatch = 0.0f;
-		float percentMatch = 0.0f;
-
-		int matchIndex = -1;
-
-		// Perform an exhaustive search through all known device layouts.
-		int compareIndex = -1;
-		for (const InputLayout& layout : m_Layouts)
+		// If a device class wasn't specified, try the id or display name
+		if (deviceInfo.deviceClass == UINT16_MAX)
 		{
-			++compareIndex;
-			percentMatch = 0.0f;
+			if (deviceInfo.id != UINT32_MAX)
+				return GetDevice(deviceInfo.id);
 
-			// Can't match devices to layouts with differing classifications
-			if (layout.deviceClass != deviceInfo.deviceClass)
-				continue;
-
-			// If device class matches, it is at least a 50% match.
-			percentMatch += 50.f;
-
-			// If a layout is specified and matches, this is a 100% match.
-			if (layout.layoutClass == deviceInfo.layoutClass)
-			{
-				percentMatch += 50.f;
-				matchIndex = compareIndex;
-				break;
-			}
-
-			// We've found a match, update values
-			if (percentMatch > highestPercentMatch)
-			{
-				highestPercentMatch = percentMatch;
-				matchIndex = compareIndex;
-			}
+			return GetDevice(deviceInfo.displayName);
 		}
 
-		// If no sufficient match was found, return nullptr
-		if (matchIndex < 0 || percentMatch < 75.0f)
+		// If a device class was specified, make sure it exists
+		auto classIt = m_DeviceMap.find(deviceInfo.deviceClass);
+		if (classIt == m_DeviceMap.end())
+		{
+			INDY_CORE_ERROR("Could not find device with classification [{0}].", deviceInfo.deviceClass);
 			return nullptr;
+		}
 
-		// Return a copy of the layout with the highest match percentage
-		return std::make_unique<InputLayout>(m_Layouts[matchIndex]);
+		// Then loop through all devices in that class and compare ID and display name.
+		for (auto& pair : classIt->second)
+		{
+			if (pair.second.GetName() == deviceInfo.displayName ||
+				pair.second.GetID() == deviceInfo.id)
+				return &pair.second;
+		}
+
+		return nullptr;
+	}
+
+	const Layout* DeviceManager::MatchDeviceLayout(const DeviceInfo& deviceInfo)
+	{
+		// If a device class was specified, make sure it exists
+		auto classIt = m_LayoutMap.find(deviceInfo.deviceClass);
+		if (classIt == m_LayoutMap.end())
+		{
+			INDY_CORE_ERROR("Could not find layout with device classification [{0}].", deviceInfo.deviceClass);
+			return nullptr;
+		}
+
+		auto layoutIt = classIt->second.find(deviceInfo.layoutID);
+		if (layoutIt == classIt->second.end())
+		{
+			INDY_CORE_ERROR("Could not find layout with ID [{0}].", deviceInfo.layoutID);
+			return nullptr;
+		}
+
+		return &layoutIt->second;
 	}
 }

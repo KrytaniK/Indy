@@ -1,9 +1,8 @@
 module;
 
-#include <vector>
-#include <memory>
 #include <cstdint>
-#include <unordered_map>
+#include <vector>
+#include <utility>
 
 export module Indy.Input:DeviceBuilder;
 
@@ -11,16 +10,15 @@ import :Device;
 
 export
 {
-	namespace Indy
+	namespace Indy::Input
 	{
-		class InputDeviceBuilder
+		class DeviceBuilder
 		{
 		public:
-			InputDeviceBuilder() {};
-			~InputDeviceBuilder() = default;
+			DeviceBuilder() {};
+			~DeviceBuilder() = default;
 
-			std::shared_ptr<InputDevice> Build(const InputDeviceInfo& deviceInfo, const InputLayout& deviceLayout);
-			std::vector<std::shared_ptr<InputDevice>> Build(const std::vector<std::pair<const InputDeviceInfo&, const InputLayout&>>& deviceList);
+			Device Build(const DeviceInfo& deviceInfo, const Layout& deviceLayout);
 
 		private:
 			uint32_t m_DeviceCount = 0;

@@ -5,60 +5,79 @@
 
 import Indy.Input;
 
-namespace Indy
+namespace Indy::Input
 {
-	InputDevice::InputDevice(const InputDeviceInfo& info, const uint16_t stateSize)
+	Device::Device(const DeviceInfo& info, const uint16_t stateSize)
 		: m_Info(info), m_State(std::make_shared<InputState>(stateSize))
 	{}
 
-	const InputDeviceInfo& InputDevice::GetInfo() const
+	const std::string& Device::GetName() const
 	{
-		return m_Info;
+		return m_Info.displayName;
 	}
 
-	void InputDevice::AddControl(InputControl control)
+	const uint32_t& Device::GetID() const
 	{
-		// Bind control state to device state
-		control.BindState(m_State.get());
-
-		m_Controls.emplace_back(control);
+		return m_Info.id;
 	}
 
-	void InputDevice::UpdateDeviceState(std::byte* newState)
+	Control* Device::AddControl(const ControlInfo& controlInfo)
 	{
-		// Bail if state is invalid
-		if (!m_State)
+		if (m_Controls.contains(controlInfo.id))
 		{
-			INDY_CORE_ERROR(
-				"Failed to process input. Bad State... \n[Device Name] {0}\n[Device Class] {1}\n[Device Layout] {2}",
-				m_Info.displayName,
-				m_Info.deviceClass,
-				m_Info.layoutClass
-			);
-			return;
+			INDY_CORE_ERROR("Could not add control to device [{0}]. Control with matching ID already exists!", m_Info.displayName);
+			return nullptr;
 		}
 
+		m_Controls[controlInfo.id] = std::make_shared<Control>(controlInfo);
+
+		// Bind control state to device state
+		m_Controls[controlInfo.id]->BindState(m_State);
+		return m_Controls[controlInfo.id].get();
+	}
+
+	Control* Device::GetControl(const uint32_t& id)
+	{
+		Control* control = nullptr;
+
+		for (auto& pair : m_Controls)
+		{
+			if (pair.second->GetID() == id)
+				return pair.second.get();
+
+			control = pair.second->GetChild(id);
+			if (control)
+				return control;
+		}
+
+		INDY_CORE_ERROR("Could not find control");
+
+		return nullptr;
+	}
+
+	Control* Device::GetControl(const std::string& alias)
+	{
+		Control* control = nullptr;
+
+		for (auto& pair : m_Controls)
+		{
+			if (alias == pair.second->GetName() || alias == pair.second->GetAlias())
+				return pair.second.get();
+
+			control = pair.second->GetChild(alias);
+
+			if (control)
+				return control;
+		}
+
+		INDY_CORE_ERROR("Could not find control");
+
+		return nullptr;
+	}
+
+	void Device::UpdateState(std::byte* newState)
+	{
 		// Write device state
 		m_State->Write(0, newState, m_State->Size());
 	}
-
-	void InputDevice::UpdateControlState(const std::string& controlName, std::byte* data)
-	{
-		// First search 
-		for (auto& control : m_Controls)
-		{
-			if (control.GetInfo().displayName == controlName)
-			{
-				// Only update target control if the names match
-				control.Update(data);
-				return;
-			}
-			
-			// Otherwise, attempt to update any child controls.
-			// NOTE: This could potentially update multiple controls if there are more than one child controls
-			//		with the same name.
-			control.UpdateChild(controlName, data);
-		}
-	}
-
 }
