@@ -41,11 +41,13 @@ export {
 
 		private:
 			virtual void OnLoad() = 0;
+			virtual void OnStart() = 0;
 			virtual void OnUpdate() = 0;
 			virtual void OnUnload() = 0;
 
 		public:
 			EventHandler OnLoad_Event;
+			EventHandler OnStart_Event;
 			EventHandler OnUpdate_Event;
 			EventHandler OnUnload_Event;
 

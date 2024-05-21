@@ -171,7 +171,13 @@ namespace Indy
 		glfwSetScrollCallback(m_NativeWindow, [](GLFWwindow* window, double xoffset, double yoffset)
 			{
 				double scroll[] = { xoffset, yoffset };
-;
+
+				Input::Event event;
+				event.device_name = "GLFW Mouse";
+				event.control_alias = "Scroll";
+				event.data = &scroll;
+
+				Events<Input::Event>::Notify(&event);
 			}
 		);
 
@@ -179,12 +185,24 @@ namespace Indy
 			{
 				double position[] = { xpos, ypos };
 
+				Input::Event event;
+				event.device_name = "GLFW Mouse";
+				event.control_alias = "Position";
+				event.data = &position;
+
+				Events<Input::Event>::Notify(&event);
+
 			}
 		);
 
 		glfwSetMouseButtonCallback(m_NativeWindow, [](GLFWwindow* window, int button, int action, int mods)
 			{
-				
+				Input::Event event;
+				event.device_name = "GLFW Mouse";
+				event.control_alias = std::to_string(button);
+				event.data = &action;
+
+				Events<Input::Event>::Notify(&event);
 			}
 		);
 
@@ -194,7 +212,12 @@ namespace Indy
 
 		glfwSetKeyCallback(m_NativeWindow, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 			{
-				
+				Input::Event event;
+				event.device_name = "GLFW Keyboard";
+				event.control_alias = std::to_string(key);
+				event.data = &action;
+
+				Events<Input::Event>::Notify(&event);
 			}
 		);
 	}

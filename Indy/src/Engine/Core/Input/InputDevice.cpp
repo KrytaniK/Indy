@@ -75,6 +75,11 @@ namespace Indy::Input
 		return nullptr;
 	}
 
+	const std::shared_ptr<InputState>& Device::GetState()
+	{
+		return m_State;
+	}
+
 	void Device::UpdateState(std::byte* newState)
 	{
 		// Write device state

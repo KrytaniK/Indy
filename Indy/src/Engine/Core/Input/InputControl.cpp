@@ -9,6 +9,11 @@ namespace Indy::Input
 	Control::Control(const ControlInfo& info)
 		: m_Info(info) {}
 
+	const ControlInfo& Control::GetInfo() const
+	{
+		return m_Info;
+	}
+
 	const std::string& Control::GetName() const
 	{
 		return m_Info.displayName;
@@ -19,9 +24,14 @@ namespace Indy::Input
 		return m_Info.alias;
 	}
 
-	const uint32_t Control::GetID() const
+	const uint32_t& Control::GetID() const
 	{
 		return m_Info.id;
+	}
+
+	const uint16_t& Control::GetSize() const
+	{
+		return m_Info.sizeInBytes;
 	}
 
 	Control* Control::Get()

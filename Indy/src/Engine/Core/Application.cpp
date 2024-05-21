@@ -25,6 +25,7 @@ namespace Indy
 		m_WindowSystem = std::make_unique<WindowSystem>();
 
 		OnLoad_Event.Subscribe<Application>(this, &Application::OnLoad);
+		OnStart_Event.Subscribe<Application>(this, &Application::OnStart);
 		OnUpdate_Event.Subscribe<Application>(this, &Application::OnUpdate);
 		OnUnload_Event.Subscribe<Application>(this, &Application::OnUnload);
 	}
@@ -37,6 +38,8 @@ namespace Indy
 	void Application::StartAndRun()
 	{
 		OnLoad_Event.Notify();
+
+		OnStart_Event.Notify();
 
 		if (m_ShouldClose) // Application is meant to execute once
 		{

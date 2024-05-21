@@ -21,7 +21,6 @@ export
 			~EventHandler() = default;
 
 			void Notify(IEvent* event);
-			void Notify(bool bubbles);
 			void Notify();
 
 			template<typename EventType, class C>

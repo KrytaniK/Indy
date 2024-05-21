@@ -37,20 +37,6 @@ namespace Indy
 		}
 	}
 
-	void EventHandler::Notify(bool bubbles)
-	{
-		if (!bubbles)
-		{
-			for (const auto& listener : m_Listeners)
-				listener->Execute();
-		}
-		else
-		{
-			for (auto iter = m_Listeners.rbegin(); iter != m_Listeners.rend(); ++iter)
-				(*iter)->Execute();
-		}
-	}
-
 	void EventHandler::Notify()
 	{
 		for (const auto& listener : m_Listeners)

@@ -47,6 +47,8 @@ export
 			Control* GetControl(const uint32_t& id);
 			Control* GetControl(const std::string& alias);
 
+			const std::shared_ptr<InputState>& GetState();
+
 			void UpdateState(std::byte* newState);
 
 		private:

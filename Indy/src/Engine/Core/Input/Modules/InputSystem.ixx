@@ -6,6 +6,7 @@ export module Indy.Input:System;
 
 import :DeviceManager;
 import :Events;
+import :Context;
 
 export
 {
@@ -22,8 +23,11 @@ export
 			void OnUnload();
 
 			void OnInput(Input::Event* event);
+			void OnGetDevice(Input::DeviceGetEvent* event);
+			void OnSetContext(Input::SetContextEvent* event);
 
 		private:
+			Input::InputContext* m_ActiveContext = nullptr;
 			std::unique_ptr<Input::DeviceManager> m_DeviceManager;
 		};
 	}

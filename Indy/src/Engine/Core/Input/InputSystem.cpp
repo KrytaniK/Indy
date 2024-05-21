@@ -1,10 +1,10 @@
-#include <memory>
+#include "Engine/Core/LogMacros.h"
 
-// Remove
+// Remove later
 #include <GLFW/glfw3.h>
 #include <string>
 
-#include "Engine/Core/LogMacros.h"
+#include <memory>
 
 import Indy.Application;
 import Indy.Input;
@@ -26,11 +26,13 @@ namespace Indy
 
 		// Bind Event Handles
 		Events<Input::Event>::Subscribe<InputSystem>(this, &InputSystem::OnInput);
+		Events<Input::DeviceGetEvent>::Subscribe<InputSystem>(this, &InputSystem::OnGetDevice);
+		Events<Input::SetContextEvent>::Subscribe<InputSystem>(this, &InputSystem::OnSetContext);
 	}
 
 	void InputSystem::OnLoad()
 	{
-		// Remove
+		// Remove later
 		DeviceInfo glfwMouseInfo;
 		glfwMouseInfo.displayName = "GLFW Mouse";
 		glfwMouseInfo.deviceClass = 0x0000;
@@ -97,6 +99,30 @@ namespace Indy
 		}
 
 		control->Update(static_cast<std::byte*>(event->data));
+
+		if (m_ActiveContext)
+		{
+			InputStateContext ctx(control, device->GetState());
+			m_ActiveContext->OnInput(device->GetID(), control->GetID(), ctx);
+		}
 	}
 
+	void InputSystem::OnGetDevice(Input::DeviceGetEvent* event)
+	{
+		if (event->device_id.has_value())
+			event->outDevice = m_DeviceManager->GetDevice(event->device_id.value());
+		else
+			event->outDevice = m_DeviceManager->GetDevice(event->device_name);
+
+		if (!event->outDevice)
+			INDY_CORE_CRITICAL("Could not get device");
+	}
+
+	void InputSystem::OnSetContext(Input::SetContextEvent* event)
+	{
+		if (!event->newContext)
+			return;
+
+		m_ActiveContext = event->newContext;
+	}
 }

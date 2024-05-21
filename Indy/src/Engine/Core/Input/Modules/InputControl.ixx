@@ -35,9 +35,11 @@ export
 			Control(const ControlInfo& info);
 			~Control() = default;
 
+			const ControlInfo& GetInfo() const;
 			const std::string& GetName() const;
 			const std::string& GetAlias() const;
-			const uint32_t GetID() const;
+			const uint32_t& GetID() const;
+			const uint16_t& GetSize() const;
 
 			Control* Get();
 			Control* GetChild(const uint32_t& id);

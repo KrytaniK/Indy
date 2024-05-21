@@ -11,6 +11,11 @@ import Indy.Input;
 
 namespace Indy
 {
+	struct Vec2D
+	{
+		double x, y;
+	};
+
 	Sandbox::Sandbox(const ApplicationCreateInfo& createInfo)
 		: Application(createInfo)
 	{
@@ -32,7 +37,34 @@ namespace Indy
 	void Sandbox::OnLoad()
 	{
 		// Load resources from disk
+	}
+
+	void Sandbox::OnStart()
+	{
+		// Post-Load operations
+
+		m_InputContext.AddInputCallback(
+			0,
+			0,
+			[](Input::CallbackEvent* event)
+			{
+				INDY_INFO("{0}", event->context->ReadAs<bool>());
+			}
+		);
 		
+		m_InputContext.AddInputCallback(
+			0,
+			8,
+			[](Input::CallbackEvent* event)
+			{
+				INDY_INFO("x: {0}, y: {1}", event->context->ReadAs<Vec2D>().x, event->context->ReadAs<Vec2D>().y);
+			}
+		);
+
+		Input::SetContextEvent event;
+		event.newContext = &m_InputContext;
+
+		Events<Input::SetContextEvent>::Notify(&event);
 	}
 
 	void Sandbox::OnUpdate()

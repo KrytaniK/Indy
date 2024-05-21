@@ -14,6 +14,9 @@ export
 {
 	namespace Indy::Input
 	{
+		class InputStateContext;
+		class InputContext;
+
 		struct Event : IEvent
 		{
 			std::optional<uint32_t> device_id;
@@ -21,6 +24,23 @@ export
 			std::optional<uint32_t> control_id;
 			std::string control_alias;
 			void* data;
+		};
+
+		struct SetContextEvent : IEvent
+		{
+			InputContext* newContext;
+		};
+
+		struct CallbackEvent : IEvent
+		{
+			InputStateContext* context;
+		};
+
+		struct DeviceGetEvent : IEvent
+		{
+			std::optional<uint32_t> device_id;
+			std::string device_name;
+			Device* outDevice;
 		};
 	}
 }
