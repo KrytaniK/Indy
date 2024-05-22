@@ -34,7 +34,7 @@ export {
 
 		public:
 			Application(const ApplicationCreateInfo& appInfo);
-			virtual ~Application() ;
+			virtual ~Application();
 
 			// For use in main (EntryPoint.cpp); Handles the internal main loop
 			void StartAndRun();
@@ -46,10 +46,10 @@ export {
 			virtual void OnUnload() = 0;
 
 		public:
-			EventHandler OnLoad_Event;
+			EventHandler Load;
 			EventHandler OnStart_Event;
-			EventHandler OnUpdate_Event;
-			EventHandler OnUnload_Event;
+			EventHandler Update;
+			EventHandler Unload;
 
 		protected:
 			ApplicationInfo m_Info;

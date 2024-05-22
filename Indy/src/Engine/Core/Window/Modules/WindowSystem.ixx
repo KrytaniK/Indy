@@ -7,7 +7,7 @@ export module Indy.Window:System;
 import :Manager;
 import :Events;
 
-import Indy.Renderer;
+import Indy.Graphics;
 
 export
 {
@@ -29,6 +29,7 @@ export
 			virtual void OnWindowGet(WindowGetEvent* event);
 
 		private:
+			std::unique_ptr<Graphics::IRenderAPI> m_RenderAPI;
 			std::unique_ptr<WindowManager> m_WindowManager;
 		};
 	}

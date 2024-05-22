@@ -1,6 +1,5 @@
 module;
 
-#include <functional>
 #include <GLFW/glfw3.h>
 
 export module Indy.WindowsWindow;
@@ -23,6 +22,8 @@ export
 
 			virtual void* NativeWindow() const override;
 			virtual const WindowProps& Properties() const override;
+
+			virtual Input::InputContext* GetInputContext() override;
 
 			virtual void SetExtent(const int& width, const int& height);
 			virtual void SetFocus(bool isFocused);

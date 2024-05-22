@@ -82,16 +82,10 @@ namespace Indy::Input
 	void InputContext::OnInput(const uint32_t& deviceID, const uint32_t& controlID, InputStateContext& ctx)
 	{
 		if (!m_InputCallbacks.contains(deviceID))
-		{
-			INDY_CORE_INFO("No Callbacks for device with id {0}", deviceID);
 			return;
-		}
 
 		if (!m_InputCallbacks[deviceID].contains(controlID))
-		{
-			INDY_CORE_INFO("No Callbacks for control with id {0}", controlID);
 			return;
-		}
 
 		m_CallbackEvent.context = &ctx;
 		m_InputCallbacks[deviceID][controlID].Notify(&m_CallbackEvent);

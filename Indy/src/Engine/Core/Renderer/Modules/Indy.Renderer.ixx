@@ -1,7 +1,5 @@
-export module Indy.Renderer;
+export module Indy.Graphics;
 
-// Rendering Front-End
+export import :IRenderAPI;
 export import :IRenderer;
-
-// Render Targets
 export import :IRenderTarget;

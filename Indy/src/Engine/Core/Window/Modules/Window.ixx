@@ -2,11 +2,10 @@ module;
 
 #include <string>
 #include <memory>
-#include <functional>
 
 export module Indy.Window:IWindow;
 
-import Indy.Renderer;
+import Indy.Graphics;
 import Indy.Input;
 
 export
@@ -38,6 +37,12 @@ export
 
 			virtual void* NativeWindow() const = 0;
 			virtual const WindowProps& Properties() const = 0;
+
+			virtual Input::InputContext* GetInputContext() = 0;
+
+		protected:
+			std::unique_ptr<Graphics::IRenderer> m_Renderer;
+			std::unique_ptr<Input::InputContext> m_InputContext;
 		};
 	}
 }

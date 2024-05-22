@@ -11,22 +11,6 @@ namespace Indy
 {
 	WindowsWindow::WindowsWindow(const WindowCreateInfo& createInfo)
 	{
-		if (!glfwInit())
-		{
-			INDY_CORE_CRITICAL("Could not initialize GLFW!");
-			return;
-		}
-		
-		glfwSetErrorCallback([](int error, const char* description)
-			{
-				INDY_CORE_ERROR("GLFW Error ({0}): {1}", error, description);
-			}
-		);
-
-		// ----- ^^^^^^^^^^^^^^ -----
-		// -- Move to WindowSystem --
-		// ----- ^^^^^^^^^^^^^^ -----
-
 		// GLFW Window Initialization
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 		m_NativeWindow = glfwCreateWindow(createInfo.width, createInfo.height, createInfo.title.c_str(), nullptr, nullptr);
@@ -46,6 +30,16 @@ namespace Indy
 		m_Props.width = createInfo.width;
 		m_Props.height = createInfo.height;
 		m_Props.id = createInfo.id;
+
+		// Create Input Context and set it to be the active context
+		m_InputContext = std::make_unique<Input::InputContext>();
+
+		Input::SetContextEvent event;
+		event.newContext = m_InputContext.get();
+		Events<Input::SetContextEvent>::Notify(&event);
+
+		// Create Renderer
+		//m_Renderer = Renderer::Create();
 	}
 
 	WindowsWindow::~WindowsWindow()
@@ -81,6 +75,11 @@ namespace Indy
 	const WindowProps& WindowsWindow::Properties() const
 	{
 		return m_Props;
+	}
+
+	Input::InputContext* WindowsWindow::GetInputContext()
+	{
+		return m_InputContext.get();
 	}
 
 	void WindowsWindow::SetExtent(const int& width, const int& height)
@@ -142,6 +141,14 @@ namespace Indy
 
 				if (!_this)
 					return;
+
+				if (focused)
+				{
+					Input::SetContextEvent event;
+					event.newContext = _this->m_InputContext.get();
+					
+					Events<Input::SetContextEvent>::Notify(&event);
+				}
 
 				_this->SetFocus(focused);
 			}

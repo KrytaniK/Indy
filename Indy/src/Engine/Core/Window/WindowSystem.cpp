@@ -1,4 +1,7 @@
+#include <Engine/Core/LogMacros.h>
 #include <memory>
+
+#include <GLFW/glfw3.h>
 
 import Indy.Application;
 import Indy.Window;
@@ -12,9 +15,9 @@ namespace Indy
 
 		// Sync Application Events
 		Application& app = Application::Get();
-		app.OnLoad_Event.Subscribe<WindowSystem>(this, &WindowSystem::OnLoad);
-		app.OnUpdate_Event.Subscribe<WindowSystem>(this, &WindowSystem::OnUpdate);
-		app.OnUnload_Event.Subscribe<WindowSystem>(this, &WindowSystem::OnUnload);
+		app.Load.Subscribe<WindowSystem>(this, &WindowSystem::OnLoad);
+		app.Update.Subscribe<WindowSystem>(this, &WindowSystem::OnUpdate);
+		app.Unload.Subscribe<WindowSystem>(this, &WindowSystem::OnUnload);
 
 		// Bind Event Handles
 		Events<WindowCreateEvent>::Subscribe<WindowSystem>(this, &WindowSystem::OnWindowCreate);
@@ -29,9 +32,21 @@ namespace Indy
 
 	void WindowSystem::OnLoad()
 	{
-		// Initialize Window API (GLFW, SDL)
+		// Load desired Window API from disk
 
-		// Initialize Render API (Vulkan, DirectX, Metal, OpenGL)
+		// Initialize Window API
+		glfwInit();
+
+		glfwSetErrorCallback([](int error, const char* description)
+			{
+				INDY_CORE_ERROR("GLFW Error ({0}): {1}", error, description);
+			}
+		);
+
+		// Load desired Render API from disk
+
+		// Initialize Render API
+		m_RenderAPI = Graphics::CreateRenderAPI(Graphics::RenderAPI::Vulkan);
 	}
 
 	void WindowSystem::OnUpdate()

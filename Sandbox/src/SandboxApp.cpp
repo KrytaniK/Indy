@@ -11,22 +11,10 @@ import Indy.Input;
 
 namespace Indy
 {
-	struct Vec2D
-	{
-		double x, y;
-	};
-
 	Sandbox::Sandbox(const ApplicationCreateInfo& createInfo)
 		: Application(createInfo)
 	{
 		m_ShouldClose = false;
-
-		WindowCreateInfo firstInfo = { "First", 1280, 760, 0 };
-
-		WindowCreateEvent event;
-		event.createInfo = &firstInfo;
-
-		Events<WindowCreateEvent>::Notify(&event);
 	}
 
 	Sandbox::~Sandbox()
@@ -43,28 +31,8 @@ namespace Indy
 	{
 		// Post-Load operations
 
-		m_InputContext.AddInputCallback(
-			0,
-			0,
-			[](Input::CallbackEvent* event)
-			{
-				INDY_INFO("{0}", event->context->ReadAs<bool>());
-			}
-		);
-		
-		m_InputContext.AddInputCallback(
-			0,
-			8,
-			[](Input::CallbackEvent* event)
-			{
-				INDY_INFO("x: {0}, y: {1}", event->context->ReadAs<Vec2D>().x, event->context->ReadAs<Vec2D>().y);
-			}
-		);
-
-		Input::SetContextEvent event;
-		event.newContext = &m_InputContext;
-
-		Events<Input::SetContextEvent>::Notify(&event);
+		auto window = Window::Create({ "First", 1280, 760, 0 });
+		window->GetInputContext()->AddInputCallback(0, 0, [](Input::CallbackEvent* event) { INDY_INFO("Left Mouse Button!"); });
 	}
 
 	void Sandbox::OnUpdate()

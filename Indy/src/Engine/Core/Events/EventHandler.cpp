@@ -17,30 +17,33 @@ namespace Indy
 	{
 		if (!event->bubbles)
 		{
-			for (const auto& listener : m_Listeners)
+			size_t i = 0;
+			while (i != m_Listeners.size())
 			{
+				m_Listeners[i++]->Execute(event);
+
 				if (!event->propagates)
 					return;
-
-				listener->Execute(event);
 			}
 		}
 		else
 		{
-			for (auto iter = m_Listeners.rbegin(); iter != m_Listeners.rend(); ++iter)
+			size_t i = m_Listeners.size();
+			while (i != 0)
 			{
+				m_Listeners[--i]->Execute(event);
+
 				if (!event->propagates)
 					return;
-
-				(*iter)->Execute(event);
 			}
 		}
 	}
 
 	void EventHandler::Notify()
 	{
-		for (const auto& listener : m_Listeners)
-			listener->Execute();
+		size_t i = 0;
+		while (i != m_Listeners.size())
+			m_Listeners[i++]->Execute();
 	}
 
 	std::shared_ptr<EventDelegate> EventHandler::Subscribe(const std::function<void()>& callback)

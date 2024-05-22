@@ -1,4 +1,6 @@
+#include "LogMacros.h"
 #include <memory>
+
 
 import Indy.Application;
 import Indy.Layers;
@@ -24,10 +26,10 @@ namespace Indy
 		m_InputSystem = std::make_unique<InputSystem>();
 		m_WindowSystem = std::make_unique<WindowSystem>();
 
-		OnLoad_Event.Subscribe<Application>(this, &Application::OnLoad);
+		Load.Subscribe<Application>(this, &Application::OnLoad);
 		OnStart_Event.Subscribe<Application>(this, &Application::OnStart);
-		OnUpdate_Event.Subscribe<Application>(this, &Application::OnUpdate);
-		OnUnload_Event.Subscribe<Application>(this, &Application::OnUnload);
+		Update.Subscribe<Application>(this, &Application::OnUpdate);
+		Unload.Subscribe<Application>(this, &Application::OnUnload);
 	}
 
 	Application::~Application()
@@ -37,22 +39,22 @@ namespace Indy
 
 	void Application::StartAndRun()
 	{
-		OnLoad_Event.Notify();
+		Load.Notify();
 
 		OnStart_Event.Notify();
 
 		if (m_ShouldClose) // Application is meant to execute once
 		{
-			OnUpdate_Event.Notify();
+			Update.Notify();
 		}
 		else // Application is meant to run continuously
 		{
 			while (!m_ShouldClose)
 			{
-				OnUpdate_Event.Notify();
+				Update.Notify();
 			}
 		}
 
-		OnUnload_Event.Notify();
+		Unload.Notify();
 	}
 }

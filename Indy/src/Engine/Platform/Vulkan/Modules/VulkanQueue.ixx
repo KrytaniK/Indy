@@ -3,28 +3,16 @@ module;
 #include <optional>
 #include <vulkan/vulkan.h>
 
-export module Indy.VulkanRenderer:Queue;
+export module Indy.VulkanGraphics:Queue;
 
 import :Utils;
 
 export
 {
-	namespace Indy
+	namespace Indy::Graphics
 	{
-		struct QueueFamilyIndices
-		{
-			std::optional<uint32_t> graphics;
-			std::optional<uint32_t> present;
-			std::optional<uint32_t> compute;
-
-			bool Complete();
-		};
-
 		class VulkanQueue
 		{
-		public:
-			static QueueFamilyIndices FindQueueFamilies(const VkPhysicalDevice& device, const VulkanDeviceCompatibility& compatibility);
-
 		public:
 			VulkanQueue(const VkDevice& logicalDevice, const QueueFamilyIndices& queueIndices);
 
