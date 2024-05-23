@@ -4,18 +4,26 @@ module;
 
 export module Indy.VulkanGraphics:Events;
 
-import :Utils;
-
 import Indy.Events;
+import Indy.Window;
 
 export
 {
 	namespace Indy::Graphics
 	{
-		struct VulkanGPUEvent : IEvent
+		struct VKDeviceCompat;
+		struct VulkanPhysicalDevice;
+
+		struct VKDeviceSelectEvent : IEvent
 		{
-			const VulkanDeviceCompatibility* compatibility = nullptr;
+			const VKDeviceCompat* compatCriteria;
 			std::shared_ptr<VulkanPhysicalDevice> outDevice;
+		};
+
+		struct VKSurfaceCreateEvent : IEvent
+		{
+			IWindow* window;
+			VKDeviceCompat* compat;
 		};
 	}
 }

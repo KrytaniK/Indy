@@ -11,6 +11,8 @@ namespace Indy
 {
 	WindowsWindow::WindowsWindow(const WindowCreateInfo& createInfo)
 	{
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // When OpenGL support becomes available, this will have to be removed.
+
 		// GLFW Window Initialization
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 		m_NativeWindow = glfwCreateWindow(createInfo.width, createInfo.height, createInfo.title.c_str(), nullptr, nullptr);

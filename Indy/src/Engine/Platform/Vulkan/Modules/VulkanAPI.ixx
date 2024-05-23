@@ -1,6 +1,8 @@
 module;
 
 #include <vector>
+#include <memory>
+
 #include <vulkan/vulkan.h>
 
 export module Indy.VulkanGraphics:Backend;
@@ -8,7 +10,7 @@ export module Indy.VulkanGraphics:Backend;
 import Indy.Graphics;
 
 import :Events;
-import :Utils;
+import :Device;
 
 export
 {
@@ -24,17 +26,13 @@ export
 			void OnStart() override;
 			void OnUnload() override;
 
+			void OnDeviceSelect(VKDeviceSelectEvent* event);
+			void OnSurfaceCreate(VKSurfaceCreateEvent* event);
+
 		private:
 			bool Init();
 			void Cleanup();
-
 			bool SupportsValidationLayers();
-			std::vector<std::shared_ptr<VulkanPhysicalDevice>> GetAllPhysicalDevices(const VkInstance& instance);
-			std::shared_ptr<VulkanPhysicalDevice> GetCompatibleDevice(const VulkanDeviceCompatibility& compatibility);
-			uint8_t RateDeviceCompatibility(const VulkanPhysicalDevice& device, const VulkanDeviceCompatibility& compatibility);
-			bool IsCompatibleFeature(const VulkanCompatibility& preference, bool hasFeature, uint8_t& rating);
-
-			void OnChoosePhysicalDevice(VulkanGPUEvent* event);
 
 		private:
 			VkInstance m_Instance;

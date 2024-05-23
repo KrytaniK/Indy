@@ -8,6 +8,7 @@ import Indy.Application;
 import Indy.Events;
 import Indy.Window;
 import Indy.Input;
+import Indy.VulkanGraphics;
 
 namespace Indy
 {
@@ -33,6 +34,13 @@ namespace Indy
 
 		auto window = Window::Create({ "First", 1280, 760, 0 });
 		window->GetInputContext()->AddInputCallback(0, 0, [](Input::CallbackEvent* event) { INDY_INFO("Left Mouse Button!"); });
+
+		Graphics::VKDeviceCompat compat;
+		Graphics::VKSurfaceCreateEvent event;
+		event.compat = &compat;
+		event.window = window;
+
+		Events<Graphics::VKSurfaceCreateEvent>::Notify(&event);
 	}
 
 	void Sandbox::OnUpdate()

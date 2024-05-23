@@ -11,43 +11,6 @@ export
 {
 	namespace Indy::Graphics
 	{
-		typedef enum VulkanCompatibility : uint8_t {
-			VULKAN_COMPATIBILITY_VOID = 0x00,
-			VULKAN_COMPATIBILITY_PREFER,
-			VULKAN_COMPATIBILITY_REQUIRED
-		} VulkanCompatibility;
-
-		// A container structure used for finding a GPU that meets some basic criteria.
-		struct VulkanDeviceCompatibility
-		{
-			VulkanCompatibility graphics = VULKAN_COMPATIBILITY_VOID;
-			VulkanCompatibility present = VULKAN_COMPATIBILITY_VOID;
-			VulkanCompatibility compute = VULKAN_COMPATIBILITY_VOID;
-			VulkanCompatibility geometryShader = VULKAN_COMPATIBILITY_VOID;
-			VkPhysicalDeviceType type = VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM;
-		};
-
-		struct QueueFamilyIndices
-		{
-			std::optional<uint32_t> graphics;
-			std::optional<uint32_t> present;
-			std::optional<uint32_t> compute;
-
-			bool Complete()
-			{
-				return graphics.has_value() && present.has_value() && compute.has_value();
-			};
-		};
-
-		// A containing structure for Vulkan Physical Devices and their properties and features.
-		struct VulkanPhysicalDevice
-		{
-			VkPhysicalDevice handle = VK_NULL_HANDLE;
-			VkPhysicalDeviceProperties properties;
-			VkPhysicalDeviceFeatures features;
-			QueueFamilyIndices queueFamilies;
-		};
-
 		// -------------------------------
 		// Debug Messenger Utility Methods
 		// -------------------------------

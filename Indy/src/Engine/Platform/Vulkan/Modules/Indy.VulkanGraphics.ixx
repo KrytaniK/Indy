@@ -8,6 +8,7 @@ export import :Utils;
 export import :Device;
 export import :Queue;
 export import :Events;
+export import :RenderTarget;
 
 import Indy.Graphics;
 

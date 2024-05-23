@@ -5,12 +5,22 @@ module;
 
 export module Indy.VulkanGraphics:Queue;
 
-import :Utils;
-
 export
 {
 	namespace Indy::Graphics
 	{
+		struct QueueFamilyIndices
+		{
+			std::optional<uint32_t> graphics;
+			std::optional<uint32_t> present;
+			std::optional<uint32_t> compute;
+
+			bool Complete()
+			{
+				return graphics.has_value() && present.has_value() && compute.has_value();
+			};
+		};
+
 		class VulkanQueue
 		{
 		public:
