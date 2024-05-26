@@ -27,13 +27,13 @@ project "Sandbox"
 
 	libdirs
 	{
-		"%{VulkanSDK}/1.3.261.1/Lib"
+		"%{VulkanSDK}/Lib"
 	}
 
 	links
 	{
 		"Indy",
-		"vulkan-1.lib",
+		"vulkan-1.lib"
 	}
 
 	filter "system:windows"

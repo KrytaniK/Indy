@@ -114,6 +114,10 @@ namespace Indy::Graphics
 		deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
+		// Enable required extensions
+		deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(g_Vulkan_Device_Extensions.size());
+		deviceCreateInfo.ppEnabledExtensionNames = g_Vulkan_Device_Extensions.data();
+
 #ifdef ENGINE_DEBUG
 		// Validation layer support (specified for legacy versions)
 		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(g_Vulkan_Validation_Layers.size());
@@ -191,8 +195,6 @@ namespace Indy::Graphics
 				// Check for support with graphics operations
 				if (props.queueFlags & VK_QUEUE_GRAPHICS_BIT)
 					pDevices[i]->queueFamilies.graphics = j;
-
-				// Querying for presentation support happens when it is needed.
 
 				// Check for support with compute operations
 				if (props.queueFlags & VK_QUEUE_COMPUTE_BIT)
@@ -299,6 +301,10 @@ namespace Indy::Graphics
 
 	bool VulkanDevice::SupportsPresentation(VulkanPhysicalDevice& device, const VkSurfaceKHR& surface)
 	{
+		// Device supports presentation if a present queue has already been found.
+		if (device.queueFamilies.present.has_value())
+			return true;
+
 		// Query for supported queue families
 		uint32_t familyCount = 0;
 		vkGetPhysicalDeviceQueueFamilyProperties(device.handle, &familyCount, nullptr);
@@ -308,20 +314,48 @@ namespace Indy::Graphics
 		vkGetPhysicalDeviceQueueFamilyProperties(device.handle, &familyCount, queueFamProps.data());
 
 		// Query queue family support for each device
-		int i = 0;
-		for (const VkQueueFamilyProperties& props : queueFamProps)
+		VkBool32 supported = false;
+		for (int i = 0; i < queueFamProps.size(); i++)
 		{
 			// Check for presentation support
-			VkBool32 supported = false;
 			vkGetPhysicalDeviceSurfaceSupportKHR(device.handle, i++, surface, &supported);
 
 			if (supported)
 			{
 				device.queueFamilies.present = i;
-				return true;
+				break;
 			}
 		}
 
-		return false;
+		if (!supported) // For early return if something went wrong
+			return false;
+
+		// If a surface is supported, we need to ensure the swap chain is supported on this device.
+		// While this is implied, it's good to check anyway.
+
+		uint32_t extensionCount;
+		vkEnumerateDeviceExtensionProperties(device.handle, nullptr, &extensionCount, nullptr);
+
+		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+		vkEnumerateDeviceExtensionProperties(device.handle, nullptr, &extensionCount, availableExtensions.data());
+
+		std::set<std::string> requiredExtensions(g_Vulkan_Device_Extensions.begin(), g_Vulkan_Device_Extensions.end());
+
+		for (const auto& extension : availableExtensions)
+		{
+			requiredExtensions.erase(extension.extensionName);
+		}
+
+		supported = requiredExtensions.empty();
+
+		if (supported)
+		{
+			VulkanSwapchain::QuerySupportDetails(device, surface);
+
+			// For presentation to be supported, we must have formats and present modes.
+			supported = !device.swapchainSupport.formats.empty() && !device.swapchainSupport.presentModes.empty();
+		}
+
+		return supported;
 	}
 }

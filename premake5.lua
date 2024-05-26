@@ -12,13 +12,13 @@ workspace "Indy"
 
 	outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
-	VulkanSDK = "C:/VulkanSDK"
+	VulkanSDK = os.getenv("VULKAN_SDK")
 
 	-- Include Directories relative to root folder
 	IncludeDirs = {}
 	IncludeDirs["spdlog"] = "%{wks.location}/Indy/lib/spdlog/include"
 	IncludeDirs["GLFW"] = "%{wks.location}/Indy/lib/GLFW/include"
-	IncludeDirs["Vulkan"] = "%{VulkanSDK}/1.3.261.1/Include"
+	IncludeDirs["Vulkan"] = "%{VulkanSDK}/Include"
 
 
 	-- Projects

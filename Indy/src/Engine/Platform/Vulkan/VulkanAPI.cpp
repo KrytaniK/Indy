@@ -4,10 +4,13 @@
 #include <cstdint>
 #include <memory>
 
+#include <shaderc/shaderc.hpp>
+
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 
 import Indy.Application;
+import Indy.Graphics;
 import Indy.VulkanGraphics;
 
 import Indy.Events;
@@ -33,11 +36,21 @@ namespace Indy::Graphics
 	{
 		if (!Init())
 			INDY_CORE_CRITICAL("Failed to initialize Vulkan!");
+
+		auto defaultVertexShader = Shader::ReadGLSLShaderFromFile("shaders/vShader.vert");
+		auto defaultFragmentShader = Shader::ReadGLSLShaderFromFile("shaders/fShader.frag");
+
+		auto vertexSprV = Shader::CompileGLSLToSPRV(defaultVertexShader, "vShader", ShaderType::Vertex);
+		auto fragmentSprV = Shader::CompileGLSLToSPRV(defaultFragmentShader, "fShader", ShaderType::Fragment);
+
+		Shader::WriteSPRVToFile(vertexSprV, "shaders/vShader.spv");
+		Shader::WriteSPRVToFile(fragmentSprV, "shaders/fShader.spv");
 	}
 
 	void VulkanAPI::OnStart()
 	{
-
+		// Preprocessing
+		
 	}
 
 	void VulkanAPI::OnUnload()

@@ -27,13 +27,17 @@ namespace Indy::Graphics
 		}
 
 		m_Device = std::make_unique<VulkanDevice>(compatibility, m_Surface);
+		m_Swapchain = std::make_unique<VulkanSwapchain>(*m_Device->GetPhysicalDevice(), m_Device->Get(), m_Surface, window);
 	}
 
 	VulkanRenderTarget::~VulkanRenderTarget()
 	{
+		m_Swapchain = nullptr; // explicitly destruct swap chain BEFORE surface.
+
 		if (&m_Surface)
+		{
+			INDY_CORE_TRACE("Destroying Window Surface!");
 			vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
+		}
 	}
-
-
 }

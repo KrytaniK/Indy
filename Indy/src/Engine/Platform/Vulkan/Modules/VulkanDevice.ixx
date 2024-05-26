@@ -8,6 +8,7 @@ module;
 export module Indy.VulkanGraphics:Device;
 
 import :Queue;
+import :Swapchain;
 import :Events;
 
 export
@@ -36,6 +37,7 @@ export
 			VkPhysicalDeviceProperties properties;
 			VkPhysicalDeviceFeatures features;
 			QueueFamilyIndices queueFamilies;
+			VKSwapchainSupport swapchainSupport;
 		};
 
 		class VulkanAPI;

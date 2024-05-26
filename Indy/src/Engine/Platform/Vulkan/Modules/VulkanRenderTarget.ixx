@@ -8,6 +8,7 @@ import Indy.Graphics;
 import Indy.Window;
 
 import :Device;
+import :Swapchain;
 
 export
 {
@@ -21,6 +22,7 @@ export
 
 		private:
 			std::unique_ptr<VulkanDevice> m_Device;
+			std::unique_ptr<VulkanSwapchain> m_Swapchain;
 			VkInstance m_Instance;
 			VkSurfaceKHR m_Surface;
 		};

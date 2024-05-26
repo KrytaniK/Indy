@@ -27,13 +27,13 @@ project "Indy"
 
 	libdirs
 	{
-		"%{VulkanSDK}/1.3.261.1/Lib"
+		"%{VulkanSDK}/Lib"
 	}
 
 	links
 	{
 		"GLFW",
-		"vulkan-1.lib",
+		"vulkan-1.lib"
 	}
 
 	filter "system:windows"
@@ -50,12 +50,33 @@ project "Indy"
 		runtime "Debug"
 		symbols "on"
 
+		links
+		{
+			"%{VulkanSDK}/Lib/shaderc_shared.lib",
+			"%{VulkanSDK}/Lib/spirv-cross-core.lib",
+			"%{VulkanSDK}/Lib/spirv-cross-glsl.lib",
+		}
+
 	filter "configurations:Release"
 		defines { "ENGINE_RELEASE", "INDY_ENABLE_CORE_DEBUG" }
 		runtime "Release"
 		optimize "on"
 
+		links
+		{
+			"%{VulkanSDK}/Lib/shaderc_shared.lib",
+			"%{VulkanSDK}/Lib/spirv-cross-core.lib",
+			"%{VulkanSDK}/Lib/spirv-cross-glsl.lib",
+		}
+
 	filter "configurations:Dist"
 		defines { "ENGINE_DIST" }
 		runtime "Release"
 		optimize "on"
+
+		links
+		{
+			"%{VulkanSDK}/Lib/shaderc_shared.lib",
+			"%{VulkanSDK}/Lib/spirv-cross-core.lib",
+			"%{VulkanSDK}/Lib/spirv-cross-glsl.lib",
+		}
