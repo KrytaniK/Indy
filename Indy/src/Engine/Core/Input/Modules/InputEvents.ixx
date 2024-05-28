@@ -14,8 +14,8 @@ export
 {
 	namespace Indy::Input
 	{
-		class InputStateContext;
-		class InputContext;
+		class StateContext;
+		class Context;
 
 		struct Event : IEvent
 		{
@@ -28,12 +28,12 @@ export
 
 		struct SetContextEvent : IEvent
 		{
-			InputContext* newContext;
+			Context* newContext;
 		};
 
 		struct CallbackEvent : IEvent
 		{
-			InputStateContext* context;
+			StateContext* context;
 		};
 
 		struct DeviceGetEvent : IEvent

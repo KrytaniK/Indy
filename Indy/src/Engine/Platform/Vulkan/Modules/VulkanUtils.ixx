@@ -9,7 +9,7 @@ export module Indy.VulkanGraphics:Utils;
 
 export
 {
-	namespace Indy::Graphics
+	namespace Indy
 	{
 		// -------------------------------
 		// Debug Messenger Utility Methods

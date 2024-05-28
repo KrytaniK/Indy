@@ -15,7 +15,7 @@ export
 {
 	namespace Indy::Input
 	{
-		// Maybe these attach to a "global" InputContext
+		// Maybe these attach to a "global" Context
 
 		//// Targets default keyboard
 		//static void OnKeyPress(const std::string& key, std::function<void(InputControlContext&)> callback);

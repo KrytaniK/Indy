@@ -13,45 +13,45 @@ import Indy.Events;
 namespace Indy::Input
 {
 	// -----------------------------------------------------------------
-	// InputStateContext - For reading the value after a change occurred
+	// StateContext - For reading the value after a change occurred
 	// -----------------------------------------------------------------
 	
-	InputStateContext::InputStateContext(Control* control, const ::std::shared_ptr<InputState>& state)
+	StateContext::StateContext(Control* control, const ::std::shared_ptr<InputState>& state)
 		: m_Control(control), m_State(state) {}
 
-	const uint16_t& InputStateContext::GetSize()
+	const uint16_t& StateContext::GetSize()
 	{
 		return m_Control->GetSize();
 	}
 
-	const uint32_t& InputStateContext::GetID()
+	const uint32_t& StateContext::GetID()
 	{
 		return m_Control->GetID();
 	}
 
-	const std::string& InputStateContext::GetName()
+	const std::string& StateContext::GetName()
 	{
 		return m_Control->GetName();
 	}
 	
-	const std::string& InputStateContext::GetAlias()
+	const std::string& StateContext::GetAlias()
 	{
 		return m_Control->GetAlias();
 	}
 
 	// ------------------------------------------------------------
-	// InputContext - For managing reactions to input state changes
+	// Context - For managing reactions to input state changes
 	// ------------------------------------------------------------
 
-	InputContext::InputContext()
+	Context::Context()
 		:m_CallbackEvent({}) {}
 
-	std::shared_ptr<EventDelegate> InputContext::AddInputCallback(const uint32_t& deviceID, const uint32_t& controlID, const std::function<void(CallbackEvent*)>& callback)
+	std::shared_ptr<EventDelegate> Context::AddInputCallback(const uint32_t& deviceID, const uint32_t& controlID, const std::function<void(CallbackEvent*)>& callback)
 	{
 		return m_InputCallbacks[deviceID][controlID].Subscribe(callback);
 	}
 
-	std::shared_ptr<EventDelegate> InputContext::AddInputCallback(const std::string& deviceName,
+	std::shared_ptr<EventDelegate> Context::AddInputCallback(const std::string& deviceName,
 		const std::string& controlName, const std::function<void(CallbackEvent*)>& callback)
 	{
 		const Control* control = nullptr;
@@ -79,7 +79,7 @@ namespace Indy::Input
 		return m_InputCallbacks[event.outDevice->GetID()][control->GetID()].Subscribe(callback);
 	}
 
-	void InputContext::OnInput(const uint32_t& deviceID, const uint32_t& controlID, InputStateContext& ctx)
+	void Context::OnInput(const uint32_t& deviceID, const uint32_t& controlID, StateContext& ctx)
 	{
 		if (!m_InputCallbacks.contains(deviceID))
 			return;

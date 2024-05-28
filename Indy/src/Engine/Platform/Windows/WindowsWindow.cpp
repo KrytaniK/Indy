@@ -34,14 +34,11 @@ namespace Indy
 		m_Props.id = createInfo.id;
 
 		// Create Input Context and set it to be the active context
-		m_InputContext = std::make_unique<Input::InputContext>();
+		m_InputContext = std::make_unique<Input::Context>();
 
 		Input::SetContextEvent event;
 		event.newContext = m_InputContext.get();
 		Events<Input::SetContextEvent>::Notify(&event);
-
-		// Create Renderer
-		//m_Renderer = Renderer::Create();
 	}
 
 	WindowsWindow::~WindowsWindow()
@@ -79,7 +76,7 @@ namespace Indy
 		return m_Props;
 	}
 
-	Input::InputContext* WindowsWindow::GetInputContext()
+	Input::Context* WindowsWindow::GetInputContext()
 	{
 		return m_InputContext.get();
 	}

@@ -1,6 +1,6 @@
 module;
 
-#include <memory>
+#include <vulkan/vulkan.h>
 
 export module Indy.VulkanGraphics:Events;
 
@@ -9,21 +9,11 @@ import Indy.Window;
 
 export
 {
-	namespace Indy::Graphics
+	namespace Indy
 	{
-		struct VKDeviceCompat;
-		struct VulkanPhysicalDevice;
-
-		struct VKDeviceSelectEvent : IEvent
+		struct VkInstanceFetchEvent : IEvent
 		{
-			const VKDeviceCompat* compatCriteria;
-			std::shared_ptr<VulkanPhysicalDevice> outDevice;
-		};
-
-		struct VKSurfaceCreateEvent : IEvent
-		{
-			IWindow* window;
-			VKDeviceCompat* compat;
+			VkInstance* outInstance;
 		};
 	}
 }

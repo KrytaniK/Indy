@@ -7,12 +7,12 @@ export module Indy.Window:System;
 import :Manager;
 import :Events;
 
-import Indy.Graphics;
-
 export
 {
 	namespace Indy
 	{
+		class GraphicsAPI;
+
 		class WindowSystem
 		{
 		public:
@@ -29,7 +29,7 @@ export
 			virtual void OnWindowGet(WindowGetEvent* event);
 
 		private:
-			std::unique_ptr<Graphics::IRenderAPI> m_RenderAPI;
+			std::unique_ptr<GraphicsAPI> m_GraphicsAPI;
 			std::unique_ptr<WindowManager> m_WindowManager;
 		};
 	}

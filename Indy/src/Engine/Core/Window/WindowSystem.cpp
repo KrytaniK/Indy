@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 
 import Indy.Application;
+import Indy.Graphics;
 import Indy.Window;
 import Indy.Events;
 
@@ -32,8 +33,6 @@ namespace Indy
 
 	void WindowSystem::OnLoad()
 	{
-		// Load desired Window API from disk
-
 		// Initialize Window API
 		glfwInit();
 
@@ -43,10 +42,8 @@ namespace Indy
 			}
 		);
 
-		// Load desired Render API from disk
-
-		// Initialize Render API
-		m_RenderAPI = Graphics::CreateRenderAPI(Graphics::RenderAPI::Vulkan);
+		// Initialize Graphics API
+		m_GraphicsAPI = GraphicsAPI::Create(GraphicsAPI::Vulkan);
 	}
 
 	void WindowSystem::OnUpdate()
@@ -61,9 +58,13 @@ namespace Indy
 
 	void WindowSystem::OnWindowCreate(WindowCreateEvent* event)
 	{
-		m_WindowManager->AddWindow(*event->createInfo);
+		event->outWindow = m_WindowManager->AddWindow(*event->createInfo); // Create the window
 
-		event->outWindow = m_WindowManager->GetWindow(event->createInfo->id);
+		// Bail early if window handle or graphics API is invalid
+		if (!event->outWindow || !m_GraphicsAPI)
+			return;
+
+		m_GraphicsAPI->CreateRenderTarget(event->outWindow); // Generate a render target
 	}
 
 	void WindowSystem::OnWindowDestroy(WindowDestroyEvent* event)

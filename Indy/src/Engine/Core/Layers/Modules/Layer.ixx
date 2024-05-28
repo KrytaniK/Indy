@@ -4,7 +4,7 @@ module;
 #include <memory>
 #include <string>
 
-export module Indy.Layers:ILayer;
+export module Indy.Layers:Layer;
 
 import Indy.Events;
 
@@ -12,29 +12,29 @@ export
 {
 	namespace Indy
 	{
-		struct ILayerData {}; // Tag structure for complex layer data. This is meant to be derived by layers to enforce layer-specific actions.
+		struct LayerData {}; // Tag structure for complex layer data. This is meant to be derived by layers to enforce layer-specific actions.
 
 		// Base Layer Event Interface
-		struct ILayerEvent : IEvent
+		struct LayerEvent : IEvent
 		{
 			std::string targetLayer; // A string identifier for layer classifications. Specifies the target layer.
-			ILayerData* layerData; // Empty tag pointer for storing complex layer data.
+			LayerData* layerData; // Empty tag pointer for storing complex layer data.
 		};
 
 		// Base Layer Action Interface. Used for defining layer-specific actions for handling layer data given by layer events.
-		class ILayerAction
+		class LayerAction
 		{
 		public:
-			virtual ~ILayerAction() = default;
+			virtual ~LayerAction() = default;
 
-			virtual void Execute(ILayerData* layerData) = 0;
+			virtual void Execute(LayerData* layerData) = 0;
 		};
 
 		// Base Layer Interface
-		class ILayer
+		class Layer
 		{
 		public:
-			virtual ~ILayer() = default;
+			virtual ~Layer() = default;
 
 		public:
 			virtual void onAttach() = 0;
@@ -42,10 +42,10 @@ export
 			virtual void Update() = 0;
 
 		private:
-			virtual void onEvent(ILayerEvent* event) = 0;
+			virtual void onEvent(LayerEvent* event) = 0;
 
 		protected:
-			std::vector<std::unique_ptr<ILayerAction>> m_LayerActions;
+			std::vector<std::unique_ptr<LayerAction>> m_LayerActions;
 		};
 	}
 }

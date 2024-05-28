@@ -12,18 +12,3 @@ export import :RenderTarget;
 export import :Swapchain;
 
 import Indy.Graphics;
-
-export
-{
-	namespace Indy::Graphics
-	{
-		class VulkanRenderer : public IRenderer
-		{
-		public:
-			VulkanRenderer();
-			virtual ~VulkanRenderer() override;
-
-			virtual void Render() override;
-		};
-	}
-}

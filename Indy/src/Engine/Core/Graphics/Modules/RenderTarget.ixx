@@ -1,17 +1,21 @@
 module;
 
-export module Indy.Graphics:IRenderTarget;
+#include <cstdint>
+
+export module Indy.Graphics:RenderTarget;
 
 export
 {
-	namespace Indy::Graphics
+	namespace Indy
 	{
 		// Base interface for declaring Render Targets
-		class IRenderTarget
+		class RenderTarget
 		{
 		public:
-			IRenderTarget() = default;
-			virtual ~IRenderTarget() = default;
+			RenderTarget() = default;
+			virtual ~RenderTarget() = default;
+
+			virtual const uint32_t& GetID() const = 0;
 		};
 	}
 }

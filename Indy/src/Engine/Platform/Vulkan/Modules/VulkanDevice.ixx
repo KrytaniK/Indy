@@ -13,21 +13,22 @@ import :Events;
 
 export
 {
-	namespace Indy::Graphics
+	namespace Indy
 	{
-		typedef enum VKCompatLevel : uint8_t {
+		typedef enum GPUCompatLevel : uint8_t {
 			COMPAT_VOID = 0x00,
 			COMPAT_PREFER,
 			COMPAT_REQUIRED
-		} VKCompatLevel;
+		} GPUCompatLevel;
 
 		// A container structure used for finding a GPU that meets some basic criteria.
-		struct VKDeviceCompat
+		struct GPUCompatibility
 		{
-			VKCompatLevel graphics = COMPAT_VOID;
-			VKCompatLevel compute = COMPAT_VOID;
-			VKCompatLevel geometryShader = COMPAT_VOID;
+			GPUCompatLevel graphics = COMPAT_VOID;
+			GPUCompatLevel compute = COMPAT_VOID;
+			GPUCompatLevel geometryShader = COMPAT_VOID;
 			VkPhysicalDeviceType type = VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM;
+			GPUCompatLevel typePreference = COMPAT_PREFER;
 		};
 
 		// A containing structure for Vulkan Physical Devices and their properties and features.
@@ -45,26 +46,25 @@ export
 		// A utility wrapper class representing a Vulkan Logical Device
 		class VulkanDevice
 		{
+		private:
+			static std::vector<std::shared_ptr<VulkanPhysicalDevice>> s_PhysicalDevices;
+
 		public:
-			VulkanDevice(const VKDeviceCompat& compatibility);
-			VulkanDevice(const VKDeviceCompat& compatibility, const VkSurfaceKHR& surface);
+			static void GetAllGPUSpecs(const VkInstance& instance);
+			static bool GetGPUSurfaceSupport(const std::shared_ptr<VulkanPhysicalDevice>& gpu, const VkSurfaceKHR& surface);
+
+		public:
+			VulkanDevice(const GPUCompatibility& compatibility);
+			VulkanDevice(const GPUCompatibility& compatibility, const VkSurfaceKHR& surface);
 			~VulkanDevice();
 
 			const std::shared_ptr<VulkanPhysicalDevice>& GetPhysicalDevice();
 			const VkDevice& Get();
 
-			static std::vector<std::shared_ptr<VulkanPhysicalDevice>> GetAllPhysicalDevices(const VkInstance& instance);
-
-			static std::shared_ptr<VulkanPhysicalDevice> GetCompatibleDevice(const std::vector<std::shared_ptr<VulkanPhysicalDevice>>& devices, const VKDeviceCompat& compatibility);
-
-			static uint8_t RateDeviceCompatibility(const VulkanPhysicalDevice& device, const VKDeviceCompat& compatibility);
-
-			static bool IsCompatibleFeature(const VKCompatLevel& preference, bool hasFeature, uint8_t& rating);
-
-			static bool SupportsPresentation(VulkanPhysicalDevice& device, const VkSurfaceKHR& surface);
-
 		private:
 			void CreateLogicalDevice();
+			void FindCompatibleGPU(const GPUCompatibility& compatibility);
+			bool IsCompatibleFeature(const GPUCompatLevel& preference, bool hasFeature, uint8_t& rating);
 
 		private:
 			std::shared_ptr<VulkanPhysicalDevice> m_PhysicalDevice;

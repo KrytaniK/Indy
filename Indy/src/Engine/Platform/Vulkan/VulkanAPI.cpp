@@ -14,13 +14,12 @@ import Indy.VulkanGraphics;
 
 import Indy.Events;
 
-namespace Indy::Graphics
+namespace Indy
 {
 	VulkanAPI::VulkanAPI()
 		: m_Instance(VK_NULL_HANDLE), m_DebugMessenger(VK_NULL_HANDLE)
 	{
-		Events<VKDeviceSelectEvent>::Subscribe<VulkanAPI>(this, &VulkanAPI::OnDeviceSelect);
-		Events<VKSurfaceCreateEvent>::Subscribe<VulkanAPI>(this, &VulkanAPI::OnSurfaceCreate);
+		Events<VkInstanceFetchEvent>::Subscribe<VulkanAPI>(this, &VulkanAPI::OnFetchInstance);
 	}
 
 	VulkanAPI::~VulkanAPI()
@@ -39,7 +38,6 @@ namespace Indy::Graphics
 
 	void VulkanAPI::OnStart()
 	{
-		// Preprocessing
 		
 	}
 
@@ -48,33 +46,34 @@ namespace Indy::Graphics
 		Cleanup();
 	}
 
+	void VulkanAPI::CreateRenderTarget(Window* window)
+	{
+		GPUCompatibility base_window_compatibility;
+		base_window_compatibility.geometryShader =	COMPAT_REQUIRED;	// always require geometry shaders
+		base_window_compatibility.graphics =		COMPAT_REQUIRED;	// always require graphics operations
+		base_window_compatibility.compute =			COMPAT_PREFER;		// always prefer compute shaders, but don't require it.
+		base_window_compatibility.type =			VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;	// Always assume dedicated GPU
+		base_window_compatibility.typePreference =	COMPAT_PREFER;		// always prefer a dedicated GPU, but it's not required.
+
+		VulkanRenderTarget target(m_Instance, base_window_compatibility, window);
+	}
+
 	// Event Handles
 	// -----------------------------------------------------------------
 
-	void VulkanAPI::OnDeviceSelect(VKDeviceSelectEvent* event)
+	void VulkanAPI::OnFetchInstance(VkInstanceFetchEvent* event)
 	{
-		event->outDevice = VulkanDevice::GetCompatibleDevice(m_PhysicalDevices, *event->compatCriteria);
+		event->outInstance = &m_Instance;
 	}
-
-	void VulkanAPI::OnSurfaceCreate(VKSurfaceCreateEvent* event)
-	{
-		// TODO: Need some kind of render target management.
-		VulkanRenderTarget rt(m_Instance, *event->compat, event->window);
-	}
-
 
 	// Internal Methods
 	// -----------------------------------------------------------------
 
 	bool VulkanAPI::Init()
 	{
-		INDY_CORE_TRACE("Checking for validation layer support...");
-
 		// Ensure Validation Layer Support
 		if (!SupportsValidationLayers())
 			return false;
-
-		INDY_CORE_TRACE("Initializing vulkan instance structures...");
 
 		// Vulkan Application Info
 		VkApplicationInfo appInfo{};
@@ -90,8 +89,6 @@ namespace Indy::Graphics
 		instanceCreateInfo.pApplicationInfo = &appInfo;
 
 #ifdef ENGINE_DEBUG
-
-		INDY_CORE_TRACE("Setting up a debug messenger...");
 
 		// Setup Debug Messenger
 		VkDebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo{};
@@ -110,14 +107,11 @@ namespace Indy::Graphics
 
 #else
 
-		INDY_CORE_INFO("Debug Mode Disabled!");
-
 		instanceCreateInfo.enabledLayerCount = 0;
 		instanceCreateInfo.pNext = nullptr;
 
 #endif
 
-		INDY_CORE_TRACE("Ensuring GLFW extensions are present...");
 		// Retrieve Required Extensions for GLFW
 		uint32_t glfwExtensionCount = 0;
 		const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -132,7 +126,6 @@ namespace Indy::Graphics
 
 #ifdef ENGINE_DEBUG
 
-		INDY_CORE_TRACE("Adding Debug util extension...");
 		extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME); // Enable vulkan debug utilities
 
 #endif
@@ -140,8 +133,6 @@ namespace Indy::Graphics
 		// Attach required extensions, if everything is valid
 		instanceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 		instanceCreateInfo.ppEnabledExtensionNames = extensions.data();
-
-		INDY_CORE_TRACE("Creating Instance...");
 
 		// Create Vulkan Instance
 		if (vkCreateInstance(&instanceCreateInfo, nullptr, &m_Instance) != VK_SUCCESS)
@@ -151,21 +142,16 @@ namespace Indy::Graphics
 		}
 
 #ifdef ENGINE_DEBUG
-
-		INDY_CORE_TRACE("Creating Debug Messenger...");
 		// For more general vulkan debugging, an explicit debug messenger must be created
 		if (Vulkan_CreateDebugUtilsMessengerEXT(m_Instance, &debugMessengerCreateInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("Failed to create debug messenger.");
 			return false;
 		}
-
 #endif
 
-		INDY_CORE_TRACE("Retrieving GPU information...");
-
-		// Store ALL physical devices and their information
-		m_PhysicalDevices = VulkanDevice::GetAllPhysicalDevices(m_Instance);
+		// Retreive GPU information
+		VulkanDevice::GetAllGPUSpecs(m_Instance);
 
 		return true;
 	}

@@ -102,7 +102,7 @@ namespace Indy
 
 		if (m_ActiveContext)
 		{
-			InputStateContext ctx(control, device->GetState());
+			StateContext ctx(control, device->GetState());
 			m_ActiveContext->OnInput(device->GetID(), control->GetID(), ctx);
 		}
 	}

@@ -10,19 +10,13 @@ import Indy.VulkanGraphics;
 
 import Indy.Events;
 
-namespace Indy::Graphics
+namespace Indy
 {
-	VulkanDevice::VulkanDevice(const VKDeviceCompat& compatibility)
+	std::vector<std::shared_ptr<VulkanPhysicalDevice>> VulkanDevice::s_PhysicalDevices;
+
+	VulkanDevice::VulkanDevice(const GPUCompatibility& compatibility)
 	{
-		INDY_CORE_TRACE("[Vulkan Device] Choosing a physical device to interface with...");
-
-		// Get a compatible physical device
-		VKDeviceSelectEvent event;
-		event.compatCriteria = &compatibility;
-
-		Events<VKDeviceSelectEvent>::Notify(&event);
-
-		m_PhysicalDevice = event.outDevice;
+		FindCompatibleGPU(compatibility);
 
 		if (!m_PhysicalDevice)
 		{
@@ -33,17 +27,9 @@ namespace Indy::Graphics
 		CreateLogicalDevice();
 	}
 
-	VulkanDevice::VulkanDevice(const VKDeviceCompat& compatibility, const VkSurfaceKHR& surface)
+	VulkanDevice::VulkanDevice(const GPUCompatibility& compatibility, const VkSurfaceKHR& surface)
 	{
-		INDY_CORE_TRACE("[Vulkan Device] Choosing a physical device to interface with...");
-
-		// Get a compatible physical device
-		VKDeviceSelectEvent event;
-		event.compatCriteria = &compatibility;
-
-		Events<VKDeviceSelectEvent>::Notify(&event);
-
-		m_PhysicalDevice = event.outDevice;
+		FindCompatibleGPU(compatibility);
 
 		if (!m_PhysicalDevice)
 		{
@@ -51,7 +37,7 @@ namespace Indy::Graphics
 			return;
 		}
 
-		if (!SupportsPresentation(*m_PhysicalDevice, surface))
+		if (!VulkanDevice::GetGPUSurfaceSupport(m_PhysicalDevice, surface))
 		{
 			INDY_CORE_ERROR("Failed to create logical device. Does not support surface presentation!");
 			return;
@@ -75,10 +61,76 @@ namespace Indy::Graphics
 		return m_LogicalDevice;
 	}
 
+	void VulkanDevice::FindCompatibleGPU(const GPUCompatibility& compatibility)
+	{
+		uint8_t highestRating = 0;
+		for (auto& device : VulkanDevice::s_PhysicalDevices)
+		{
+			if (!device)
+				continue;
+
+			// Rate device compatibility
+			uint8_t rating = 0;
+
+			if (!IsCompatibleFeature(
+				compatibility.typePreference,
+				compatibility.type == device->properties.deviceType,
+				rating
+			)) continue;
+
+			if (!IsCompatibleFeature(
+				compatibility.graphics,
+				device->queueFamilies.graphics.has_value(),
+				rating
+			)) continue;
+
+			if (!IsCompatibleFeature(
+				compatibility.compute,
+				device->queueFamilies.compute.has_value(),
+				rating
+			)) continue;
+
+			if (!IsCompatibleFeature(
+				compatibility.geometryShader,
+				device->features.geometryShader,
+				rating
+			)) continue;
+
+			if (rating >= highestRating)
+			{
+				m_PhysicalDevice = device;
+				highestRating = rating;
+			}
+		}
+	}
+
+	bool VulkanDevice::IsCompatibleFeature(const GPUCompatLevel& preference, bool hasFeature, uint8_t& rating)
+	{
+		switch (preference)
+		{
+		case COMPAT_VOID: return true;
+		case COMPAT_PREFER:
+		{
+			if (hasFeature)
+				rating += 10;
+		};
+		case COMPAT_REQUIRED:
+		{
+			if (hasFeature)
+				rating += 10;
+			else
+			{
+				rating = 0;
+				return false;
+			}
+		}
+		}
+
+		return true;
+	}
+
 	void VulkanDevice::CreateLogicalDevice()
 	{
-		INDY_CORE_TRACE("Creating logical device...");
-
 		float queuePriority = 1.0f;
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 		std::set<uint32_t> uniqueIndices;
@@ -141,44 +193,39 @@ namespace Indy::Graphics
 	// -------------------------------------------------- Static Methods -----------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------------
 
-	std::vector<std::shared_ptr<VulkanPhysicalDevice>> VulkanDevice::GetAllPhysicalDevices(const VkInstance& instance)
+	void VulkanDevice::GetAllGPUSpecs(const VkInstance& instance)
 	{
 		// Query physical device count
 		uint32_t deviceCount = 0;
 		if (vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("Failed to enumerate physical devices...");
-			return {};
+			return;
 		}
 
 		if (deviceCount == 0)
 		{
 			INDY_CORE_ERROR("Could not find any GPUs with Vulkan support!");
-			return {};
+			return;
 		}
-
-		// Create wrapper device vector and vulkan device vector
-		std::vector<std::shared_ptr<VulkanPhysicalDevice>> pDevices(deviceCount);
 		std::vector<VkPhysicalDevice> devices(deviceCount);
-
-		INDY_CORE_TRACE("Enumerating Physical Devices...");
 
 		// Retrieve all physical devices
 		vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
-		INDY_CORE_TRACE("Physical Device Count: {0}", deviceCount);
-
+		// Copy device properties and features into static list
 		int i = 0;
 		for (VkPhysicalDevice device : devices)
 		{
-			pDevices[i] = std::make_unique<VulkanPhysicalDevice>();
+			VulkanDevice::s_PhysicalDevices.emplace_back(std::make_shared<VulkanPhysicalDevice>());
+			auto static_device = VulkanDevice::s_PhysicalDevices[i];
 
 			// Copy each physical device into the wrapper vector
-			pDevices[i]->handle = device;
+			static_device->handle = device;
 
 			// Copy all device properties and features into the wrapper vector
-			vkGetPhysicalDeviceProperties(device, &pDevices[i]->properties);
-			vkGetPhysicalDeviceFeatures(device, &pDevices[i]->features);
+			vkGetPhysicalDeviceProperties(device, &static_device->properties);
+			vkGetPhysicalDeviceFeatures(device, &static_device->features);
 
 			// Query for supported queue families
 			uint32_t familyCount = 0;
@@ -194,135 +241,47 @@ namespace Indy::Graphics
 			{
 				// Check for support with graphics operations
 				if (props.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-					pDevices[i]->queueFamilies.graphics = j;
+					static_device->queueFamilies.graphics = j;
 
 				// Check for support with compute operations
 				if (props.queueFlags & VK_QUEUE_COMPUTE_BIT)
-					pDevices[i]->queueFamilies.compute = j;
+					static_device->queueFamilies.compute = j;
 
-				if (pDevices[i]->queueFamilies.Complete())
+				if (static_device->queueFamilies.Complete())
 					break;
 
 				j++;
 			}
 
-			INDY_CORE_INFO(
-				"\n\t[{0}]\tID: {1}\tType: {2}\n\t\tSupports Graphics: {3}\n\t\tSupports Present: {4}\n\t\tSupports Compute: {5}\n\t\t",
-				pDevices[i]->properties.deviceName,
-				pDevices[i]->properties.deviceID,
-				pDevices[i]->properties.deviceType,
-				pDevices[i]->queueFamilies.graphics.has_value(),
-				pDevices[i]->queueFamilies.present.has_value(),
-				pDevices[i]->queueFamilies.compute.has_value()
-			);
-
 			i++;
 		}
-
-		// return the wrapper vector
-		return pDevices;
 	}
 
-	std::shared_ptr<VulkanPhysicalDevice> VulkanDevice::GetCompatibleDevice(const std::vector<std::shared_ptr<VulkanPhysicalDevice>>& devices, const VKDeviceCompat& compatibility)
-	{
-		std::shared_ptr<VulkanPhysicalDevice> outDevice = nullptr;
-
-		uint8_t highestRating = 0;
-		for (auto& device : devices)
-		{
-			uint8_t rating = RateDeviceCompatibility(*device, compatibility);
-			if (rating >= highestRating)
-			{
-				outDevice = device;
-				highestRating = rating;
-			}
-		}
-
-		return outDevice;
-	}
-
-	uint8_t VulkanDevice::RateDeviceCompatibility(const VulkanPhysicalDevice& device, const VKDeviceCompat& compatibility)
-	{
-
-		uint8_t rating = 0;
-
-		if (compatibility.type != VK_PHYSICAL_DEVICE_TYPE_MAX_ENUM)
-		{
-			if (compatibility.type != device.properties.deviceType)
-				return 0;
-
-			rating += 10;
-		}
-
-		if (!IsCompatibleFeature(
-			compatibility.graphics,
-			device.queueFamilies.graphics.has_value(),
-			rating)
-			) return 0;
-
-		if (!IsCompatibleFeature(
-			compatibility.compute,
-			device.queueFamilies.compute.has_value(),
-			rating)
-			) return 0;
-
-		if (!IsCompatibleFeature(
-			compatibility.geometryShader,
-			device.features.geometryShader,
-			rating)
-			) return 0;
-
-
-		INDY_CORE_TRACE("Device compatibility rating for [{0}]: {1}.", device.properties.deviceName, rating);
-		return rating;
-	}
-
-	bool VulkanDevice::IsCompatibleFeature(const VKCompatLevel& preference, bool hasFeature, uint8_t& rating)
-	{
-		switch (preference)
-		{
-		case COMPAT_VOID: return true;
-		case COMPAT_PREFER:
-		{
-			if (hasFeature)
-				rating += 10;
-		};
-		case COMPAT_REQUIRED:
-		{
-			if (hasFeature)
-				rating += 10;
-			else
-				return false;
-		}
-		}
-
-		return true;
-	}
-
-	bool VulkanDevice::SupportsPresentation(VulkanPhysicalDevice& device, const VkSurfaceKHR& surface)
+	bool VulkanDevice::GetGPUSurfaceSupport(const std::shared_ptr<VulkanPhysicalDevice>& gpu,
+		const VkSurfaceKHR& surface)
 	{
 		// Device supports presentation if a present queue has already been found.
-		if (device.queueFamilies.present.has_value())
+		if (gpu->queueFamilies.present.has_value())
 			return true;
 
 		// Query for supported queue families
 		uint32_t familyCount = 0;
-		vkGetPhysicalDeviceQueueFamilyProperties(device.handle, &familyCount, nullptr);
+		vkGetPhysicalDeviceQueueFamilyProperties(gpu->handle, &familyCount, nullptr);
 
 		// Get all queue families
 		std::vector<VkQueueFamilyProperties> queueFamProps(familyCount);
-		vkGetPhysicalDeviceQueueFamilyProperties(device.handle, &familyCount, queueFamProps.data());
+		vkGetPhysicalDeviceQueueFamilyProperties(gpu->handle, &familyCount, queueFamProps.data());
 
 		// Query queue family support for each device
 		VkBool32 supported = false;
 		for (int i = 0; i < queueFamProps.size(); i++)
 		{
 			// Check for presentation support
-			vkGetPhysicalDeviceSurfaceSupportKHR(device.handle, i++, surface, &supported);
+			vkGetPhysicalDeviceSurfaceSupportKHR(gpu->handle, i++, surface, &supported);
 
 			if (supported)
 			{
-				device.queueFamilies.present = i;
+				gpu->queueFamilies.present = i;
 				break;
 			}
 		}
@@ -334,10 +293,10 @@ namespace Indy::Graphics
 		// While this is implied, it's good to check anyway.
 
 		uint32_t extensionCount;
-		vkEnumerateDeviceExtensionProperties(device.handle, nullptr, &extensionCount, nullptr);
+		vkEnumerateDeviceExtensionProperties(gpu->handle, nullptr, &extensionCount, nullptr);
 
 		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-		vkEnumerateDeviceExtensionProperties(device.handle, nullptr, &extensionCount, availableExtensions.data());
+		vkEnumerateDeviceExtensionProperties(gpu->handle, nullptr, &extensionCount, availableExtensions.data());
 
 		std::set<std::string> requiredExtensions(g_Vulkan_Device_Extensions.begin(), g_Vulkan_Device_Extensions.end());
 
@@ -350,12 +309,13 @@ namespace Indy::Graphics
 
 		if (supported)
 		{
-			VulkanSwapchain::QuerySupportDetails(device, surface);
+			VulkanSwapchain::QuerySupportDetails(gpu, surface);
 
 			// For presentation to be supported, we must have formats and present modes.
-			supported = !device.swapchainSupport.formats.empty() && !device.swapchainSupport.presentModes.empty();
+			supported = !gpu->swapchainSupport.formats.empty() && !gpu->swapchainSupport.presentModes.empty();
 		}
 
 		return supported;
 	}
+
 }

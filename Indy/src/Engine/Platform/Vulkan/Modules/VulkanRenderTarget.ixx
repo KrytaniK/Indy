@@ -1,5 +1,6 @@
 module;
 
+#include <cstdint>
 #include <vulkan/vulkan.h>
 
 export module Indy.VulkanGraphics:RenderTarget;
@@ -12,19 +13,22 @@ import :Swapchain;
 
 export
 {
-	namespace Indy::Graphics
+	namespace Indy
 	{
-		class VulkanRenderTarget : IRenderTarget
+		class VulkanRenderTarget : RenderTarget
 		{
 		public:
-			VulkanRenderTarget(const VkInstance& instance, const VKDeviceCompat& compatibility, IWindow* window = nullptr);
+			VulkanRenderTarget(const VkInstance& instance, const GPUCompatibility& compatibility, Window* window = nullptr);
 			virtual ~VulkanRenderTarget() override;
 
+			virtual const uint32_t& GetID() const override { return m_ID; };
+
 		private:
-			std::unique_ptr<VulkanDevice> m_Device;
-			std::unique_ptr<VulkanSwapchain> m_Swapchain;
+			uint32_t m_ID;
 			VkInstance m_Instance;
 			VkSurfaceKHR m_Surface;
+			std::unique_ptr<VulkanDevice> m_Device;
+			std::unique_ptr<VulkanSwapchain> m_Swapchain;
 		};
 	}
 }

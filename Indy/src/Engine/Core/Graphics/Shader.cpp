@@ -1,6 +1,8 @@
 #include <Engine/Core/LogMacros.h>
 
+#include <filesystem>
 #include <fstream>
+#include <sstream>
 
 #include <string>
 #include <vector>
@@ -17,108 +19,238 @@
 
 import Indy.Graphics;
 
-namespace Indy::Graphics
+namespace Indy
 {
-	std::string Shader::ReadGLSLShaderFromFile(const std::string& file_path)
+	void Shader::WriteToDisk(const std::string& shaderName, const std::string& shaderSource, const ShaderFormat& format, const ShaderType& type)
 	{
-		std::ifstream inGLSL(file_path, std::ios::in | std::ios::binary | std::ios::ate);
+		// Create intermediary directories if necessary
+		if (!std::filesystem::exists("shaders"))
+			std::filesystem::create_directories("shaders");
 
-		if (!inGLSL.is_open())
+
+		// Construct File name
+		std::string file = shaderName + GetFileExtension(type, format);
+		std::string filePath = "shaders/" + file;
+
+		std::ofstream stream(filePath, std::ios::out | std::ios::binary);
+
+		if (!stream.is_open())
 		{
-			INDY_CORE_ERROR("Could not open file path [{0}].", file_path);
-			return "";
+			INDY_CORE_ERROR("Error writing shader to disk. Path does not exist! [{0}]", filePath);
+			stream.close();
+			return;
 		}
 
-		size_t fileSize = inGLSL.tellg();
-		inGLSL.seekg(0, std::ios::beg);
-
-		std::string content(fileSize, '\0');
-		inGLSL.read(&content[0], fileSize);
-		inGLSL.close();
-
-		return content;
+		stream.write(shaderSource.data(), shaderSource.size());
+		stream.close();
 	}
 
-	// I might extend this to support defining macros for the shader if needed.
-	std::vector<uint32_t> Shader::CompileGLSLToSPIRV(const std::string& source, const std::string& name, ShaderType type, bool optimize)
+	std::string Shader::GetFileExtension(const ShaderType& type, const ShaderFormat& format)
+	{
+		std::string extension = "";
+
+		switch(format)
+		{
+			case INDY_SHADER_FORMAT_GLSL:			extension += ".glsl"; break;
+			case INDY_SHADER_FORMAT_SPIR_V:			extension += ".spv";  break;
+		}
+
+		switch (type)
+		{
+			case INDY_SHADER_TYPE_VERTEX:			extension += ".vert"; break;
+			case INDY_SHADER_TYPE_FRAGMENT:			extension += ".frag"; break;
+			case INDY_SHADER_TYPE_COMPUTE:			extension += ".comp"; break;
+			case INDY_SHADER_TYPE_GEOMETRY:			extension += ".geom"; break;
+			case INDY_SHADER_TYPE_TESS_CONTROL:		extension += ".tesc"; break;
+			case INDY_SHADER_TYPE_TESS_EVAL:		extension += ".tese"; break;
+			default: break;
+		}
+
+		return extension;
+	}
+
+	Shader::Shader(const ShaderType& type, const ShaderFormat& format, const std::string& filePath)
+		: m_Type(type), m_Format(format), m_filePath(filePath), m_SPIRV({})
+	{
+		// Get File Name
+		size_t slashIndex = 0, i = 0;
+		for (const auto& c : filePath)
+		{
+			if (c == '/')
+				slashIndex = i + 1;
+			i++;
+		}
+
+		// Get the file name and assert file naming conventions are used
+		m_FileName = filePath.substr(slashIndex, filePath.size() - slashIndex);
+		if (!AssertShaderExtension(m_FileName))
+			return;
+
+		// Open the file
+		std::ifstream stream(filePath, std::ios::in | std::ios::binary | std::ios::ate);
+		if (!stream.is_open())
+		{
+			// If the file doesn't exist, warn the user, but prepare the shader for writing.
+			// Conversion should not be possible, as there is no source.
+			// Basically, treat as an empty shader.
+
+			INDY_CORE_ERROR("Error loading shader. File/Directory does not exist! [{0}]", filePath);
+			stream.close();
+			return;
+		}
+
+		// Copy file to shader source string
+		size_t size = stream.tellg();
+		stream.seekg(0, std::ios::beg);
+
+		m_Source = std::string(size, '\0');
+		stream.read(m_Source.data(), size);
+
+		stream.close();
+	}
+
+	void Shader::CompileSPIRV()
 	{
 		shaderc::Compiler compiler;
 		shaderc::CompileOptions options;
 
-		if (optimize)
-			options.SetOptimizationLevel(shaderc_optimization_level_performance);
+		options.SetOptimizationLevel(shaderc_optimization_level_performance);
 
-		shaderc_shader_kind kind = shaderc_vertex_shader;
-		switch(type)
+		switch(m_Format)
 		{
-			case ShaderType::Vertex:
+			case INDY_SHADER_FORMAT_GLSL: { CompileFromGLSL(compiler, options); break; }
+			default: { return; }
+		}
+
+		m_SPIRV.size = m_SPIRV_Raw.size() * sizeof(uint32_t);
+		m_SPIRV.data = m_SPIRV_Raw.data();
+	}
+
+	std::string Shader::GetSPIRVSource() const
+	{
+		if (m_SPIRV.size == 0)
+			return {};
+
+		std::stringstream stream;
+		stream.write(reinterpret_cast<const char*>(m_SPIRV.data), m_SPIRV.size);
+		return stream.str();
+	}
+
+	void Shader::Reflect(const ShaderFormat& format)
+	{
+		switch(format)
+		{
+			case INDY_SHADER_FORMAT_GLSL:
+				{
+					ReflectGLSL();
+					break;
+				}
+			default:
+				break;
+		}
+	}
+
+	bool Shader::AssertShaderExtension(const std::string& fileName)
+	{
+		switch (m_Format)
+		{
+			case INDY_SHADER_FORMAT_GLSL:
 			{
-				kind = shaderc_glsl_vertex_shader;
+				if (fileName.find("glsl") == std::string::npos) // Ensure GLSL shaders include "glsl" in the file name
+				{
+					INDY_CORE_ERROR("Error loading GLSL shader. Shader must contain 'glsl' in the file name. [{0}]", fileName);
+					return false;
+				}
 				break;
 			}
-			case ShaderType::Fragment:
+			case INDY_SHADER_FORMAT_SPIR_V:
 			{
-				kind = shaderc_glsl_fragment_shader;
+				if (!fileName.ends_with(".spv"))
+				{
+					INDY_CORE_ERROR("Error loading SPIR-V shader. Shader must contain the '.spv' file extension. [{0}]", fileName);
+					return false;
+				}
 				break;
 			}
-			case ShaderType::Compute:
+		default:
 			{
-				kind = shaderc_glsl_compute_shader;
-				break;
-			}
-			case ShaderType::Geometry:
-			{
-				kind = shaderc_glsl_geometry_shader;
-				break;
+				INDY_CORE_ERROR("Error loading shader. Unknown format");
+				return false;
 			}
 		}
 
-		shaderc::SpvCompilationResult spvModule = compiler.CompileGlslToSpv(source, kind, name.c_str(), options);
+		return true;
+	}
+
+	void Shader::CompileFromGLSL(const shaderc::Compiler& compiler, const shaderc::CompileOptions& options)
+	{
+		shaderc::SpvCompilationResult spvModule = compiler.CompileGlslToSpv(
+			m_Source, GetShaderCType(m_Type), m_FileName.c_str(), options
+		);
 
 		if (spvModule.GetCompilationStatus() != shaderc_compilation_status_success) {
 			INDY_CORE_ERROR("{0}", spvModule.GetErrorMessage());
-			return std::vector<uint32_t>();
-		}
-
-		return {spvModule.begin(), spvModule.end()};
-	}
-
-	void Shader::WriteSPIRVToFile(const std::vector<uint32_t>& spirv, const std::string& out_file_path)
-	{
-		std::ofstream outFile(out_file_path, std::ios::out | std::ios::binary);
-
-		if (!outFile.is_open())
-		{
-			INDY_CORE_ERROR("Could not open output file [{0}].", out_file_path);
 			return;
 		}
 
-		outFile.write(reinterpret_cast<const char*>(spirv.data()), spirv.size() * sizeof(uint32_t));
-		outFile.close();
+		m_SPIRV_Raw = std::vector<uint32_t>(spvModule.begin(), spvModule.end());
 	}
 
-	SPIRV_Data Shader::ReadSPIRVFromFile(const std::string& file_path)
+	void Shader::ReflectGLSL()
 	{
-		std::ifstream inSPIRV(file_path, std::ios::ate | std::ios::binary);
 
-		if (!inSPIRV.is_open())
+	}
+
+	shaderc_shader_kind Shader::GetShaderCType(const ShaderType& type)
+	{
+		switch (type)
 		{
-			INDY_CORE_ERROR("Could not open file path [{0}].", file_path);
-			return {0, nullptr, {}};
+			case INDY_SHADER_TYPE_VERTEX: return shaderc_glsl_vertex_shader;
+			case INDY_SHADER_TYPE_FRAGMENT: return shaderc_glsl_fragment_shader;
+			case INDY_SHADER_TYPE_COMPUTE: return shaderc_glsl_compute_shader;
+			case INDY_SHADER_TYPE_GEOMETRY: return shaderc_glsl_geometry_shader;
+			default: return shaderc_vertex_shader;
 		}
-
-		SPIRV_Data data;
-
-		data.size = inSPIRV.tellg();
-		data.binary = std::vector<char>(data.size);
-
-		inSPIRV.seekg(0);
-		inSPIRV.read(data.binary.data(), data.size);
-
-		inSPIRV.close();
-
-		data.code = reinterpret_cast<const uint32_t*>(data.binary.data());
-
-		return data;
 	}
 }
+
+//
+//	void Shader::WriteSPIRVToFile(const std::vector<uint32_t>& spirv, const std::string& out_file_path)
+//	{
+//		std::ofstream outFile(out_file_path, std::ios::out | std::ios::binary);
+//
+//		if (!outFile.is_open())
+//		{
+//			INDY_CORE_ERROR("Could not open output file [{0}].", out_file_path);
+//			return;
+//		}
+//
+//		outFile.write(reinterpret_cast<const char*>(spirv.data()), spirv.size() * sizeof(uint32_t));
+//		outFile.close();
+//	}
+//
+//	SPIRV_Data Shader::ReadSPIRVFromFile(const std::string& file_path)
+//	{
+//		std::ifstream inSPIRV(file_path, std::ios::ate | std::ios::binary);
+//
+//		if (!inSPIRV.is_open())
+//		{
+//			INDY_CORE_ERROR("Could not open file path [{0}].", file_path);
+//			return {0, nullptr, {}};
+//		}
+//
+//		SPIRV_Data data;
+//
+//		data.size = inSPIRV.tellg();
+//		data.binary = std::vector<char>(data.size);
+//
+//		inSPIRV.seekg(0);
+//		inSPIRV.read(data.binary.data(), data.size);
+//
+//		inSPIRV.close();
+//
+//		data.code = reinterpret_cast<const uint32_t*>(data.binary.data());
+//
+//		return data;
+//	}
+//}

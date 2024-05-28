@@ -1,7 +1,7 @@
 export module Indy.Graphics;
 
-export import :IRenderAPI;
-export import :IRenderer;
-export import :IRenderTarget;
+export import :GraphicsAPI;
+export import :Renderer;
+export import :RenderTarget;
 
 export import :Shader;

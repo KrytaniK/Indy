@@ -4,13 +4,11 @@
 
 import Indy.VulkanGraphics;
 
-namespace Indy::Graphics
+namespace Indy
 {
 	VulkanQueue::VulkanQueue(const VkDevice& logicalDevice, const QueueFamilyIndices& queueIndices)
 	{
 		m_LogicalDevice = logicalDevice;
-
-		INDY_CORE_TRACE("Generating logical device queues...");
 
 		if (m_LogicalDevice == VK_NULL_HANDLE)
 		{

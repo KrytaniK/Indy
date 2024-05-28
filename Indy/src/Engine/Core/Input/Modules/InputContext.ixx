@@ -22,11 +22,11 @@ export
 		typedef std::unordered_map<uint32_t, EventHandler> DeviceControlCallbackMap;
 		typedef std::unordered_map<uint32_t, DeviceControlCallbackMap> DeviceCallbackMap;
 
-		class InputStateContext
+		class StateContext
 		{
 		public:
-			InputStateContext(Control* control, const std::shared_ptr<InputState>& state);
-			~InputStateContext() = default;
+			StateContext(Control* control, const std::shared_ptr<InputState>& state);
+			~StateContext() = default;
 
 			const uint16_t& GetSize();
 			const uint32_t& GetID();
@@ -41,16 +41,16 @@ export
 			std::shared_ptr<InputState> m_State;
 		};
 
-		class InputContext
+		class Context
 		{
 		public:
-			InputContext();
-			~InputContext() = default;
+			Context();
+			~Context() = default;
 
 			std::shared_ptr<EventDelegate> AddInputCallback(const uint32_t& deviceID, const uint32_t& controlID, const std::function<void(CallbackEvent*)>& callback);
 			std::shared_ptr<EventDelegate> AddInputCallback(const std::string& deviceName, const std::string& controlName, const std::function<void(CallbackEvent*)>& callback);
 
-			void OnInput(const uint32_t& deviceID, const uint32_t& controlID, InputStateContext& ctx);
+			void OnInput(const uint32_t& deviceID, const uint32_t& controlID, StateContext& ctx);
 
 		private:
 			CallbackEvent m_CallbackEvent;
@@ -60,7 +60,7 @@ export
 		// Template Definitions
 
 		template <typename T>
-		T InputStateContext::ReadAs()
+		T StateContext::ReadAs()
 		{
 			const ControlInfo& controlInfo = m_Control->GetInfo();
 

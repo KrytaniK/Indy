@@ -1,4 +1,4 @@
 export module Indy.Layers;
 
-export import :ILayer;
+export import :Layer;
 export import :LayerStack;

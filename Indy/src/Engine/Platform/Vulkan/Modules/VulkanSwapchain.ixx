@@ -1,5 +1,6 @@
 module;
 
+#include <memory>
 #include <vector>
 
 #include <GLFW/glfw3.h>
@@ -17,7 +18,7 @@ import Indy.Window;
 
 export
 {
-	namespace Indy::Graphics
+	namespace Indy
 	{
 		struct VulkanPhysicalDevice;
 
@@ -37,10 +38,10 @@ export
 		class VulkanSwapchain
 		{
 		public:
-			VulkanSwapchain(const VulkanPhysicalDevice& physicalDevice, const VkDevice& logicalDevice, const VkSurfaceKHR& surface, IWindow* window);
+			VulkanSwapchain(const std::shared_ptr<VulkanPhysicalDevice>& physicalDevice, const VkDevice& logicalDevice, const VkSurfaceKHR& surface, Window* window);
 			~VulkanSwapchain();
 
-			static void QuerySupportDetails(VulkanPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface);
+			static void QuerySupportDetails(const std::shared_ptr<VulkanPhysicalDevice>& physicalDevice, const VkSurfaceKHR& surface);
 
 		private:
 			void ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);

@@ -1,5 +1,7 @@
 module;
 
+#include <memory>
+
 #include <GLFW/glfw3.h>
 
 export module Indy.WindowsWindow;
@@ -12,7 +14,7 @@ export
 	namespace Indy
 	{
 		// Windows OS Window Implementation
-		class WindowsWindow : public IWindow
+		class WindowsWindow : public Window
 		{
 		public:
 			WindowsWindow(const WindowCreateInfo& createInfo);
@@ -23,7 +25,7 @@ export
 			virtual void* NativeWindow() const override;
 			virtual const WindowProps& Properties() const override;
 
-			virtual Input::InputContext* GetInputContext() override;
+			virtual Input::Context* GetInputContext();
 
 			virtual void SetExtent(const int& width, const int& height);
 			virtual void SetFocus(bool isFocused);
@@ -36,6 +38,7 @@ export
 		private:
 			WindowProps m_Props;
 			GLFWwindow* m_NativeWindow;
+			std::unique_ptr<Input::Context> m_InputContext;
 		};
 	}
 }

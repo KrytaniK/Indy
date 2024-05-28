@@ -1,6 +1,7 @@
 #include "Engine/Core/LogMacros.h"
 
 #include <vector>
+#include <memory>
 #include <algorithm>
 
 #include <GLFW/glfw3.h>
@@ -10,26 +11,33 @@
 import Indy.Window;
 import Indy.VulkanGraphics;
 
-namespace Indy::Graphics
+namespace Indy
 {
-	VulkanSwapchain::VulkanSwapchain(const VulkanPhysicalDevice& physicalDevice, const VkDevice& logicalDevice, const VkSurfaceKHR& surface, IWindow* window)
+	VulkanSwapchain::VulkanSwapchain(const std::shared_ptr<VulkanPhysicalDevice>& physicalDevice, const VkDevice& logicalDevice, const VkSurfaceKHR& surface, Window* window)
 	{
+		if (!physicalDevice)
+		{
+			INDY_CORE_ERROR("Failed to create swap chain! Null Physical Device Reference");
+			return;
+		}
+
 		m_LogicalDeviceHandle = &logicalDevice;
 
 		// Choose the best format
-		ChooseSurfaceFormat(physicalDevice.swapchainSupport.formats);
+		ChooseSurfaceFormat(physicalDevice->swapchainSupport.formats);
 
 		// Choose the best present mode
-		ChoosePresentMode(physicalDevice.swapchainSupport.presentModes);
+		ChoosePresentMode(physicalDevice->swapchainSupport.presentModes);
 
 		// Choose the best extent
-		ChooseExtent(physicalDevice.swapchainSupport.capabilities, static_cast<GLFWwindow*>(window->NativeWindow()));
+		ChooseExtent(physicalDevice->swapchainSupport.capabilities, static_cast<GLFWwindow*>(window->NativeWindow()));
 
 		// Assign the number of images we'd like to have in the swap chain, always 1 more than the minimum to avoid waiting for driver operations,
 		//	and never more than the maximum.
-		uint32_t imageCount = physicalDevice.swapchainSupport.capabilities.minImageCount + 1;
-		if (physicalDevice.swapchainSupport.capabilities.maxImageCount > 0 && imageCount > physicalDevice.swapchainSupport.capabilities.maxImageCount) {
-			imageCount = physicalDevice.swapchainSupport.capabilities.maxImageCount;
+		uint32_t imageCount = physicalDevice->swapchainSupport.capabilities.minImageCount + 1;
+		if (physicalDevice->swapchainSupport.capabilities.maxImageCount > 0 && 
+			imageCount > physicalDevice->swapchainSupport.capabilities.maxImageCount) {
+			imageCount = physicalDevice->swapchainSupport.capabilities.maxImageCount;
 		}
 
 		VkSwapchainCreateInfoKHR createInfo{};
@@ -46,8 +54,8 @@ namespace Indy::Graphics
 		//	for rendering to another image before presentation.
 		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; 
 
-		uint32_t queueFamilyIndices[] = { physicalDevice.queueFamilies.graphics.value(), physicalDevice.queueFamilies.present.value() };
-		if (physicalDevice.queueFamilies.graphics.value() != physicalDevice.queueFamilies.present.value())
+		uint32_t queueFamilyIndices[] = { physicalDevice->queueFamilies.graphics.value(), physicalDevice->queueFamilies.present.value() };
+		if (physicalDevice->queueFamilies.graphics.value() != physicalDevice->queueFamilies.present.value())
 		{
 			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT; // images are shared among queue families
 			createInfo.queueFamilyIndexCount = 2;
@@ -61,7 +69,7 @@ namespace Indy::Graphics
 		}
 
 		// Used to alter image transformation before presentation
-		createInfo.preTransform = physicalDevice.swapchainSupport.capabilities.currentTransform;
+		createInfo.preTransform = physicalDevice->swapchainSupport.capabilities.currentTransform;
 
 		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 		createInfo.presentMode = m_PresentMode;
@@ -80,13 +88,11 @@ namespace Indy::Graphics
 
 	VulkanSwapchain::~VulkanSwapchain()
 	{
-		INDY_CORE_TRACE("Destroying Image Views!");
 		for (auto& image : m_Images)
 		{
 			vkDestroyImageView(*m_LogicalDeviceHandle, image.imageView, nullptr);
 		}
 
-		INDY_CORE_TRACE("Destroying Swapchain!");
 		vkDestroySwapchainKHR(*m_LogicalDeviceHandle, m_Swapchain, nullptr);
 	}
 
@@ -188,38 +194,44 @@ namespace Indy::Graphics
 	// -------------------------------------------------- Static Methods -----------------------------------------------------
 	// -----------------------------------------------------------------------------------------------------------------------
 
-	void VulkanSwapchain::QuerySupportDetails(VulkanPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface)
+	void VulkanSwapchain::QuerySupportDetails(const std::shared_ptr<VulkanPhysicalDevice>& physicalDevice, const VkSurfaceKHR& surface)
 	{
+		if (!physicalDevice)
+		{
+			INDY_CORE_ERROR("Failed to get swapchain support details! Null Physical Device Reference");
+			return;
+		}
+
 		// Get surface capabilities
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice.handle, surface, &physicalDevice.swapchainSupport.capabilities);
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice->handle, surface, &physicalDevice->swapchainSupport.capabilities);
 
 		// Get surface formats
 		uint32_t formatCount;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice.handle, surface, &formatCount, nullptr);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice->handle, surface, &formatCount, nullptr);
 
 		if (formatCount != 0)
 		{
-			physicalDevice.swapchainSupport.formats.resize(formatCount);
+			physicalDevice->swapchainSupport.formats.resize(formatCount);
 			vkGetPhysicalDeviceSurfaceFormatsKHR(
-				physicalDevice.handle, 
+				physicalDevice->handle, 
 				surface, 
 				&formatCount, 
-				physicalDevice.swapchainSupport.formats.data()
+				physicalDevice->swapchainSupport.formats.data()
 			);
 		}
 
 		// Get present modes
 		uint32_t presentModeCount;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice.handle, surface, &presentModeCount, nullptr);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice->handle, surface, &presentModeCount, nullptr);
 
 		if (presentModeCount != 0)
 		{
-			physicalDevice.swapchainSupport.presentModes.resize(presentModeCount);
+			physicalDevice->swapchainSupport.presentModes.resize(presentModeCount);
 			vkGetPhysicalDeviceSurfacePresentModesKHR(
-				physicalDevice.handle, 
+				physicalDevice->handle, 
 				surface, 
 				&presentModeCount, 
-				physicalDevice.swapchainSupport.presentModes.data()
+				physicalDevice->swapchainSupport.presentModes.data()
 			);
 		}
 	}

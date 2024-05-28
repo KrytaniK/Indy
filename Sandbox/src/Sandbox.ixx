@@ -1,7 +1,6 @@
 export module Sandbox;
 
 import Indy.Application;
-import Indy.Input;
 
 export {
 	namespace Indy
@@ -16,9 +15,6 @@ export {
 			virtual void OnStart() override;
 			virtual void OnUpdate() override;
 			virtual void OnUnload() override;
-
-		private:
-			Input::InputContext m_InputContext;
 		};
 	}
 }

@@ -4,7 +4,7 @@ module;
 
 export module Indy.Window:Events;
 
-import :IWindow;
+import :Window;
 
 import Indy.Events;
 
@@ -15,7 +15,7 @@ export
 		struct WindowCreateEvent : IEvent
 		{
 			WindowCreateInfo* createInfo;
-			IWindow* outWindow;
+			Window* outWindow;
 		};
 
 		struct WindowDestroyEvent : IEvent
@@ -27,7 +27,7 @@ export
 		{
 			uint8_t windowID;
 			bool getActiveWindow;
-			IWindow* outWindow;
+			Window* outWindow;
 		};
 	}
 }

@@ -1,11 +1,10 @@
 module;
 
 #include <string>
-#include <memory>
+#include <cstdint>
 
-export module Indy.Window:IWindow;
+export module Indy.Window:Window;
 
-import Indy.Graphics;
 import Indy.Input;
 
 export
@@ -28,21 +27,21 @@ export
 		};
 
 		// Abstract interface for platform-specific window implementation
-		class IWindow
+		class Window
 		{
 		public:
-			virtual ~IWindow() = default;
+			static Window* Create(const WindowCreateInfo& createInfo);
+			static void Destroy(const uint8_t& windowID);
+
+		public:
+			virtual ~Window() = default;
 
 			virtual void Update() = 0;
 
 			virtual void* NativeWindow() const = 0;
 			virtual const WindowProps& Properties() const = 0;
 
-			virtual Input::InputContext* GetInputContext() = 0;
-
-		protected:
-			std::unique_ptr<Graphics::IRenderer> m_Renderer;
-			std::unique_ptr<Input::InputContext> m_InputContext;
+			virtual Input::Context* GetInputContext() = 0;
 		};
 	}
 }

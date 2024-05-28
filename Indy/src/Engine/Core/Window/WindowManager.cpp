@@ -39,7 +39,7 @@ namespace Indy
 		}
 	}
 
-	IWindow* WindowManager::GetWindow(uint8_t index) const
+	Window* WindowManager::GetWindow(uint8_t index) const
 	{
 		if (index >= m_WindowCount)
 		{
@@ -53,7 +53,7 @@ namespace Indy
 		return m_Windows[index].get();
 	}
 
-	IWindow* WindowManager::GetActiveWindow() const
+	Window* WindowManager::GetActiveWindow() const
 	{
 		uint8_t index = 0;
 		for (const auto& window : m_Windows)
@@ -69,7 +69,7 @@ namespace Indy
 		return nullptr;
 	}
 
-	void WindowManager::AddWindow(WindowCreateInfo& createInfo)
+	Window* WindowManager::AddWindow(WindowCreateInfo& createInfo)
 	{
 		// Ensure We're not attempting to recreate an existing window
 		uint8_t index = 0;
@@ -82,22 +82,24 @@ namespace Indy
 					"Failed to create window [{0}]. Window already exists!",
 					createInfo.title
 				);
-				return; // If a matching window was found, return its handle
+				return window.get();
 			}
 			index++;
 		}
 
 		// Create Platform-Specific Window
-		std::shared_ptr<IWindow> window;
+		std::shared_ptr<Window> window;
 	#ifdef ENGINE_PLATFORM_WINDOWS
 		window = std::make_shared<WindowsWindow>(createInfo);
 	#else
 		INDY_CORE_ERROR("Could not create window: Unsupported Platform!");
-	#endif // ENGINE_PLATFORM_WINDOWS
+	#endif 
 
-		// Store the window on the handle and increment the window count
+		// Store the window and increment the window count
 		m_Windows.emplace_back(window);
 		m_WindowCount++;
+
+		return m_Windows[m_Windows.size() - 1].get();
 	}
 
 	void WindowManager::DestroyWindow(uint8_t index)
@@ -115,7 +117,7 @@ namespace Indy
 		if (index != m_Windows.size() - 1)
 		{
 			// Swap with last window
-			std::shared_ptr<IWindow> toDelete = m_Windows[index];
+			std::shared_ptr<Window> toDelete = m_Windows[index];
 			m_Windows[index] = m_Windows.back();
 			m_Windows[m_Windows.size() - 1] = toDelete;
 		}

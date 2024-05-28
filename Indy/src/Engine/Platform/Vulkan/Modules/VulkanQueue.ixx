@@ -7,7 +7,7 @@ export module Indy.VulkanGraphics:Queue;
 
 export
 {
-	namespace Indy::Graphics
+	namespace Indy
 	{
 		struct QueueFamilyIndices
 		{
@@ -25,6 +25,7 @@ export
 		{
 		public:
 			VulkanQueue(const VkDevice& logicalDevice, const QueueFamilyIndices& queueIndices);
+			~VulkanQueue() = default;
 
 		private:
 			VkDevice m_LogicalDevice = VK_NULL_HANDLE;

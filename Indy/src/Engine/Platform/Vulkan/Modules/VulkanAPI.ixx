@@ -1,33 +1,33 @@
 module;
 
-#include <vector>
-#include <memory>
-
 #include <vulkan/vulkan.h>
 
 export module Indy.VulkanGraphics:Backend;
 
 import Indy.Graphics;
+import Indy.Window;
 
 import :Events;
+import :RenderTarget;
 import :Device;
 
 export
 {
-	namespace Indy::Graphics
+	namespace Indy
 	{
-		class VulkanAPI : public IRenderAPI
+		class VulkanAPI : public GraphicsAPI
 		{
 		public:
 			VulkanAPI();
 			virtual ~VulkanAPI() override;
 
-			void OnLoad() override;
-			void OnStart() override;
-			void OnUnload() override;
+			virtual void OnLoad() override;
+			virtual void OnStart() override;
+			virtual void OnUnload() override;
 
-			void OnDeviceSelect(VKDeviceSelectEvent* event);
-			void OnSurfaceCreate(VKSurfaceCreateEvent* event);
+			virtual void CreateRenderTarget(Window* window) override;
+
+			void OnFetchInstance(VkInstanceFetchEvent* event);
 
 		private:
 			bool Init();
@@ -36,8 +36,8 @@ export
 
 		private:
 			VkInstance m_Instance;
-			std::vector<std::shared_ptr<VulkanPhysicalDevice>> m_PhysicalDevices;
 			VkDebugUtilsMessengerEXT m_DebugMessenger;
+			std::vector<VulkanRenderTarget> m_RenderTargets;
 		};
 	}
 }

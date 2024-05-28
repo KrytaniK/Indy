@@ -27,7 +27,7 @@ export
 			void OnSetContext(Input::SetContextEvent* event);
 
 		private:
-			Input::InputContext* m_ActiveContext = nullptr;
+			Input::Context* m_ActiveContext = nullptr;
 			std::unique_ptr<Input::DeviceManager> m_DeviceManager;
 		};
 	}

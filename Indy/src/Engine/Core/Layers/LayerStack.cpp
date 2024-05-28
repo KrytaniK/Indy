@@ -23,13 +23,13 @@ namespace Indy
 				layer->Update();
 	}
 
-	void LayerStack::PushLayer(const std::shared_ptr<ILayer> layer)
+	void LayerStack::PushLayer(const std::shared_ptr<Layer> layer)
 	{
 		m_Layers.insert(m_Layers.begin() + m_OverlayStartIndex++, layer);
 		layer->onAttach();
 	}
 
-	void LayerStack::PushOverlay(const std::shared_ptr<ILayer> overlay)
+	void LayerStack::PushOverlay(const std::shared_ptr<Layer> overlay)
 	{
 		m_Layers.emplace_back(overlay);
 		overlay->onAttach();

@@ -1,18 +1,18 @@
 module;
 
-export module Indy.Graphics:IRenderer;
+export module Indy.Graphics:Renderer;
 
 import Indy.Events;
 
 export
 {
-	namespace Indy::Graphics
+	namespace Indy
 	{
 		// Interface for platform-specific renderers.
-		class IRenderer
+		class Renderer
 		{
 		public:
-			virtual ~IRenderer() = default;
+			virtual ~Renderer() = default;
 
 			virtual void Render() = 0;
 		};
