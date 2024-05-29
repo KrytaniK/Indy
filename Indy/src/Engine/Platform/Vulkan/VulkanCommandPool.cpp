@@ -36,9 +36,6 @@ namespace Indy
 
 	VulkanCommandPool::~VulkanCommandPool()
 	{
-		// Wait for GPU to finish operations
-		vkDeviceWaitIdle(m_LogicalDevice);
-
 		// Then, destroy the command pool and allocated buffers
 		vkDestroyCommandPool(m_LogicalDevice, m_CommandPool, nullptr);
 	}

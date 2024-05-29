@@ -19,6 +19,7 @@ workspace "Indy"
 	IncludeDirs["spdlog"] = "%{wks.location}/Indy/lib/spdlog/include"
 	IncludeDirs["GLFW"] = "%{wks.location}/Indy/lib/GLFW/include"
 	IncludeDirs["Vulkan"] = "%{VulkanSDK}/Include"
+	IncludeDirs["VMA"] = "%{wks.location}/Indy/lib/VMA/include"
 
 
 	-- Projects

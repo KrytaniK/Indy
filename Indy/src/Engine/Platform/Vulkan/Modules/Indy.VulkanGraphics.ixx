@@ -14,3 +14,4 @@ export import :Pipeline;
 export import :CommandPool;
 export import :SyncObjects;
 export import :Frame;
+export import :Image;

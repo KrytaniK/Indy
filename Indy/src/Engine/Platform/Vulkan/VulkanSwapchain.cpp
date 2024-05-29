@@ -94,66 +94,12 @@ namespace Indy
 		vkDestroySwapchainKHR(m_LogicalDevice, m_Swapchain, nullptr);
 	}
 
-	void VulkanSwapchain::TransitionImage(const VkCommandBuffer& commandBuffer, const uint32_t& imageIndex,
-		const VkImageLayout& currentLayout, const VkImageLayout& newLayout)
+	const VkSwapchainImage& VulkanSwapchain::GetImage(const uint32_t& index)
 	{
-		// NOTE: This is inefficient and binds the pipeline for a bit. Look into improving this
+		if (index >= m_Images.size())
+			return {};
 
-		VkImageMemoryBarrier2 imageBarrier{};
-		imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-		imageBarrier.pNext = nullptr;
-
-		// Set barrier masks
-		imageBarrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-		imageBarrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
-		imageBarrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-		imageBarrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
-
-		// Transition from old to new layout
-		imageBarrier.oldLayout = currentLayout;
-		imageBarrier.newLayout = newLayout;
-
-		// Create Image Subresource Range with aspect mask
-		VkImageAspectFlags aspectMask = (newLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
-		VkImageSubresourceRange subImage{};
-		subImage.aspectMask = aspectMask;
-		subImage.baseMipLevel = 0;
-		subImage.levelCount = VK_REMAINING_MIP_LEVELS;
-		subImage.baseArrayLayer = 0;
-		subImage.layerCount = VK_REMAINING_ARRAY_LAYERS;
-
-		// Create aspect mask
-		imageBarrier.subresourceRange = subImage;
-		imageBarrier.image = m_Images[imageIndex].image;
-
-		// Dependency struct
-		VkDependencyInfo depInfo{};
-		depInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
-		depInfo.pNext = nullptr;
-
-		// Attach image barrier
-		depInfo.imageMemoryBarrierCount = 1;
-		depInfo.pImageMemoryBarriers = &imageBarrier;
-
-		vkCmdPipelineBarrier2(commandBuffer, &depInfo);
-	}
-
-	void VulkanSwapchain::ClearImage(const VkCommandBuffer& commandBuffer, const uint8_t& frameNumber, const uint32_t& imageIndex, const VkImageLayout& imageLayout)
-	{
-		// Create clear color from frame number
-		VkClearColorValue clearColorValue{};
-		clearColorValue = {{0.0f, 0.0f, std::abs(std::sin(frameNumber / 120.f))}};
-
-		// Specify subresource range
-		VkImageSubresourceRange clearRange{};
-		clearRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		clearRange.baseMipLevel = 0;
-		clearRange.levelCount = VK_REMAINING_MIP_LEVELS;
-		clearRange.baseArrayLayer = 0;
-		clearRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
-
-		// Clear image
-		vkCmdClearColorImage(commandBuffer, m_Images[imageIndex].image, imageLayout, &clearColorValue, 1, &clearRange);
+		return m_Images[index];
 	}
 
 	void VulkanSwapchain::ChooseSurfaceFormat(const ::std::vector<VkSurfaceFormatKHR>& availableFormats)

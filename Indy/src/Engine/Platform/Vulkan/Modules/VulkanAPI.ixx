@@ -37,7 +37,6 @@ export
 		private:
 			VkInstance m_Instance;
 			VkDebugUtilsMessengerEXT m_DebugMessenger;
-			std::vector<VulkanRenderTarget> m_RenderTargets;
 		};
 	}
 }

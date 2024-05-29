@@ -23,6 +23,7 @@ project "Sandbox"
 		"%{wks.location}/Indy/src",
 		"%{IncludeDirs.spdlog}",
 		"%{IncludeDirs.Vulkan}",
+		"%{IncludeDirs.VMA}",
 	}
 
 	libdirs

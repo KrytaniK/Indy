@@ -1,3 +1,6 @@
 [submodule "Indy/lib/spdlog"]
 	path = Indy/lib/spdlog
 	url = https://github.com/gabime/spdlog.git
+[submodule "Indy/lib/VMA"]
+	path = Indy/lib/VMA
+	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git

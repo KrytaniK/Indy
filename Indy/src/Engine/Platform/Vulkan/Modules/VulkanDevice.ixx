@@ -4,6 +4,7 @@ module;
 #include <vector>
 
 #include <vulkan/vulkan.h>
+#include <vk_mem_alloc.h>
 
 export module Indy.VulkanGraphics:Device;
 
@@ -60,6 +61,7 @@ export
 
 			const std::shared_ptr<VulkanPhysicalDevice>& GetPhysicalDevice();
 			const VkDevice& Get();
+			const VmaAllocator& GetVmaAllocator() const { return m_Allocator; };
 
 			VulkanQueue* Queues() { return m_Queue.get(); };
 
@@ -69,8 +71,9 @@ export
 			bool IsCompatibleFeature(const GPUCompatLevel& preference, bool hasFeature, uint8_t& rating);
 
 		private:
-			std::shared_ptr<VulkanPhysicalDevice> m_PhysicalDevice;
+			VmaAllocator m_Allocator;
 			VkDevice m_LogicalDevice = VK_NULL_HANDLE;
+			std::shared_ptr<VulkanPhysicalDevice> m_PhysicalDevice;
 			std::unique_ptr<VulkanQueue> m_Queue;
 		};
 	}

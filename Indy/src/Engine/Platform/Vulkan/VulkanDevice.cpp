@@ -6,6 +6,9 @@
 
 #include <vulkan/vulkan.h>
 
+#define VMA_IMPLEMENTATION
+#include <vk_mem_alloc.h>
+
 import Indy.VulkanGraphics;
 
 import Indy.Events;
@@ -16,6 +19,7 @@ namespace Indy
 
 	VulkanDevice::VulkanDevice(const GPUCompatibility& compatibility)
 	{
+		// Choose a suitable physical device
 		FindCompatibleGPU(compatibility);
 
 		if (!m_PhysicalDevice)
@@ -24,11 +28,36 @@ namespace Indy
 			return;
 		}
 
+		// Create Logical Device
 		CreateLogicalDevice();
+
+		VkInstanceFetchEvent event;
+		Events<VkInstanceFetchEvent>::Notify(&event);
+
+		if (!event.outInstance)
+		{
+			INDY_CORE_ERROR("Failed to fetch Vulkan instance!");
+			return;
+		}
+
+		// Create a memory allocator
+		VmaAllocatorCreateInfo allocatorInfo{};
+		allocatorInfo.physicalDevice = m_PhysicalDevice->handle;
+		allocatorInfo.device = m_LogicalDevice;
+		allocatorInfo.instance = *event.outInstance;
+		allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+
+		if (vmaCreateAllocator(&allocatorInfo, &m_Allocator) != VK_SUCCESS)
+		{
+			INDY_CORE_ERROR("Failed to create device memory allocator!");
+			return;
+		}
+
 	}
 
 	VulkanDevice::VulkanDevice(const GPUCompatibility& compatibility, const VkSurfaceKHR& surface)
 	{
+		// Choose a compatible physical device
 		FindCompatibleGPU(compatibility);
 
 		if (!m_PhysicalDevice)
@@ -37,17 +66,44 @@ namespace Indy
 			return;
 		}
 
+		// Query for surface support
 		if (!VulkanDevice::GetGPUSurfaceSupport(m_PhysicalDevice, surface))
 		{
 			INDY_CORE_ERROR("Failed to create logical device. Does not support surface presentation!");
 			return;
 		}
 
+		// Create logical device
 		CreateLogicalDevice();
+
+		VkInstanceFetchEvent event;
+		Events<VkInstanceFetchEvent>::Notify(&event);
+
+		if (!event.outInstance)
+		{
+			INDY_CORE_ERROR("Failed to fetch Vulkan instance!");
+			return;
+		}
+
+		// Create a memory allocator
+		VmaAllocatorCreateInfo allocatorInfo{};
+		allocatorInfo.physicalDevice = m_PhysicalDevice->handle;
+		allocatorInfo.device = m_LogicalDevice;
+		allocatorInfo.instance = *event.outInstance;
+		allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+
+		if (vmaCreateAllocator(&allocatorInfo, &m_Allocator) != VK_SUCCESS)
+		{
+			INDY_CORE_ERROR("Failed to create device memory allocator!");
+			return;
+		}
 	}
 
 	VulkanDevice::~VulkanDevice()
 	{
+		vmaDestroyAllocator(m_Allocator);
+
+		// Always destroy logical device LAST
 		vkDestroyDevice(m_LogicalDevice, nullptr);
 	}
 

@@ -7,6 +7,7 @@
 #include <shaderc/shaderc.hpp>
 
 #include <vulkan/vulkan.h>
+
 #include <GLFW/glfw3.h>
 
 import Indy.Application;
@@ -56,7 +57,7 @@ namespace Indy
 		base_window_compatibility.typePreference =	COMPAT_PREFER;		// always prefer a dedicated GPU, but it's not required.
 
 		VulkanRenderTarget target(m_Instance, base_window_compatibility, window);
-		target.Draw();
+		target.Render();
 	}
 
 	// Event Handles
