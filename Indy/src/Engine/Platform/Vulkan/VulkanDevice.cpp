@@ -156,15 +156,11 @@ namespace Indy
 			queueCreateInfos.push_back(queueCreateInfo);
 		}
 
-		// Features specified via compatibility (e.g., geometry shaders, tessellation shaders, etc.)
-		VkPhysicalDeviceFeatures deviceFeatures{};
-
 		// Initialize logical device creation structure
 		VkDeviceCreateInfo deviceCreateInfo{};
 		deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
 		deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-		deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
 		// Enable required extensions
 		deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(g_Vulkan_Device_Extensions.size());
@@ -177,6 +173,31 @@ namespace Indy
 #else
 		deviceCreateInfo.enabledLayerCount = 0;
 #endif
+
+		// Core Vulkan Features
+		VkPhysicalDeviceFeatures features{};
+
+		// Vulkan 1.2 features
+		VkPhysicalDeviceVulkan12Features features12{};
+		features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+		features12.bufferDeviceAddress = VK_TRUE;
+		features12.descriptorIndexing = VK_TRUE;
+
+		// Vulkan 1.3 features
+		VkPhysicalDeviceVulkan13Features features13{};
+		features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+		features13.dynamicRendering = VK_TRUE;
+		features13.synchronization2 = VK_TRUE;
+		features13.pNext = &features12;
+
+		VkPhysicalDeviceFeatures2 deviceFeatures2{};
+		deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		deviceFeatures2.features = features;
+		deviceFeatures2.pNext = &features13;
+
+		//vkGetPhysicalDeviceFeatures2(m_PhysicalDevice->handle, &deviceFeatures2);
+
+		deviceCreateInfo.pNext = &deviceFeatures2;
 
 		// Create the logical device
 		if (vkCreateDevice(m_PhysicalDevice->handle, &deviceCreateInfo, nullptr, &m_LogicalDevice) != VK_SUCCESS)

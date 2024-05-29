@@ -48,7 +48,7 @@ namespace Indy
 
 	void VulkanAPI::CreateRenderTarget(Window* window)
 	{
-		GPUCompatibility base_window_compatibility;
+		GPUCompatibility base_window_compatibility{};
 		base_window_compatibility.geometryShader =	COMPAT_REQUIRED;	// always require geometry shaders
 		base_window_compatibility.graphics =		COMPAT_REQUIRED;	// always require graphics operations
 		base_window_compatibility.compute =			COMPAT_PREFER;		// always prefer compute shaders, but don't require it.
@@ -56,6 +56,7 @@ namespace Indy
 		base_window_compatibility.typePreference =	COMPAT_PREFER;		// always prefer a dedicated GPU, but it's not required.
 
 		VulkanRenderTarget target(m_Instance, base_window_compatibility, window);
+		target.Draw();
 	}
 
 	// Event Handles

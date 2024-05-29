@@ -61,6 +61,8 @@ export
 			const std::shared_ptr<VulkanPhysicalDevice>& GetPhysicalDevice();
 			const VkDevice& Get();
 
+			VulkanQueue* Queues() { return m_Queue.get(); };
+
 		private:
 			void CreateLogicalDevice();
 			void FindCompatibleGPU(const GPUCompatibility& compatibility);

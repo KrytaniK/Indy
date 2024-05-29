@@ -21,7 +21,7 @@ namespace Indy
 			return;
 		}
 
-		m_LogicalDeviceHandle = &logicalDevice;
+		m_LogicalDevice = logicalDevice;
 
 		// Choose the best format
 		ChooseSurfaceFormat(physicalDevice->swapchainSupport.formats);
@@ -49,10 +49,8 @@ namespace Indy
 		createInfo.imageExtent = m_Extent;
 		createInfo.imageArrayLayers = 1;
 
-		// This is specifically for rendering to the surface directly.
-		// Later, this will need to be dynamic (likely using VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-		//	for rendering to another image before presentation.
-		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT; 
+		// For use with dynamic rendering
+		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
 		uint32_t queueFamilyIndices[] = { physicalDevice->queueFamilies.graphics.value(), physicalDevice->queueFamilies.present.value() };
 		if (physicalDevice->queueFamilies.graphics.value() != physicalDevice->queueFamilies.present.value())
@@ -90,10 +88,72 @@ namespace Indy
 	{
 		for (auto& image : m_Images)
 		{
-			vkDestroyImageView(*m_LogicalDeviceHandle, image.imageView, nullptr);
+			vkDestroyImageView(m_LogicalDevice, image.imageView, nullptr);
 		}
 
-		vkDestroySwapchainKHR(*m_LogicalDeviceHandle, m_Swapchain, nullptr);
+		vkDestroySwapchainKHR(m_LogicalDevice, m_Swapchain, nullptr);
+	}
+
+	void VulkanSwapchain::TransitionImage(const VkCommandBuffer& commandBuffer, const uint32_t& imageIndex,
+		const VkImageLayout& currentLayout, const VkImageLayout& newLayout)
+	{
+		// NOTE: This is inefficient and binds the pipeline for a bit. Look into improving this
+
+		VkImageMemoryBarrier2 imageBarrier{};
+		imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
+		imageBarrier.pNext = nullptr;
+
+		// Set barrier masks
+		imageBarrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+		imageBarrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
+		imageBarrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+		imageBarrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
+
+		// Transition from old to new layout
+		imageBarrier.oldLayout = currentLayout;
+		imageBarrier.newLayout = newLayout;
+
+		// Create Image Subresource Range with aspect mask
+		VkImageAspectFlags aspectMask = (newLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+		VkImageSubresourceRange subImage{};
+		subImage.aspectMask = aspectMask;
+		subImage.baseMipLevel = 0;
+		subImage.levelCount = VK_REMAINING_MIP_LEVELS;
+		subImage.baseArrayLayer = 0;
+		subImage.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+		// Create aspect mask
+		imageBarrier.subresourceRange = subImage;
+		imageBarrier.image = m_Images[imageIndex].image;
+
+		// Dependency struct
+		VkDependencyInfo depInfo{};
+		depInfo.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO;
+		depInfo.pNext = nullptr;
+
+		// Attach image barrier
+		depInfo.imageMemoryBarrierCount = 1;
+		depInfo.pImageMemoryBarriers = &imageBarrier;
+
+		vkCmdPipelineBarrier2(commandBuffer, &depInfo);
+	}
+
+	void VulkanSwapchain::ClearImage(const VkCommandBuffer& commandBuffer, const uint8_t& frameNumber, const uint32_t& imageIndex, const VkImageLayout& imageLayout)
+	{
+		// Create clear color from frame number
+		VkClearColorValue clearColorValue{};
+		clearColorValue = {{0.0f, 0.0f, std::abs(std::sin(frameNumber / 120.f))}};
+
+		// Specify subresource range
+		VkImageSubresourceRange clearRange{};
+		clearRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		clearRange.baseMipLevel = 0;
+		clearRange.levelCount = VK_REMAINING_MIP_LEVELS;
+		clearRange.baseArrayLayer = 0;
+		clearRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+		// Clear image
+		vkCmdClearColorImage(commandBuffer, m_Images[imageIndex].image, imageLayout, &clearColorValue, 1, &clearRange);
 	}
 
 	void VulkanSwapchain::ChooseSurfaceFormat(const ::std::vector<VkSurfaceFormatKHR>& availableFormats)
@@ -150,14 +210,14 @@ namespace Indy
 		std::vector<VkImage> images;
 
 		// Retrieve image count from swapchain
-		vkGetSwapchainImagesKHR(*m_LogicalDeviceHandle, m_Swapchain, &imageCount, nullptr);
+		vkGetSwapchainImagesKHR(m_LogicalDevice, m_Swapchain, &imageCount, nullptr);
 
 		// resize vectors to match
 		images.resize(imageCount);
 		m_Images.resize(imageCount);
 
 		// retrieve images
-		vkGetSwapchainImagesKHR(*m_LogicalDeviceHandle, m_Swapchain, &imageCount, images.data());
+		vkGetSwapchainImagesKHR(m_LogicalDevice, m_Swapchain, &imageCount, images.data());
 
 		// Set up image view creation. NOTE: This is for VkSurface image views ONLY.
 		VkImageViewCreateInfo createInfo{};
@@ -182,7 +242,7 @@ namespace Indy
 			createInfo.image = images[i]; // apply current image to createInfo
 
 			// Generate image view
-			if (vkCreateImageView(*m_LogicalDeviceHandle, &createInfo, nullptr, &m_Images[i].imageView) != VK_SUCCESS)
+			if (vkCreateImageView(m_LogicalDevice, &createInfo, nullptr, &m_Images[i].imageView) != VK_SUCCESS)
 			{
 				INDY_CORE_ERROR("Failed to create image view!");
 				return;
