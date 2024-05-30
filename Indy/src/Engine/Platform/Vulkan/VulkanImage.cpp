@@ -159,5 +159,4 @@ namespace Indy
 		vkDestroyImageView(m_LogicalDevice, m_ImageView, nullptr);
 		vmaDestroyImage(*m_Allocator, m_Image, m_Allocation);
 	}
-
 }

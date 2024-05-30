@@ -18,7 +18,6 @@ namespace Indy
 		m_Instance = instance;
 		m_DeviceHandle = spec.deviceHandle;
 		m_ComputePipeline = spec.computePipeline;
-		m_RenderImageDescriptor = spec.imageDescriptor;
 		m_FrameCount = 0;
 
 		if (!spec.useSurface)
@@ -41,44 +40,35 @@ namespace Indy
 		// Create Swapchain with window
 		m_Swapchain = std::make_unique<VulkanSwapchain>(physicalDevice, m_DeviceHandle->Get(), m_Surface, spec.window);
 
-		// Allocate frame data for this render target
-		m_Frames.reserve(g_Max_Frames_In_Flight);
-		for (uint8_t i = 0; i < g_Max_Frames_In_Flight; i++)
-			m_Frames.emplace_back(std::make_unique<VulkanFrame>(m_DeviceHandle->Get(), physicalDevice->queueFamilies));
-
-		// Allocate the image we want to render to
-		VulkanImageSpec renderImageSpec{};
-		renderImageSpec.extent = {
+		VulkanImageSpec offscreenImageSpec{};
+		offscreenImageSpec.extent = {
 			spec.window->Properties().width,
 			spec.window->Properties().height,
 			1
 		};
-		renderImageSpec.format = VK_FORMAT_R16G16B16A16_SFLOAT;
-		renderImageSpec.usageFlags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-		renderImageSpec.usageFlags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-		renderImageSpec.usageFlags |= VK_IMAGE_USAGE_STORAGE_BIT;
-		renderImageSpec.usageFlags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-		renderImageSpec.aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
+		offscreenImageSpec.format = VK_FORMAT_R16G16B16A16_SFLOAT;
+		offscreenImageSpec.usageFlags |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+		offscreenImageSpec.usageFlags |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+		offscreenImageSpec.usageFlags |= VK_IMAGE_USAGE_STORAGE_BIT;
+		offscreenImageSpec.usageFlags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		offscreenImageSpec.aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
 
-		m_RenderImage = std::make_unique<VulkanImage>(m_DeviceHandle->GetVmaAllocator(), m_DeviceHandle->Get(), renderImageSpec);
+		m_OffscreenImage = std::make_unique<VulkanImage>(m_DeviceHandle->GetVmaAllocator(), m_DeviceHandle->Get(), offscreenImageSpec);
 
-		// Initialize Descriptor Sets
-		VkDescriptorImageInfo imgInfo{};
-		imgInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		imgInfo.imageView = m_RenderImage->GetView();
+		// Allocate frame data for this render target
+		m_Frames.reserve(g_Max_Frames_In_Flight);
+		for (uint8_t i = 0; i < g_Max_Frames_In_Flight; i++)
+			m_Frames.emplace_back(std::make_unique<VulkanFrame>(m_DeviceHandle, physicalDevice->queueFamilies));
 
-		VkWriteDescriptorSet renderImageWrite = {};
-		renderImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		renderImageWrite.pNext = nullptr;
+		// Offscreen Image Descriptor Info
+		VkDescriptorImageInfo imageInfo{};
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		imageInfo.imageView = m_OffscreenImage->GetView();
 
-		// Bind Compute shader descriptor set (binding = 0)
-		renderImageWrite.dstBinding = 0;
-		renderImageWrite.dstSet = spec.imageDescriptor->GetSet();
-		renderImageWrite.descriptorCount = 1;
-		renderImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		renderImageWrite.pImageInfo = &imgInfo;
-
-		vkUpdateDescriptorSets(m_DeviceHandle->Get(), 1, &renderImageWrite, 0, nullptr);
+		// Update compute image descriptor
+		auto computeDescriptor = m_ComputePipeline->GetDescriptor(INDY_SHADER_TYPE_COMPUTE);
+		computeDescriptor->UpdateImageBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &imageInfo);
+		computeDescriptor->UpdateDescriptorSets(m_DeviceHandle->Get());
 	}
 
 	VulkanRenderTarget::~VulkanRenderTarget()
@@ -90,8 +80,8 @@ namespace Indy
 		for (int i = 0; i < m_Frames.size(); i++)
 			m_Frames[i] = nullptr;
 
-		// Explicitly delete render image
-		m_RenderImage = nullptr;
+		// Explicitly destroy offscreen image
+		m_OffscreenImage = nullptr;
 
 		// Explicitly destroy swap chain.
 		m_Swapchain = nullptr; 
@@ -121,18 +111,21 @@ namespace Indy
 
 	void VulkanRenderTarget::OnBeginFrame(VulkanFrame* frame, uint32_t& swapchainImageIndex)
 	{
+		// Wait for GPU to finish operations
 		if (vkWaitForFences(m_DeviceHandle->Get(), 1, &frame->GetFence("Render"), VK_TRUE, UINT64_MAX) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("Error waiting for Render Fence");
 			return;
 		}
 
+		// Reset the current fence
 		if (vkResetFences(m_DeviceHandle->Get(), 1, &frame->GetFence("Render")) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("Error resetting Render Fence");
 			return;
 		}
 
+		// Obtain the next swapchain image (TODO: if we're rendering to a surface) 
 		if (vkAcquireNextImageKHR(m_DeviceHandle->Get(), m_Swapchain->Get(), UINT64_MAX, frame->GetSemaphore("Swapchain"), nullptr, &swapchainImageIndex) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("Error retrieving next swapchain image!");
@@ -147,10 +140,11 @@ namespace Indy
 	{
 		// Get primary command buffer
 		auto& commandBuffer = frame->GetCommandBuffer(0);
+		auto computeDescriptor = m_ComputePipeline->GetDescriptor(INDY_SHADER_TYPE_COMPUTE);
 
 		// Transition render image to general layout so we can write to it
 		VulkanImage::TransitionLayout(
-			commandBuffer, m_RenderImage->Get(), 
+			commandBuffer, m_OffscreenImage->Get(),
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL
 		);
 
@@ -160,19 +154,19 @@ namespace Indy
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline->Get());
 
 			// Bind compute render image descriptors
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline->GetLayout(), 0, 1, &m_RenderImageDescriptor->GetSet(), 0, nullptr);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline->GetLayout(), 0, 1, &computeDescriptor->GetSet(), 0, nullptr);
 
 			vkCmdDispatch(
 				commandBuffer, 
-				std::ceil(m_RenderImage->GetExtent().width / 16.0), 
-				std::ceil(m_RenderImage->GetExtent().height / 16.0), 
+				std::ceil(m_OffscreenImage->GetExtent().width / 16.0),
+				std::ceil(m_OffscreenImage->GetExtent().height / 16.0),
 				1
 			);
 		}
 
 		// Transition render image to transfer source
 		VulkanImage::TransitionLayout(
-			commandBuffer, m_RenderImage->Get(), 
+			commandBuffer, m_OffscreenImage->Get(),
 			VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
 		);
 
@@ -184,8 +178,8 @@ namespace Indy
 
 		// Copy rendered image to swap chain image
 		VulkanImage::Copy(
-			commandBuffer, m_RenderImage->Get(), m_Swapchain->GetImage(swapchainImageIndex).image,
-			{ m_RenderImage->GetExtent().width, m_RenderImage->GetExtent().height }, m_Swapchain->GetExtent()
+			commandBuffer, m_OffscreenImage->Get(), m_Swapchain->GetImage(swapchainImageIndex).image,
+			{ m_OffscreenImage->GetExtent().width, m_OffscreenImage->GetExtent().height }, m_Swapchain->GetExtent()
 		);
 
 		// Transition swapchain image to presentation
@@ -272,14 +266,6 @@ namespace Indy
 
 	VulkanFrame* VulkanRenderTarget::GetCurrentFrame()
 	{
-		uint8_t frameIndex = m_FrameCount % g_Max_Frames_In_Flight;
-
-		if (frameIndex == 0)
-		{
-			// Reset all command buffers once we've cycled through each frame
-			m_Frames[frameIndex]->GetCommandPool()->Reset();
-		}
-
-		return m_Frames[frameIndex].get();
+		return m_Frames[m_FrameCount % g_Max_Frames_In_Flight].get();
 	}
 }

@@ -43,7 +43,7 @@ export
 			bool CreateVulkanInstance();
 			bool CreateDebugMessenger(const VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 			bool CreateGlobalDevice();
-			bool CreateGlobalDescriptors();
+			bool CreateGlobalDescriptorPool();
 			bool CreateBasePipelines();
 
 		private:
@@ -53,7 +53,6 @@ export
 			std::unique_ptr<VulkanDescriptorPool> m_Global_DescriptorPool;
 
 			// Temp?
-			std::unique_ptr<VulkanDescriptor> m_RTImageDescriptor;
 			std::unordered_map<std::string, std::unique_ptr<VulkanPipeline>> m_Pipelines;
 		};
 	}

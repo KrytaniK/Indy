@@ -15,7 +15,7 @@ import :Device;
 import :Swapchain;
 import :Frame;
 import :Image;
-import :Descriptor;
+import :DescriptorPool;
 
 export
 {
@@ -26,8 +26,9 @@ export
 			VulkanDevice* deviceHandle;
 			bool useSurface = false;
 			Window* window = nullptr;
-			VulkanDescriptor* imageDescriptor;
 			VulkanPipeline* computePipeline;
+			VulkanPipeline* graphicsPipeline;
+			VulkanPipeline* raytracePipeline;
 		};
 
 		class VulkanRenderTarget : RenderTarget
@@ -63,10 +64,9 @@ export
 
 			VulkanDevice* m_DeviceHandle;
 			std::unique_ptr<VulkanSwapchain> m_Swapchain;
-			std::unique_ptr<VulkanImage> m_RenderImage;
+			std::unique_ptr<VulkanImage> m_OffscreenImage;
 
 			VulkanPipeline* m_ComputePipeline;
-			VulkanDescriptor* m_RenderImageDescriptor;
 
 			std::vector<std::unique_ptr<VulkanFrame>> m_Frames;
 			uint8_t m_FrameCount;

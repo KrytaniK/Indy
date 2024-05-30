@@ -15,6 +15,5 @@ export import :CommandPool;
 export import :SyncObjects;
 export import :Frame;
 export import :Image;
-export import :Descriptor;
 export import :DescriptorPool;
-export import :DescriptorSetLayout;
+export import :Descriptor;

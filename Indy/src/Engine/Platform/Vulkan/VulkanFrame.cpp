@@ -8,10 +8,10 @@ import Indy.VulkanGraphics;
 
 namespace Indy
 {
-	VulkanFrame::VulkanFrame(const VkDevice& logicalDevice, const QueueFamilyIndices& queueFamilies)
+	VulkanFrame::VulkanFrame(VulkanDevice* device, const QueueFamilyIndices& queueFamilies)
 	{
-		m_CommandPool = std::make_unique<VulkanCommandPool>(logicalDevice, queueFamilies.graphics.value(), 1);
-		m_SyncObjects = std::make_unique<VulkanSyncObjects>(logicalDevice);
+		m_CommandPool = std::make_unique<VulkanCommandPool>(device->Get(), queueFamilies.graphics.value(), 1);
+		m_SyncObjects = std::make_unique<VulkanSyncObjects>(device->Get());
 
 		m_SyncObjects->AddFence("Render", VK_FENCE_CREATE_SIGNALED_BIT);
 		m_SyncObjects->AddSemaphore("Swapchain");
@@ -44,5 +44,4 @@ namespace Indy
 	{
 		return m_SyncObjects->GetSemaphore(semaphore);
 	}
-	
 }

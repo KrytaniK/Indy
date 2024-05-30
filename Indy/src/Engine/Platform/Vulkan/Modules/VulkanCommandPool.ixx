@@ -29,8 +29,6 @@ export
 			void BeginCommandBuffer(const uint8_t& index, const VkCommandBufferUsageFlags& flags) const;
 			void EndCommandBuffer(const uint8_t& index) const;
 
-			void Reset(bool release = false) const;
-
 		private:
 			void AllocateCommandBuffers(const uint8_t& commandBufferCount);
 

@@ -1,8 +1,12 @@
 module;
 
+#include <vector>
+
 #include <vulkan/vulkan.h>
 
 export module Indy.VulkanGraphics:Descriptor;
+
+import :DescriptorPool;
 
 export
 {
@@ -11,17 +15,20 @@ export
 		class VulkanDescriptor
 		{
 		public:
-			VulkanDescriptor(const VkDescriptorSet& set, const VkDescriptorSetLayout& layout)
-				: m_Set(set), m_Layout(layout) {};
+			VulkanDescriptor(VulkanDescriptorPool* descriptorPool, const VkDescriptorSetLayout& layout);
 
-			~VulkanDescriptor() = default;
+			void UpdateBufferBinding(const VkDescriptorType& descriptorType, uint32_t binding, VkDescriptorBufferInfo* bufferInfos, const uint32_t& elementOffset = 0, const uint32_t& updateCount = 1);
+			void UpdateImageBinding(const VkDescriptorType& descriptorType, uint32_t binding, VkDescriptorImageInfo* imageInfos, const uint32_t& elementOffset = 0, const uint32_t& updateCount = 1);
 
-			const VkDescriptorSet& GetSet() const { return m_Set; };
-			const VkDescriptorSetLayout& GetSetLayout() const { return m_Layout; };
+			void UpdateDescriptorSets(const VkDevice& logicalDevice);
+
+			const VkDescriptorSet& GetSet() { return m_Set; };
+			const VkDescriptorSetLayout& GetLayout() { return m_Layout; };
 
 		private:
-			VkDescriptorSet m_Set;
 			VkDescriptorSetLayout m_Layout;
+			VkDescriptorSet m_Set;
+			std::vector<VkWriteDescriptorSet> m_Writes;
 		};
 	}
 }

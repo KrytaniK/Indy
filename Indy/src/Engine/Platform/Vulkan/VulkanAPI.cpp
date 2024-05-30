@@ -11,6 +11,8 @@
 import Indy.Application;
 import Indy.Graphics;
 
+import Indy.Profiler;
+
 import Indy.VulkanGraphics;
 
 import Indy.Events;
@@ -53,8 +55,9 @@ namespace Indy
 		rtSpec.deviceHandle = m_Global_Device.get();
 		rtSpec.useSurface = true;
 		rtSpec.window = window;
-		rtSpec.imageDescriptor = m_RTImageDescriptor.get();
 		rtSpec.computePipeline = m_Pipelines["Compute"].get();
+		rtSpec.graphicsPipeline = nullptr;
+		rtSpec.raytracePipeline = nullptr;
 
 		VulkanRenderTarget target(m_Instance, rtSpec);
 		target.Render();
@@ -82,7 +85,7 @@ namespace Indy
 		if (!CreateGlobalDevice())
 			return false;
 
-		if (!CreateGlobalDescriptors())
+		if (!CreateGlobalDescriptorPool())
 			return false;
 
 		if (!CreateBasePipelines())
@@ -99,8 +102,6 @@ namespace Indy
 		Vulkan_DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
 
 #endif
-
-		// Destroy Logical devices before instance
 
 		INDY_CORE_TRACE("Destroying Vulkan Instance...");
 		vkDestroyInstance(m_Instance, nullptr);
@@ -247,27 +248,14 @@ namespace Indy
 		return true;
 	}
 
-	bool VulkanAPI::CreateGlobalDescriptors()
+	bool VulkanAPI::CreateGlobalDescriptorPool()
 	{
 		// Descriptor Pool Initialization
 		std::vector<VulkanDescriptorPool::Ratio> sizes = {
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 }
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 }  // 1 descriptor for each storage image (for compute)
 		};
 
-		// Descriptor pool with 10 sets of 1 image
 		m_Global_DescriptorPool = std::make_unique<VulkanDescriptorPool>(m_Global_Device->Get(), 10, sizes);
-
-		// Make descriptor set layout for compute drawing
-		{
-			VulkanDescriptorSetLayoutBuilder layoutBuilder(m_Global_Device->Get());
-			layoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
-			VkDescriptorSetLayout renderDescSetLayout = layoutBuilder.Build(VK_SHADER_STAGE_COMPUTE_BIT);
-
-			m_RTImageDescriptor = std::make_unique<VulkanDescriptor>(
-				m_Global_DescriptorPool->AllocateDescriptorSet(renderDescSetLayout),
-				renderDescSetLayout
-			);
-		}
 
 		return true;
 	}
@@ -275,13 +263,21 @@ namespace Indy
 	bool VulkanAPI::CreateBasePipelines()
 	{
 		{ // Compute
-			m_Pipelines["Compute"] = std::make_unique<VulkanPipeline>(m_Global_Device->Get(), INDY_PIPELINE_TYPE_COMPUTE);
+
+			// Descriptor Set Layout for compute shader
+			VulkanDescriptorLayoutBuilder layoutBuilder;
+			layoutBuilder.AddBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, 1); // Binding 0 is the image the compute shader uses
+
+			VkDescriptorSetLayout layout = layoutBuilder.Build(m_Global_Device->Get(), { VK_SHADER_STAGE_COMPUTE_BIT });
+
+			// Pipeline
+			m_Pipelines["Compute"] = std::make_unique<VulkanPipeline>(m_Global_Device->Get(), VulkanPipelineInfo(INDY_PIPELINE_TYPE_COMPUTE));
 			VulkanPipeline* compute = m_Pipelines["Compute"].get();
 
 			Shader computeShader(INDY_SHADER_TYPE_COMPUTE, INDY_SHADER_FORMAT_GLSL, "shaders/gradient.glsl.comp");
-			compute->BindShader(INDY_PIPELINE_SHADER_STAGE_COMPUTE, computeShader);
+			compute->BindShader(computeShader);
+			compute->BindDescriptorSetLayout(INDY_SHADER_TYPE_COMPUTE, m_Global_DescriptorPool.get(), layout);
 
-			compute->AddDescriptorSetLayout(m_RTImageDescriptor->GetSetLayout());
 			compute->Build();
 		}
 

@@ -2,6 +2,8 @@
 
 #include <span>
 #include <vector>
+#include <memory>
+
 #include <vulkan/vulkan.h>
 
 import Indy.VulkanGraphics;
@@ -14,7 +16,7 @@ namespace Indy
 		std::vector<VkDescriptorPoolSize> poolSizes;
 
 		for (Ratio& ratio : ratios)
-			poolSizes.emplace_back(ratio.type, ratio.ratio * maxSets);
+			poolSizes.emplace_back(ratio.type, static_cast<uint32_t>(ratio.ratio) * maxSets);
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -39,14 +41,14 @@ namespace Indy
 		allocInfo.descriptorSetCount = 1;
 		allocInfo.pSetLayouts = &layout;
 
-		VkDescriptorSet descriptorSet;
-		if (vkAllocateDescriptorSets(m_LogicalDevice, &allocInfo, &descriptorSet) != VK_SUCCESS)
+		VkDescriptorSet descSet;
+		if (vkAllocateDescriptorSets(m_LogicalDevice, &allocInfo, &descSet) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("Failed to create descriptor set!");
-			return VK_NULL_HANDLE;
+			return {};
 		}
 
-		return descriptorSet;
+		return descSet;
 	}
 
 	void VulkanDescriptorPool::ClearDescriptors()
@@ -54,4 +56,45 @@ namespace Indy
 		vkResetDescriptorPool(m_LogicalDevice, m_DescriptorPool, 0);
 	}
 
+	// Layout Builder
+	// -------------------------------------------------------------------
+
+	void VulkanDescriptorLayoutBuilder::AddBinding(const VkDescriptorType& type, const uint32_t& binding, const uint32_t& count)
+	{
+		VkDescriptorSetLayoutBinding newBind{};
+		newBind.descriptorType = type;
+		newBind.binding = binding;
+		newBind.descriptorCount = count;
+		newBind.pImmutableSamplers = nullptr;
+
+		bindings.emplace_back(newBind);
+	}
+
+	void VulkanDescriptorLayoutBuilder::Clear()
+	{
+		bindings.clear();
+	}
+
+	VkDescriptorSetLayout VulkanDescriptorLayoutBuilder::Build(const VkDevice& logicalDevice, const BuildInfo& buildInfo)
+	{
+		for (auto& binding : bindings)
+			binding.stageFlags |= buildInfo.shaderStages;
+
+		VkDescriptorSetLayoutCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		createInfo.pNext = buildInfo.pNext;
+
+		createInfo.pBindings = bindings.data();
+		createInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+		createInfo.flags = buildInfo.flags;
+
+		VkDescriptorSetLayout layout;
+		if (vkCreateDescriptorSetLayout(logicalDevice, &createInfo, nullptr, &layout) != VK_SUCCESS)
+		{
+			INDY_CORE_ERROR("Failed to build Vulkan Descriptor Set Layout!");
+			return VK_NULL_HANDLE;
+		}
+
+		return layout;
+	}
 }

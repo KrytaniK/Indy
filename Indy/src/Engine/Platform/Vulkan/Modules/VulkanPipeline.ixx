@@ -7,44 +7,58 @@ module;
 
 export module Indy.VulkanGraphics:Pipeline;
 
+import :DescriptorPool;
+import :Descriptor;
+
 import Indy.Graphics;
 
 export
 {
 	namespace Indy
 	{
+		struct VulkanPipelineInfo
+		{
+			PipelineType type = INDY_PIPELINE_TYPE_GRAPHICS;
+			VkPipeline pipeline = VK_NULL_HANDLE;
+			VkPipelineLayout layout = VK_NULL_HANDLE;
+		};
+
 		class VulkanPipeline : public Pipeline
 		{
 		public:
-			VulkanPipeline(const VkDevice& logicalDevice, const PipelineType& type);
+			static VkShaderStageFlagBits GetShaderStage(const ShaderType& shaderType);
+
+		public:
+			VulkanPipeline(const VkDevice& logicalDevice, const VulkanPipelineInfo& info)
+				: m_Info(info), m_LogicalDevice(logicalDevice) {};
+
 			virtual ~VulkanPipeline() override;
 
-			virtual const PipelineType& GetType() const override { return m_Type; };
+			// Resource fetching
+			const VkPipeline& Get() const { return m_Info.pipeline; };
+			const VulkanPipelineInfo& GetInfo() const { return m_Info; };
+			const VkPipelineLayout& GetLayout() const { return m_Info.layout; };
+			virtual const PipelineType& GetType() const override { return m_Info.type; };
+			VulkanDescriptor* GetDescriptor(const ShaderType& shaderType);
 
-			void BindShader(const PipelineShaderStage& stage, Shader& shader) override;
+			// Pipeline Build process functions
+			void BindShader(Shader& shader) override;
+			void BindDescriptorSetLayout(const ShaderType& shaderType, VulkanDescriptorPool* descriptorPool, const VkDescriptorSetLayout& layout);
 
-			void AddDescriptorSetLayout(const VkDescriptorSetLayout& layout);
-
-			void Build() override;
-
-			const VkPipeline& Get() { return m_Pipeline; };
-			const VkPipelineLayout& GetLayout() { return m_PipelineLayout; };
+			// Inherited Build function
+			virtual void Build() override;
 
 		private:
+			// Internal build functions
 			void BuildComputePipeline();
 			void BuildGraphicsPipeline();
 			void BuildRayTracePipeline();
 
-			VkPipelineShaderStageCreateInfo GenerateShaderStageInfo(const PipelineShaderStage& stage);
-
 		private:
-			PipelineType m_Type;
+			VulkanPipelineInfo m_Info;
 			VkDevice m_LogicalDevice;
-			VkPipeline m_Pipeline;
-			VkPipelineLayout m_PipelineLayout;
-			std::vector<VkDescriptorSetLayout> m_DescSetLayouts;
-
-			std::unordered_map<PipelineShaderStage, VkShaderModule> m_ShaderModules;
+			std::unordered_map<ShaderType, VulkanDescriptor> m_Descriptors;
+			std::unordered_map<ShaderType, VkShaderModule> m_ShaderModules;
 		};
 	}
 }

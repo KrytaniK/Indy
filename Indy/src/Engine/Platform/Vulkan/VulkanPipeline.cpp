@@ -8,20 +8,42 @@ import Indy.VulkanGraphics;
 
 namespace Indy
 {
-	VulkanPipeline::VulkanPipeline(const VkDevice& logicalDevice, const PipelineType& type)
-		: m_LogicalDevice(logicalDevice), m_Type(type), m_Pipeline(VK_NULL_HANDLE), m_PipelineLayout(VK_NULL_HANDLE)
-	{ }
+	VkShaderStageFlagBits VulkanPipeline::GetShaderStage(const ShaderType& shaderType)
+	{
+		switch(shaderType)
+		{
+			case INDY_SHADER_TYPE_COMPUTE: return VK_SHADER_STAGE_COMPUTE_BIT;
+			case INDY_SHADER_TYPE_VERTEX: return VK_SHADER_STAGE_VERTEX_BIT;
+			case INDY_SHADER_TYPE_FRAGMENT: return VK_SHADER_STAGE_FRAGMENT_BIT;
+			case INDY_SHADER_TYPE_TESS_CONTROL: return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+			case INDY_SHADER_TYPE_TESS_EVAL: return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+			default: return VK_SHADER_STAGE_ALL;
+		}
+	}
 
 	VulkanPipeline::~VulkanPipeline()
 	{
 		for (const auto& shaderModule : m_ShaderModules)
 			vkDestroyShaderModule(m_LogicalDevice, shaderModule.second, nullptr);
 
-		vkDestroyPipelineLayout(m_LogicalDevice, m_PipelineLayout, nullptr);
-		vkDestroyPipeline(m_LogicalDevice, m_Pipeline, nullptr);
+		for (auto& descriptor : m_Descriptors)
+			vkDestroyDescriptorSetLayout(m_LogicalDevice, descriptor.second.GetLayout(), nullptr);
+
+		vkDestroyPipelineLayout(m_LogicalDevice, m_Info.layout, nullptr);
+		vkDestroyPipeline(m_LogicalDevice, m_Info.pipeline, nullptr);
 	}
 
-	void VulkanPipeline::BindShader(const PipelineShaderStage& stage, Shader& shader)
+	VulkanDescriptor* VulkanPipeline::GetDescriptor(const ShaderType& shaderType)
+	{
+		auto descIt = m_Descriptors.find(shaderType);
+
+		if (descIt == m_Descriptors.end())
+			return nullptr;
+
+		return &descIt->second;
+	}
+
+	void VulkanPipeline::BindShader(Shader& shader)
 	{
 		// Get or compile SPIR-V shader
 		auto spv = shader.GetSPIRV();
@@ -36,53 +58,70 @@ namespace Indy
 		createInfo.codeSize = spv.size;
 		createInfo.pCode = spv.data;
 
-		if (vkCreateShaderModule(m_LogicalDevice, &createInfo, nullptr, &m_ShaderModules[stage]) != VK_SUCCESS)
+		if (vkCreateShaderModule(m_LogicalDevice, &createInfo, nullptr, &m_ShaderModules[shader.GetType()]) != VK_SUCCESS)
 			INDY_CORE_ERROR("failed to create shader module!");
 	}
 
-	void VulkanPipeline::AddDescriptorSetLayout(const VkDescriptorSetLayout& layout)
+	void VulkanPipeline::BindDescriptorSetLayout(const ShaderType& shaderType, VulkanDescriptorPool* descriptorPool, const VkDescriptorSetLayout& layout)
 	{
-		m_DescSetLayouts.emplace_back(layout);
+		m_Descriptors.emplace(shaderType, VulkanDescriptor(descriptorPool, layout));
 	}
 
 	void VulkanPipeline::Build()
 	{
-		switch(m_Type)
+		switch(m_Info.type)
 		{
 			case INDY_PIPELINE_TYPE_COMPUTE: { BuildComputePipeline(); return; }
 			case INDY_PIPELINE_TYPE_RAY_TRACING: { BuildRayTracePipeline(); return; }
-			default: { BuildGraphicsPipeline(); }
+			case INDY_PIPELINE_TYPE_GRAPHICS: { BuildGraphicsPipeline(); return; }
+			default:
+			{
+				INDY_CORE_ERROR("Invalid Pipeline Type");
+			}
 		}
 	}
 
-	void VulkanPipeline::BuildComputePipeline()
+	void VulkanPipeline::BuildComputePipeline() 
 	{
+		// Get all layouts
+		// -------------------------------------------------------------------------------------------------------
+
+		std::vector<VkDescriptorSetLayout> layouts;
+		for (auto& descriptor : m_Descriptors)
+			layouts.emplace_back(descriptor.second.GetLayout());
+
+		// Build pipeline layout
+		// -------------------------------------------------------------------------------------------------------
+
 		VkPipelineLayoutCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		createInfo.pNext = nullptr;
-		createInfo.pSetLayouts = m_DescSetLayouts.data();
-		createInfo.setLayoutCount = (uint32_t)m_DescSetLayouts.size();
+		createInfo.pSetLayouts = layouts.data();
+		createInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
 
-		if (vkCreatePipelineLayout(m_LogicalDevice, &createInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS)
+		if (vkCreatePipelineLayout(m_LogicalDevice, &createInfo, nullptr, &m_Info.layout) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("Could not create compute pipeline layout!");
 			return;
 		}
 
+		// Build Pipeline
+		// -------------------------------------------------------------------------------------------------------
+
 		VkPipelineShaderStageCreateInfo stageInfo{};
 		stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		stageInfo.pNext = nullptr;
 		stageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		stageInfo.module = m_ShaderModules[INDY_PIPELINE_SHADER_STAGE_COMPUTE];
+		stageInfo.module = m_ShaderModules[INDY_SHADER_TYPE_COMPUTE];
 		stageInfo.pName = "main";
 
 		VkComputePipelineCreateInfo computePipelineCreateInfo{};
 		computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
 		computePipelineCreateInfo.pNext = nullptr;
-		computePipelineCreateInfo.layout = m_PipelineLayout;
+		computePipelineCreateInfo.layout = m_Info.layout;
 		computePipelineCreateInfo.stage = stageInfo;
 
-		if (vkCreateComputePipelines(m_LogicalDevice, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &m_Pipeline) != VK_SUCCESS)
+		if (vkCreateComputePipelines(m_LogicalDevice, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &m_Info.pipeline) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("Failed to create compute pipeline!");
 		}
@@ -90,63 +129,61 @@ namespace Indy
 
 	void VulkanPipeline::BuildGraphicsPipeline()
 	{
-		// Programmable pipeline stages
-		VkPipelineShaderStageCreateInfo shaderStageInfos[] = {
-			GenerateShaderStageInfo(INDY_PIPELINE_SHADER_STAGE_VERTEX),
-			GenerateShaderStageInfo(INDY_PIPELINE_SHADER_STAGE_VERTEX),
-			GenerateShaderStageInfo(INDY_PIPELINE_SHADER_STAGE_FRAGMENT),
-		};
+		// Get all layouts
+		// -------------------------------------------------------------------------------------------------------
 
+		std::vector<VkDescriptorSetLayout> layouts;
+		for (auto& descriptor : m_Descriptors)
+			layouts.emplace_back(descriptor.second.GetLayout());
 
+		// Build pipeline layout
+		// -------------------------------------------------------------------------------------------------------
+
+		VkPipelineLayoutCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		createInfo.pNext = nullptr;
+		createInfo.pSetLayouts = layouts.data();
+		createInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+
+		if (vkCreatePipelineLayout(m_LogicalDevice, &createInfo, nullptr, &m_Info.layout) != VK_SUCCESS)
+		{
+			INDY_CORE_ERROR("Could not create compute pipeline layout!");
+			return;
+		}
+
+		// Build Pipeline
+		// -------------------------------------------------------------------------------------------------------
+
+		// TODO: Implement Graphics Pipeline!
 	}
 
 	void VulkanPipeline::BuildRayTracePipeline()
 	{
-		// TODO: Implement Ray Tracing Pipeline!
-	}
+		// Get all layouts
+		// -------------------------------------------------------------------------------------------------------
 
-	VkPipelineShaderStageCreateInfo VulkanPipeline::GenerateShaderStageInfo(const PipelineShaderStage& stage)
-	{
-		VkPipelineShaderStageCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		createInfo.module = m_ShaderModules[stage];
-		createInfo.pName = "main"; // shader entrypoint
+		std::vector<VkDescriptorSetLayout> layouts;
+		for (auto& descriptor : m_Descriptors)
+			layouts.emplace_back(descriptor.second.GetLayout());
 
-		switch(stage)
+		// Build pipeline layout
+		// -------------------------------------------------------------------------------------------------------
+
+		VkPipelineLayoutCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		createInfo.pNext = nullptr;
+		createInfo.pSetLayouts = layouts.data();
+		createInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+
+		if (vkCreatePipelineLayout(m_LogicalDevice, &createInfo, nullptr, &m_Info.layout) != VK_SUCCESS)
 		{
-		case INDY_PIPELINE_SHADER_STAGE_COMPUTE:
-			{
-				createInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-
-				break;
-			};
-		case INDY_PIPELINE_SHADER_STAGE_VERTEX:
-			{
-				createInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-
-				break;
-			};
-		case INDY_PIPELINE_SHADER_STAGE_FRAGMENT:
-			{
-				createInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-				break;
-			};
-		case INDY_PIPELINE_SHADER_STAGE_TESS_CONTROL:
-			{
-				createInfo.stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-
-				break;
-			};
-		case INDY_PIPELINE_SHADER_STAGE_TESS_EVAL:
-			{
-				createInfo.stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-
-				break;
-			};
+			INDY_CORE_ERROR("Could not create compute pipeline layout!");
+			return;
 		}
 
-		return createInfo;
-	};
+		// Build Pipeline
+		// -------------------------------------------------------------------------------------------------------
 
+		// TODO: Implement Ray Tracing Pipeline!
+	}
 }

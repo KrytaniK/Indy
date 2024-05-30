@@ -18,12 +18,7 @@ namespace Indy
 		createInfo.queueFamilyIndex = queueFamilyIndex;
 		createInfo.pNext = nullptr;
 
-		// This flag is optional. If included, command buffers must be explicitly reset via vkResetCommandBuffer
-		//	otherwise, we can exclude this flag and reset the command pool entirely once safe via vkResetCommandPool
-		//	The ladder option provides the driver with more opportunities for optimization by only using one command
-		//	allocator per pool, rather than one per command buffer. Either way, command buffers are recycled.
-
-		/* createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; */
+		createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT; 
 
 		if (vkCreateCommandPool(m_LogicalDevice, &createInfo, nullptr, &m_CommandPool) != VK_SUCCESS)
 		{
@@ -70,6 +65,12 @@ namespace Indy
 	{
 		auto buffer = m_CommandBuffers[index];
 
+		if (vkResetCommandBuffer(buffer, 0) != VK_SUCCESS)
+		{
+			INDY_CORE_ERROR("Error resetting command buffer!");
+			return;
+		}
+
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.pInheritanceInfo = nullptr;
@@ -88,22 +89,6 @@ namespace Indy
 		if (vkEndCommandBuffer(m_CommandBuffers[index]) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("Error beginning command buffer!");
-			return;
-		}
-	}
-
-	void VulkanCommandPool::Reset(bool release) const
-	{
-		if (vkDeviceWaitIdle(m_LogicalDevice) != VK_SUCCESS)
-		{
-			INDY_CORE_ERROR("Error waiting for logical deivce");
-			return;
-		}
-
-		// Reset command pool with/without releasing resources
-		if (vkResetCommandPool(m_LogicalDevice, m_CommandPool, release & VK_COMMAND_POOL_RESET_RELEASE_RESOURCES_BIT) != VK_SUCCESS)
-		{
-			INDY_CORE_ERROR("Error resetting command pool!");
 			return;
 		}
 	}

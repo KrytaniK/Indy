@@ -10,6 +10,8 @@ export module Indy.VulkanGraphics:Frame;
 import :Queue;
 import :CommandPool;
 import :SyncObjects;
+import :Image;
+import :Device;
 
 export
 {
@@ -18,7 +20,7 @@ export
 		class VulkanFrame
 		{
 		public:
-			VulkanFrame(const VkDevice& logicalDevice, const QueueFamilyIndices& queueFamilies);
+			VulkanFrame(VulkanDevice* device, const QueueFamilyIndices& queueFamilies);
 			~VulkanFrame();
 
 			VulkanCommandPool* GetCommandPool() const;

@@ -1,9 +1,13 @@
 module;
 
+#include <span>
+
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
 
 export module Indy.VulkanGraphics:Image;
+
+import :DescriptorPool;
 
 export
 {
@@ -15,6 +19,7 @@ export
 			VkExtent3D extent;
 			VkImageUsageFlags usageFlags;
 			VkImageAspectFlags aspectFlags;
+			VkDescriptorSet descriptorSet;
 		};
 
 		class VulkanImage
@@ -32,11 +37,12 @@ export
 			const VkImage& Get() { return m_Image; };
 			const VkImageView& GetView() { return m_ImageView; };
 
-
 		private:
 			const VmaAllocator* m_Allocator;
 			VmaAllocation m_Allocation;
+
 			VkDevice m_LogicalDevice;
+
 			VkImage m_Image;
 			VkImageView m_ImageView;
 			VkExtent3D m_ImageExtent;
