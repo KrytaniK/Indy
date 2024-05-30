@@ -23,7 +23,7 @@ export
 		} GPUCompatLevel;
 
 		// A container structure used for finding a GPU that meets some basic criteria.
-		struct GPUCompatibility
+		struct VulkanDeviceCompatibility
 		{
 			GPUCompatLevel graphics = COMPAT_VOID;
 			GPUCompatLevel compute = COMPAT_VOID;
@@ -55,8 +55,7 @@ export
 			static bool GetGPUSurfaceSupport(const std::shared_ptr<VulkanPhysicalDevice>& gpu, const VkSurfaceKHR& surface);
 
 		public:
-			VulkanDevice(const GPUCompatibility& compatibility);
-			VulkanDevice(const GPUCompatibility& compatibility, const VkSurfaceKHR& surface);
+			VulkanDevice(const VkInstance& instance, const VulkanDeviceCompatibility& compatibility);
 			~VulkanDevice();
 
 			const std::shared_ptr<VulkanPhysicalDevice>& GetPhysicalDevice();
@@ -67,7 +66,7 @@ export
 
 		private:
 			void CreateLogicalDevice();
-			void FindCompatibleGPU(const GPUCompatibility& compatibility);
+			void FindCompatibleGPU(const VulkanDeviceCompatibility& compatibility);
 			bool IsCompatibleFeature(const GPUCompatLevel& preference, bool hasFeature, uint8_t& rating);
 
 		private:

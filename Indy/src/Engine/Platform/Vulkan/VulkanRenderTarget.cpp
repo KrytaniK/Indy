@@ -12,38 +12,45 @@ import Indy.Events;
 
 namespace Indy
 {
-	VulkanRenderTarget::VulkanRenderTarget(const VkInstance& instance, const GPUCompatibility& compatibility, Window* window)
+	VulkanRenderTarget::VulkanRenderTarget(const VkInstance& instance, const VulkanRTSpec& spec)
 	{
-		m_ID = window->Properties().id;
+		m_ID = spec.window->Properties().id;
 		m_Instance = instance;
+		m_DeviceHandle = spec.deviceHandle;
+		m_ComputePipeline = spec.computePipeline;
+		m_RenderImageDescriptor = spec.imageDescriptor;
+		m_FrameCount = 0;
 
-		if (!window)
+		if (!spec.useSurface)
 			return;
 
 		// Create VkSurface
-		if (glfwCreateWindowSurface(m_Instance, static_cast<GLFWwindow*>(window->NativeWindow()), nullptr, &m_Surface) != VK_SUCCESS)
+		if (glfwCreateWindowSurface(m_Instance, static_cast<GLFWwindow*>(spec.window->NativeWindow()), nullptr, &m_Surface) != VK_SUCCESS)
 		{
 			INDY_CORE_CRITICAL("Failed to create window surface!");
 			return;
 		}
 
-		// Create Logical Device with surface support
-		m_Device = std::make_unique<VulkanDevice>(compatibility, m_Surface);
-		auto physicalDevice = m_Device->GetPhysicalDevice();
+		auto physicalDevice = m_DeviceHandle->GetPhysicalDevice();
+		if (!VulkanDevice::GetGPUSurfaceSupport(physicalDevice, m_Surface))
+		{
+			INDY_CORE_ERROR("Failed to create render target. GPU not support surface presentation!");
+			return;
+		}
 
 		// Create Swapchain with window
-		m_Swapchain = std::make_unique<VulkanSwapchain>(physicalDevice, m_Device->Get(), m_Surface, window);
+		m_Swapchain = std::make_unique<VulkanSwapchain>(physicalDevice, m_DeviceHandle->Get(), m_Surface, spec.window);
 
 		// Allocate frame data for this render target
 		m_Frames.reserve(g_Max_Frames_In_Flight);
 		for (uint8_t i = 0; i < g_Max_Frames_In_Flight; i++)
-			m_Frames.emplace_back(std::make_unique<VulkanFrame>(m_Device->Get(), physicalDevice->queueFamilies));
+			m_Frames.emplace_back(std::make_unique<VulkanFrame>(m_DeviceHandle->Get(), physicalDevice->queueFamilies));
 
 		// Allocate the image we want to render to
 		VulkanImageSpec renderImageSpec{};
 		renderImageSpec.extent = {
-			window->Properties().width,
-			window->Properties().height,
+			spec.window->Properties().width,
+			spec.window->Properties().height,
 			1
 		};
 		renderImageSpec.format = VK_FORMAT_R16G16B16A16_SFLOAT;
@@ -53,15 +60,31 @@ namespace Indy
 		renderImageSpec.usageFlags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		renderImageSpec.aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
 
-		m_RenderImage = std::make_unique<VulkanImage>(m_Device->GetVmaAllocator(), m_Device->Get(), renderImageSpec);
+		m_RenderImage = std::make_unique<VulkanImage>(m_DeviceHandle->GetVmaAllocator(), m_DeviceHandle->Get(), renderImageSpec);
 
-		m_FrameCount = 0;
+		// Initialize Descriptor Sets
+		VkDescriptorImageInfo imgInfo{};
+		imgInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		imgInfo.imageView = m_RenderImage->GetView();
+
+		VkWriteDescriptorSet renderImageWrite = {};
+		renderImageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		renderImageWrite.pNext = nullptr;
+
+		// Bind Compute shader descriptor set (binding = 0)
+		renderImageWrite.dstBinding = 0;
+		renderImageWrite.dstSet = spec.imageDescriptor->GetSet();
+		renderImageWrite.descriptorCount = 1;
+		renderImageWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		renderImageWrite.pImageInfo = &imgInfo;
+
+		vkUpdateDescriptorSets(m_DeviceHandle->Get(), 1, &renderImageWrite, 0, nullptr);
 	}
 
 	VulkanRenderTarget::~VulkanRenderTarget()
 	{
 		// Wait for GPU to finish up any tasks
-		vkDeviceWaitIdle(m_Device->Get());
+		vkDeviceWaitIdle(m_DeviceHandle->Get());
 
 		// Explicitly delete all frames
 		for (int i = 0; i < m_Frames.size(); i++)
@@ -98,19 +121,19 @@ namespace Indy
 
 	void VulkanRenderTarget::OnBeginFrame(VulkanFrame* frame, uint32_t& swapchainImageIndex)
 	{
-		if (vkWaitForFences(m_Device->Get(), 1, &frame->GetFence("Render"), VK_TRUE, UINT64_MAX) != VK_SUCCESS)
+		if (vkWaitForFences(m_DeviceHandle->Get(), 1, &frame->GetFence("Render"), VK_TRUE, UINT64_MAX) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("Error waiting for Render Fence");
 			return;
 		}
 
-		if (vkResetFences(m_Device->Get(), 1, &frame->GetFence("Render")) != VK_SUCCESS)
+		if (vkResetFences(m_DeviceHandle->Get(), 1, &frame->GetFence("Render")) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("Error resetting Render Fence");
 			return;
 		}
 
-		if (vkAcquireNextImageKHR(m_Device->Get(), m_Swapchain->Get(), UINT64_MAX, frame->GetSemaphore("Swapchain"), nullptr, &swapchainImageIndex) != VK_SUCCESS)
+		if (vkAcquireNextImageKHR(m_DeviceHandle->Get(), m_Swapchain->Get(), UINT64_MAX, frame->GetSemaphore("Swapchain"), nullptr, &swapchainImageIndex) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("Error retrieving next swapchain image!");
 			return;
@@ -131,21 +154,20 @@ namespace Indy
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL
 		);
 
-		{ // Set Clear color
-			VkClearColorValue clearValue;
-			float flash = std::abs(std::sin(m_FrameCount / 120.f));
-			clearValue = { { 0.0f, 0.0f, flash, 1.0f } };
+		{ // Render Commands
 
-			// Specify subresource range
-			VkImageSubresourceRange clearRange{};
-			clearRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			clearRange.baseMipLevel = 0;
-			clearRange.levelCount = VK_REMAINING_MIP_LEVELS;
-			clearRange.baseArrayLayer = 0;
-			clearRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+			// Bind compute pipeline
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline->Get());
 
-			//clear image
-			vkCmdClearColorImage(commandBuffer, m_RenderImage->Get(), VK_IMAGE_LAYOUT_GENERAL, &clearValue, 1, &clearRange);
+			// Bind compute render image descriptors
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline->GetLayout(), 0, 1, &m_RenderImageDescriptor->GetSet(), 0, nullptr);
+
+			vkCmdDispatch(
+				commandBuffer, 
+				std::ceil(m_RenderImage->GetExtent().width / 16.0), 
+				std::ceil(m_RenderImage->GetExtent().height / 16.0), 
+				1
+			);
 		}
 
 		// Transition render image to transfer source
@@ -218,7 +240,7 @@ namespace Indy
 		submitInfo.pCommandBufferInfos = &cmdBufferSubmitInfo;
 
 		// Queue up graphics operations
-		if (vkQueueSubmit2(m_Device->Queues()->GetGraphicsQueue(), 1, &submitInfo, frame->GetFence("Render")) != VK_SUCCESS)
+		if (vkQueueSubmit2(m_DeviceHandle->Queues()->GetGraphicsQueue(), 1, &submitInfo, frame->GetFence("Render")) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("Error Submitting Graphics Queue!");
 			return;
@@ -241,7 +263,7 @@ namespace Indy
 		// Attach swap chain image index
 		presentInfo.pImageIndices = &swapchainImageIndex;
 
-		if (vkQueuePresentKHR(m_Device->Queues()->GetGraphicsQueue(), &presentInfo) != VK_SUCCESS)
+		if (vkQueuePresentKHR(m_DeviceHandle->Queues()->GetGraphicsQueue(), &presentInfo) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("Error Submitting Graphics Queue!");
 			return;

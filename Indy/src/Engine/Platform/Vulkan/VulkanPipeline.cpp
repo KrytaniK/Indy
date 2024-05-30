@@ -8,15 +8,17 @@ import Indy.VulkanGraphics;
 
 namespace Indy
 {
-	VulkanPipeline::VulkanPipeline(const PipelineType& type, const VkDevice& logicalDevice)
-		: m_Type(type), m_LogicalDevice(logicalDevice), m_Pipeline(VK_NULL_HANDLE), m_PipelineLayout(VK_NULL_HANDLE)
-	{
-	}
+	VulkanPipeline::VulkanPipeline(const VkDevice& logicalDevice, const PipelineType& type)
+		: m_LogicalDevice(logicalDevice), m_Type(type), m_Pipeline(VK_NULL_HANDLE), m_PipelineLayout(VK_NULL_HANDLE)
+	{ }
 
 	VulkanPipeline::~VulkanPipeline()
 	{
 		for (const auto& shaderModule : m_ShaderModules)
 			vkDestroyShaderModule(m_LogicalDevice, shaderModule.second, nullptr);
+
+		vkDestroyPipelineLayout(m_LogicalDevice, m_PipelineLayout, nullptr);
+		vkDestroyPipeline(m_LogicalDevice, m_Pipeline, nullptr);
 	}
 
 	void VulkanPipeline::BindShader(const PipelineShaderStage& stage, Shader& shader)
@@ -38,6 +40,11 @@ namespace Indy
 			INDY_CORE_ERROR("failed to create shader module!");
 	}
 
+	void VulkanPipeline::AddDescriptorSetLayout(const VkDescriptorSetLayout& layout)
+	{
+		m_DescSetLayouts.emplace_back(layout);
+	}
+
 	void VulkanPipeline::Build()
 	{
 		switch(m_Type)
@@ -50,7 +57,35 @@ namespace Indy
 
 	void VulkanPipeline::BuildComputePipeline()
 	{
-		// TODO: Implement Compute Pipeline!
+		VkPipelineLayoutCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		createInfo.pNext = nullptr;
+		createInfo.pSetLayouts = m_DescSetLayouts.data();
+		createInfo.setLayoutCount = (uint32_t)m_DescSetLayouts.size();
+
+		if (vkCreatePipelineLayout(m_LogicalDevice, &createInfo, nullptr, &m_PipelineLayout) != VK_SUCCESS)
+		{
+			INDY_CORE_ERROR("Could not create compute pipeline layout!");
+			return;
+		}
+
+		VkPipelineShaderStageCreateInfo stageInfo{};
+		stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		stageInfo.pNext = nullptr;
+		stageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		stageInfo.module = m_ShaderModules[INDY_PIPELINE_SHADER_STAGE_COMPUTE];
+		stageInfo.pName = "main";
+
+		VkComputePipelineCreateInfo computePipelineCreateInfo{};
+		computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		computePipelineCreateInfo.pNext = nullptr;
+		computePipelineCreateInfo.layout = m_PipelineLayout;
+		computePipelineCreateInfo.stage = stageInfo;
+
+		if (vkCreateComputePipelines(m_LogicalDevice, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &m_Pipeline) != VK_SUCCESS)
+		{
+			INDY_CORE_ERROR("Failed to create compute pipeline!");
+		}
 	}
 
 	void VulkanPipeline::BuildGraphicsPipeline()

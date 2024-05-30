@@ -10,19 +10,30 @@ export module Indy.VulkanGraphics:RenderTarget;
 import Indy.Graphics;
 import Indy.Window;
 
+import :Pipeline;
 import :Device;
 import :Swapchain;
 import :Frame;
 import :Image;
+import :Descriptor;
 
 export
 {
 	namespace Indy
 	{
+		struct VulkanRTSpec
+		{
+			VulkanDevice* deviceHandle;
+			bool useSurface = false;
+			Window* window = nullptr;
+			VulkanDescriptor* imageDescriptor;
+			VulkanPipeline* computePipeline;
+		};
+
 		class VulkanRenderTarget : RenderTarget
 		{
 		public:
-			VulkanRenderTarget(const VkInstance& instance, const GPUCompatibility& compatibility, Window* window = nullptr);
+			VulkanRenderTarget(const VkInstance& instance, const VulkanRTSpec& spec);
 			virtual ~VulkanRenderTarget() override;
 
 			virtual const uint32_t& GetID() const override { return m_ID; };
@@ -49,9 +60,14 @@ export
 			uint32_t m_ID;
 			VkInstance m_Instance;
 			VkSurfaceKHR m_Surface;
+
+			VulkanDevice* m_DeviceHandle;
 			std::unique_ptr<VulkanSwapchain> m_Swapchain;
-			std::unique_ptr<VulkanDevice> m_Device;
 			std::unique_ptr<VulkanImage> m_RenderImage;
+
+			VulkanPipeline* m_ComputePipeline;
+			VulkanDescriptor* m_RenderImageDescriptor;
+
 			std::vector<std::unique_ptr<VulkanFrame>> m_Frames;
 			uint8_t m_FrameCount;
 		};

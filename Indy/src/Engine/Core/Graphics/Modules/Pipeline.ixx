@@ -36,6 +36,8 @@ export
 			Pipeline() = default;
 			virtual ~Pipeline() = default;
 
+			virtual const PipelineType& GetType() const = 0;
+
 			virtual void BindShader(const PipelineShaderStage& stage, Shader& shader) = 0;
 
 			virtual void Build() = 0;

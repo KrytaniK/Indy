@@ -3,14 +3,14 @@
 
 #include <cstdint>
 #include <memory>
-
-#include <shaderc/shaderc.hpp>
+#include <vector>
 
 #include <vulkan/vulkan.h>
-
 #include <GLFW/glfw3.h>
 
 import Indy.Application;
+import Indy.Graphics;
+
 import Indy.VulkanGraphics;
 
 import Indy.Events;
@@ -49,14 +49,14 @@ namespace Indy
 
 	void VulkanAPI::CreateRenderTarget(Window* window)
 	{
-		GPUCompatibility base_window_compatibility{};
-		base_window_compatibility.geometryShader =	COMPAT_REQUIRED;	// always require geometry shaders
-		base_window_compatibility.graphics =		COMPAT_REQUIRED;	// always require graphics operations
-		base_window_compatibility.compute =			COMPAT_PREFER;		// always prefer compute shaders, but don't require it.
-		base_window_compatibility.type =			VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;	// Always assume dedicated GPU
-		base_window_compatibility.typePreference =	COMPAT_PREFER;		// always prefer a dedicated GPU, but it's not required.
+		VulkanRTSpec rtSpec;
+		rtSpec.deviceHandle = m_Global_Device.get();
+		rtSpec.useSurface = true;
+		rtSpec.window = window;
+		rtSpec.imageDescriptor = m_RTImageDescriptor.get();
+		rtSpec.computePipeline = m_Pipelines["Compute"].get();
 
-		VulkanRenderTarget target(m_Instance, base_window_compatibility, window);
+		VulkanRenderTarget target(m_Instance, rtSpec);
 		target.Render();
 	}
 
@@ -73,10 +73,80 @@ namespace Indy
 
 	bool VulkanAPI::Init()
 	{
-		// Ensure Validation Layer Support
 		if (!SupportsValidationLayers())
 			return false;
 
+		if (!CreateVulkanInstance())
+			return false;
+
+		if (!CreateGlobalDevice())
+			return false;
+
+		if (!CreateGlobalDescriptors())
+			return false;
+
+		if (!CreateBasePipelines())
+			return false;
+
+		return true;
+	}
+
+	void VulkanAPI::Cleanup()
+	{
+#ifdef ENGINE_DEBUG
+
+		INDY_CORE_TRACE("Destroying Vulkan Debug Messenger...");
+		Vulkan_DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
+
+#endif
+
+		// Destroy Logical devices before instance
+
+		INDY_CORE_TRACE("Destroying Vulkan Instance...");
+		vkDestroyInstance(m_Instance, nullptr);
+	}
+
+	bool VulkanAPI::SupportsValidationLayers()
+	{
+		// Query for the number of instance layers
+		uint32_t layerCount;
+		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+		// Query for all layer properties
+		std::vector<VkLayerProperties> availableLayers(layerCount);
+		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+		// Ensure all requested layers are available
+		for (const char* validationLayer : g_Vulkan_Validation_Layers)
+		{
+			bool found = false;
+
+			// Find validation layer in instance layers
+			for (const auto& layerProperties : availableLayers)
+			{
+				if (strcmp(validationLayer, layerProperties.layerName) == 0)
+				{
+					found = true;
+					break;
+				}
+			}
+
+			// return false if this validation layer wasn't found
+			if (!found)
+			{
+				INDY_CORE_CRITICAL(
+					"[Vulkan Backend] One or more requested validation layers are not available!\nFirst is: {0}",
+					validationLayer
+				);
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	bool VulkanAPI::CreateVulkanInstance()
+	{
 		// Vulkan Application Info
 		VkApplicationInfo appInfo{};
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -143,70 +213,76 @@ namespace Indy
 			return false;
 		}
 
+		return CreateDebugMessenger(debugMessengerCreateInfo);
+	}
+
+	bool VulkanAPI::CreateDebugMessenger(const VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+	{
 #ifdef ENGINE_DEBUG
 		// For more general vulkan debugging, an explicit debug messenger must be created
-		if (Vulkan_CreateDebugUtilsMessengerEXT(m_Instance, &debugMessengerCreateInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS)
+		if (Vulkan_CreateDebugUtilsMessengerEXT(m_Instance, &createInfo, nullptr, &m_DebugMessenger) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("Failed to create debug messenger.");
 			return false;
 		}
 #endif
+		return true;
+	}
 
+	bool VulkanAPI::CreateGlobalDevice()
+	{
 		// Retreive GPU information
 		VulkanDevice::GetAllGPUSpecs(m_Instance);
+
+		// Create Global Logical Device
+		VulkanDeviceCompatibility compat;
+		compat.geometryShader = COMPAT_REQUIRED;	// always require geometry shaders
+		compat.graphics = COMPAT_REQUIRED;	// always require graphics operations
+		compat.compute = COMPAT_PREFER;		// always prefer compute shaders, but don't require it.
+		compat.type = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;	// Always assume dedicated GPU
+		compat.typePreference = COMPAT_PREFER;		// always prefer a dedicated GPU, but it's not required.
+
+		m_Global_Device = std::make_unique<VulkanDevice>(m_Instance, compat);
 
 		return true;
 	}
 
-	void VulkanAPI::Cleanup()
+	bool VulkanAPI::CreateGlobalDescriptors()
 	{
-#ifdef ENGINE_DEBUG
+		// Descriptor Pool Initialization
+		std::vector<VulkanDescriptorPool::Ratio> sizes = {
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 }
+		};
 
-		INDY_CORE_TRACE("Destroying Vulkan Debug Messenger...");
-		Vulkan_DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
+		// Descriptor pool with 10 sets of 1 image
+		m_Global_DescriptorPool = std::make_unique<VulkanDescriptorPool>(m_Global_Device->Get(), 10, sizes);
 
-#endif
+		// Make descriptor set layout for compute drawing
+		{
+			VulkanDescriptorSetLayoutBuilder layoutBuilder(m_Global_Device->Get());
+			layoutBuilder.AddBinding(0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+			VkDescriptorSetLayout renderDescSetLayout = layoutBuilder.Build(VK_SHADER_STAGE_COMPUTE_BIT);
 
-		// Destroy Logical devices before instance
+			m_RTImageDescriptor = std::make_unique<VulkanDescriptor>(
+				m_Global_DescriptorPool->AllocateDescriptorSet(renderDescSetLayout),
+				renderDescSetLayout
+			);
+		}
 
-		INDY_CORE_TRACE("Destroying Vulkan Instance...");
-		vkDestroyInstance(m_Instance, nullptr);
+		return true;
 	}
 
-	bool VulkanAPI::SupportsValidationLayers()
+	bool VulkanAPI::CreateBasePipelines()
 	{
-		// Query for the number of instance layers
-		uint32_t layerCount;
-		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+		{ // Compute
+			m_Pipelines["Compute"] = std::make_unique<VulkanPipeline>(m_Global_Device->Get(), INDY_PIPELINE_TYPE_COMPUTE);
+			VulkanPipeline* compute = m_Pipelines["Compute"].get();
 
-		// Query for all layer properties
-		std::vector<VkLayerProperties> availableLayers(layerCount);
-		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+			Shader computeShader(INDY_SHADER_TYPE_COMPUTE, INDY_SHADER_FORMAT_GLSL, "shaders/gradient.glsl.comp");
+			compute->BindShader(INDY_PIPELINE_SHADER_STAGE_COMPUTE, computeShader);
 
-		// Ensure all requested layers are available
-		for (const char* validationLayer : g_Vulkan_Validation_Layers)
-		{
-			bool found = false;
-
-			// Find validation layer in instance layers
-			for (const auto& layerProperties : availableLayers)
-			{
-				if (strcmp(validationLayer, layerProperties.layerName) == 0)
-				{
-					found = true;
-					break;
-				}
-			}
-
-			// return false if this validation layer wasn't found
-			if (!found)
-			{
-				INDY_CORE_CRITICAL(
-					"[Vulkan Backend] One or more requested validation layers are not available!\nFirst is: {0}",
-					validationLayer
-				);
-				return false;
-			}
+			compute->AddDescriptorSetLayout(m_RTImageDescriptor->GetSetLayout());
+			compute->Build();
 		}
 
 		return true;

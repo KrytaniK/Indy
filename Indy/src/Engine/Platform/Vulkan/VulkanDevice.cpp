@@ -17,7 +17,7 @@ namespace Indy
 {
 	std::vector<std::shared_ptr<VulkanPhysicalDevice>> VulkanDevice::s_PhysicalDevices;
 
-	VulkanDevice::VulkanDevice(const GPUCompatibility& compatibility)
+	VulkanDevice::VulkanDevice(const VkInstance& instance, const VulkanDeviceCompatibility& compatibility)
 	{
 		// Choose a suitable physical device
 		FindCompatibleGPU(compatibility);
@@ -31,20 +31,11 @@ namespace Indy
 		// Create Logical Device
 		CreateLogicalDevice();
 
-		VkInstanceFetchEvent event;
-		Events<VkInstanceFetchEvent>::Notify(&event);
-
-		if (!event.outInstance)
-		{
-			INDY_CORE_ERROR("Failed to fetch Vulkan instance!");
-			return;
-		}
-
 		// Create a memory allocator
 		VmaAllocatorCreateInfo allocatorInfo{};
 		allocatorInfo.physicalDevice = m_PhysicalDevice->handle;
 		allocatorInfo.device = m_LogicalDevice;
-		allocatorInfo.instance = *event.outInstance;
+		allocatorInfo.instance = instance;
 		allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 
 		if (vmaCreateAllocator(&allocatorInfo, &m_Allocator) != VK_SUCCESS)
@@ -53,50 +44,6 @@ namespace Indy
 			return;
 		}
 
-	}
-
-	VulkanDevice::VulkanDevice(const GPUCompatibility& compatibility, const VkSurfaceKHR& surface)
-	{
-		// Choose a compatible physical device
-		FindCompatibleGPU(compatibility);
-
-		if (!m_PhysicalDevice)
-		{
-			INDY_CORE_ERROR("Failed to create logical device. No compatible GPU!");
-			return;
-		}
-
-		// Query for surface support
-		if (!VulkanDevice::GetGPUSurfaceSupport(m_PhysicalDevice, surface))
-		{
-			INDY_CORE_ERROR("Failed to create logical device. Does not support surface presentation!");
-			return;
-		}
-
-		// Create logical device
-		CreateLogicalDevice();
-
-		VkInstanceFetchEvent event;
-		Events<VkInstanceFetchEvent>::Notify(&event);
-
-		if (!event.outInstance)
-		{
-			INDY_CORE_ERROR("Failed to fetch Vulkan instance!");
-			return;
-		}
-
-		// Create a memory allocator
-		VmaAllocatorCreateInfo allocatorInfo{};
-		allocatorInfo.physicalDevice = m_PhysicalDevice->handle;
-		allocatorInfo.device = m_LogicalDevice;
-		allocatorInfo.instance = *event.outInstance;
-		allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-
-		if (vmaCreateAllocator(&allocatorInfo, &m_Allocator) != VK_SUCCESS)
-		{
-			INDY_CORE_ERROR("Failed to create device memory allocator!");
-			return;
-		}
 	}
 
 	VulkanDevice::~VulkanDevice()
@@ -117,7 +64,7 @@ namespace Indy
 		return m_LogicalDevice;
 	}
 
-	void VulkanDevice::FindCompatibleGPU(const GPUCompatibility& compatibility)
+	void VulkanDevice::FindCompatibleGPU(const VulkanDeviceCompatibility& compatibility)
 	{
 		uint8_t highestRating = 0;
 		for (auto& device : VulkanDevice::s_PhysicalDevices)
