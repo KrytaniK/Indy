@@ -45,6 +45,7 @@ export
 
 			const VkSwapchainKHR& Get() const { return m_Swapchain; };
 			const VkExtent2D& GetExtent() { return m_Extent; };
+			const VkSurfaceFormatKHR& GetFormat() { return m_Format; };
 			const VkSwapchainImage& GetImage(const uint32_t& index);
 
 		private:

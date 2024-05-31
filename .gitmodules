@@ -4,3 +4,7 @@
 [submodule "Indy/lib/VMA"]
 	path = Indy/lib/VMA
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "Indy/lib/ImGui"]
+	path = Indy/lib/ImGui
+	url = https://github.com/ocornut/imgui.git
+	branch = docking

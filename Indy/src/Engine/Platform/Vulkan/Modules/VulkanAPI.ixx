@@ -54,6 +54,7 @@ export
 
 			// Temp?
 			std::unordered_map<std::string, std::unique_ptr<VulkanPipeline>> m_Pipelines;
+			std::unique_ptr<VulkanRenderTarget> m_Target;
 		};
 	}
 }

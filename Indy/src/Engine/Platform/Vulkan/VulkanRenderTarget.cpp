@@ -2,8 +2,14 @@
 
 #include <memory>
 
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
+
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
+
+#include "imgui_internal.h"
 
 import Indy.Profiler;
 import Indy.Graphics;
@@ -55,7 +61,13 @@ namespace Indy
 
 		m_OffscreenImage = std::make_unique<VulkanImage>(m_DeviceHandle->GetVmaAllocator(), m_DeviceHandle->Get(), offscreenImageSpec);
 
-		//m_ImmediateCommandPool = std::make_unique<VulkanCommandPool>(m_DeviceHandle->Get(), physicalDevice->queueFamilies)
+		m_ImmediateCommandPool = std::make_unique<VulkanCommandPool>(
+			m_DeviceHandle->Get(), 
+			physicalDevice->queueFamilies.graphics.value(), 
+			1
+		);
+		m_ImmediateSyncObjects = std::make_unique<VulkanSyncObjects>(m_DeviceHandle->Get());
+		m_ImmediateSyncObjects->AddFence("Immediate Submit", VK_FENCE_CREATE_SIGNALED_BIT);
 
 		// Allocate frame data for this render target
 		m_Frames.reserve(g_Max_Frames_In_Flight);
@@ -71,6 +83,10 @@ namespace Indy
 		auto computeDescriptor = m_ComputePipeline->GetDescriptor(INDY_SHADER_TYPE_COMPUTE);
 		computeDescriptor->UpdateImageBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &imageInfo);
 		computeDescriptor->UpdateDescriptorSets(m_DeviceHandle->Get());
+
+		// TEMP: MOVE LATER!! -----------------
+			init_imgui(instance, spec.window);
+		// ------------------------------------
 	}
 
 	VulkanRenderTarget::~VulkanRenderTarget()
@@ -91,10 +107,25 @@ namespace Indy
 		// Explicitly destroy surface
 		if (&m_Surface)
 			vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
+
+		// TEMP
+		ImGui_ImplVulkan_Shutdown();
+		vkDestroyDescriptorPool(m_DeviceHandle->Get(), m_ImGuiPool, nullptr);
 	}
 
 	void VulkanRenderTarget::Render()
 	{
+		// TEMP IMGUI
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		ImGui::ShowDemoWindow();
+
+		ImGui::Render();
+
+		// ----------
+
 		// Get Current Frame
 		FrameData frameData = GetCurrentFrameData();
 
@@ -156,7 +187,6 @@ namespace Indy
 				std::ceil(m_OffscreenImage->GetExtent().height / 16.0),
 				1
 			);
-
 		}
 
 		frameData.computeCommandPool->EndCommandBuffer(0);
@@ -212,7 +242,7 @@ namespace Indy
 			frameData.graphicsCommandBuffer, m_Swapchain->GetImage(frameData.swapchainImageIndex).image,
 			VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 			VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_2_TRANSFER_BIT,
-			0, VK_ACCESS_2_TRANSFER_WRITE_BIT
+			0, VK_ACCESS_2_MEMORY_WRITE_BIT
 		);
 
 		// Copy rendered image to swap chain image
@@ -221,11 +251,25 @@ namespace Indy
 			{ m_OffscreenImage->GetExtent().width, m_OffscreenImage->GetExtent().height }, m_Swapchain->GetExtent()
 		);
 
+		// Transition swap chain image from transfer destination to color attachment optimal, so it can receive commands
+		VulkanImage::TransitionLayout(
+			frameData.graphicsCommandBuffer, m_Swapchain->GetImage(frameData.swapchainImageIndex).image,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			VK_PIPELINE_STAGE_2_TRANSFER_BIT, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+			VK_ACCESS_2_MEMORY_WRITE_BIT, VK_ACCESS_2_MEMORY_WRITE_BIT
+		);
+
+		{ // Post-graphics commands (for ImGui)
+
+			draw_imgui(frameData.graphicsCommandBuffer, m_Swapchain->GetImage(frameData.swapchainImageIndex).imageView);
+
+		}
+
 		// Transition swap chain image from transfer destination to present
 		VulkanImage::TransitionLayout(
 			frameData.graphicsCommandBuffer, m_Swapchain->GetImage(frameData.swapchainImageIndex).image,
-			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-			VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
+			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+			VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
 			VK_ACCESS_2_MEMORY_WRITE_BIT, VK_ACCESS_2_MEMORY_READ_BIT
 		);
 
@@ -368,6 +412,46 @@ namespace Indy
 		}
 	}
 
+	void VulkanRenderTarget::SubmitImmediateCommand(std::function<void(const VkCommandBuffer&)>&& function)
+	{
+		// Reset compute fence
+		if (vkResetFences(m_DeviceHandle->Get(), 1, &m_ImmediateSyncObjects->GetFence("Immediate Submit")) != VK_SUCCESS)
+		{
+			INDY_CORE_ERROR("Error resetting Render Fence");
+			return;
+		}
+
+		m_ImmediateCommandPool->BeginCommandBuffer(0, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+		function(m_ImmediateCommandPool->GetCommandBuffer(0));
+
+		m_ImmediateCommandPool->EndCommandBuffer(0);
+
+		VkSubmitInfo2 submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+		submitInfo.pNext = nullptr;
+
+		VkCommandBufferSubmitInfo bufferSubmitInfo{};
+		bufferSubmitInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+		bufferSubmitInfo.commandBuffer = m_ImmediateCommandPool->GetCommandBuffer(0);
+		bufferSubmitInfo.pNext = nullptr;
+		bufferSubmitInfo.deviceMask = 0;
+
+		submitInfo.commandBufferInfoCount = 1;
+		submitInfo.pCommandBufferInfos = &bufferSubmitInfo;
+
+		// Submit graphics operations and return early
+		if (vkQueueSubmit2(m_DeviceHandle->Queues()->GetGraphicsQueue(), 1, &submitInfo, m_ImmediateSyncObjects->GetFence("Immediate Submit")) != VK_SUCCESS)
+		{
+			INDY_CORE_ERROR("Error on Immediate Submit to Graphics Queue!");
+		}
+
+		if (vkWaitForFences(m_DeviceHandle->Get(), 1, &m_ImmediateSyncObjects->GetFence("Immediate Submit"), VK_TRUE, UINT64_MAX) != VK_SUCCESS)
+		{
+			INDY_CORE_ERROR("Error waiting for Immediate Submit to graphics queue!");
+		}
+	}
+
 	FrameData VulkanRenderTarget::GetCurrentFrameData()
 	{
 		auto frame = m_Frames[m_FrameCount % g_Max_Frames_In_Flight].get();
@@ -387,5 +471,130 @@ namespace Indy
 		data.graphicsCommandBuffer = frame->GetGraphicsCommandBuffer(0);
 
 		return data;
+	}
+
+	// TEMP: MOVE LATER!!!!
+	// --------------------------------------------------------------------------
+
+	void VulkanRenderTarget::init_imgui(const VkInstance& instance, Window* window)
+	{
+		std::vector<VkDescriptorPoolSize> pool_sizes = 
+		{
+			{ VK_DESCRIPTOR_TYPE_SAMPLER,					1000 },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,	1000 },
+			{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,			1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,			1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,	1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,	1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,			1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,			1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,	1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,	1000 },
+			{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT,		1000 }
+		};
+
+		VkDescriptorPoolCreateInfo pool_info = {};
+		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+		pool_info.maxSets = 1000;
+		pool_info.poolSizeCount = static_cast<uint32_t>(pool_sizes.size());
+		pool_info.pPoolSizes = pool_sizes.data();
+
+		if (vkCreateDescriptorPool(m_DeviceHandle->Get(), &pool_info, nullptr, &m_ImGuiPool) != VK_SUCCESS)
+		{
+			INDY_CORE_ERROR("ImGui Initialization Error: Failed to create descriptor pool");
+			return;
+		}
+
+		// Initialize core ImGui structures
+		ImGui::CreateContext(/* shared font atlas */);
+
+		ImGui::StyleColorsDark();
+
+		ImGuiIO& io = ImGui::GetIO();
+		io.Fonts->AddFontDefault();
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+		io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
+		io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
+		//io.ConfigViewportsNoAutoMerge = true;
+		//io.ConfigViewportsNoTaskBarIcon = true;
+
+		// Initialize ImGui for GLFW
+		if (!ImGui_ImplGlfw_InitForVulkan(static_cast<GLFWwindow*>(window->NativeWindow()), true))
+		{
+			INDY_CORE_ERROR("ImGui Initialization Error: Failed to initialize ImGui for GLFW");
+			return;
+		}
+
+		// this initializes imgui for Vulkan
+		ImGui_ImplVulkan_InitInfo init_info = {};
+		init_info.Instance = instance;
+		init_info.PhysicalDevice = m_DeviceHandle->GetPhysicalDevice()->handle;
+		init_info.Device = m_DeviceHandle->Get();
+		init_info.QueueFamily = m_DeviceHandle->GetPhysicalDevice()->queueFamilies.graphics.value();
+		init_info.Queue = m_DeviceHandle->Queues()->GetGraphicsQueue();
+		init_info.DescriptorPool = m_ImGuiPool;
+		init_info.MinImageCount = 3;
+		init_info.ImageCount = 3;
+		init_info.UseDynamicRendering = true;
+
+		// Rendering Pipeline info
+		VkPipelineRenderingCreateInfoKHR pipelineInfo{};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+		pipelineInfo.colorAttachmentCount = 1;
+		pipelineInfo.pColorAttachmentFormats = &m_Swapchain->GetFormat().format;
+		pipelineInfo.pNext = nullptr;
+
+		// Dynamic rendering parameters
+		init_info.PipelineRenderingCreateInfo = pipelineInfo;
+
+		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+		if (!ImGui_ImplVulkan_Init(&init_info))
+		{
+			INDY_CORE_ERROR("Error Initializing Vulkan ImGui Impl");
+		}
+
+		if (!ImGui_ImplVulkan_CreateFontsTexture())
+		{
+			INDY_CORE_ERROR("Error Initializing Vulkan ImGui font texture");
+		}
+	}
+
+	void VulkanRenderTarget::draw_imgui(const VkCommandBuffer& buffer, const VkImageView& imageView)
+	{
+		VkRenderingAttachmentInfo colorAttachment{};
+		colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		colorAttachment.pNext = nullptr;
+
+		colorAttachment.imageView = imageView;
+		colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+		VkRect2D renderArea{};
+		renderArea.extent = m_Swapchain->GetExtent();
+
+		VkRenderingInfo renderInfo{};
+		renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+		renderInfo.colorAttachmentCount = 1;
+		renderInfo.pColorAttachments = &colorAttachment;
+		renderInfo.renderArea = renderArea;
+		renderInfo.flags = 0;
+		renderInfo.layerCount = 1;
+
+		vkCmdBeginRendering(buffer, &renderInfo);
+
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), buffer);
+
+		vkCmdEndRendering(buffer);
+
+		ImGuiIO& io = ImGui::GetIO();
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		{
+			ImGui::UpdatePlatformWindows();
+			ImGui::RenderPlatformWindowsDefault();
+		}
 	}
 }

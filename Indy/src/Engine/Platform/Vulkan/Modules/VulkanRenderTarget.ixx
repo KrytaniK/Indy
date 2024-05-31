@@ -2,6 +2,7 @@ module;
 
 #include <cstdint>
 #include <vector>
+#include <functional>
 
 #include <vulkan/vulkan.h>
 
@@ -43,6 +44,11 @@ export
 			void Render();
 
 		private:
+			// TEMP: MOVE LATER
+			void init_imgui(const VkInstance& instance, Window* window);
+			void draw_imgui(const VkCommandBuffer& buffer, const VkImageView& imageView);
+			// ------------------
+
 			// Execute compute operations
 			void OnBeginFrame(const FrameData& frameData);
 
@@ -54,6 +60,8 @@ export
 
 			void SubmitComputeQueue(const FrameData& frameData);
 			void SubmitGraphicsQueue(const FrameData& frameData, bool present = true);
+
+			void SubmitImmediateCommand(std::function<void(const VkCommandBuffer&)>&& function);
 
 			// Retrieve the current frame in the "frame buffer"
 			FrameData GetCurrentFrameData();
@@ -73,6 +81,10 @@ export
 			uint8_t m_FrameCount;
 
 			std::unique_ptr<VulkanCommandPool> m_ImmediateCommandPool;
+			std::unique_ptr<VulkanSyncObjects> m_ImmediateSyncObjects;
+
+			// TEMP
+			VkDescriptorPool m_ImGuiPool;
 		};
 	}
 }

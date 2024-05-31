@@ -21,9 +21,7 @@ project "Sandbox"
 	includedirs
 	{
 		"%{wks.location}/Indy/src",
-		"%{IncludeDirs.spdlog}",
-		"%{IncludeDirs.Vulkan}",
-		"%{IncludeDirs.VMA}",
+		"%{wks.location}/Indy/lib/spdlog/include",
 	}
 
 	libdirs

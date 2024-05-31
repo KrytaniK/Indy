@@ -59,8 +59,12 @@ namespace Indy
 		rtSpec.graphicsPipeline = nullptr;
 		rtSpec.raytracePipeline = nullptr;
 
-		VulkanRenderTarget target(m_Instance, rtSpec);
-		target.Render();
+		m_Target = std::make_unique<VulkanRenderTarget>(m_Instance, rtSpec);
+
+		Application::Get().Update.Subscribe([this]() { m_Target->Render(); });
+
+		/*VulkanRenderTarget target(m_Instance, rtSpec);
+		target.Render();*/
 	}
 
 	// Event Handles
@@ -90,6 +94,8 @@ namespace Indy
 
 		if (!CreateBasePipelines())
 			return false;
+
+		INDY_CORE_WARN("Vulkan Successfully Initialized!");
 
 		return true;
 	}
@@ -214,7 +220,11 @@ namespace Indy
 			return false;
 		}
 
+#ifdef ENGINE_DEBUG
 		return CreateDebugMessenger(debugMessengerCreateInfo);
+#endif
+
+		return true;
 	}
 
 	bool VulkanAPI::CreateDebugMessenger(const VkDebugUtilsMessengerCreateInfoEXT& createInfo)

@@ -15,7 +15,8 @@ export
 
 		const std::vector<const char*> g_Vulkan_Device_Extensions = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-			VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME
+			VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
+			VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
 		};
 
 		// Allows for the buffering of frames (triple-buffering in this case)
