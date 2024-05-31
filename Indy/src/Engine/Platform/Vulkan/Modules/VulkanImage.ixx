@@ -15,6 +15,7 @@ export
 	{
 		struct VulkanImageSpec
 		{
+			VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 			VkFormat format;
 			VkExtent3D extent;
 			VkImageUsageFlags usageFlags;
@@ -25,9 +26,24 @@ export
 		class VulkanImage
 		{
 		public:
-			static void Copy(const VkCommandBuffer& commandBuffer, const VkImage& src, const VkImage& dst, const VkExtent2D& srcExtent, const VkExtent2D& dstExtent);
+			static void Copy(
+				const VkCommandBuffer& commandBuffer, 
+				const VkImage& src, 
+				const VkImage& dst, 
+				const VkExtent2D& srcExtent, 
+				const VkExtent2D& dstExtent
+			);
 
-			static void TransitionLayout(const VkCommandBuffer& commandBuffer, const VkImage& image, const VkImageLayout& currentLayout, const VkImageLayout& newLayout);
+			static void TransitionLayout(
+				const VkCommandBuffer& commandBuffer, 
+				const VkImage& image, 
+				const VkImageLayout& currentLayout, 
+				const VkImageLayout& newLayout,
+				const VkPipelineStageFlags2& srcStageMask,
+				const VkPipelineStageFlags2& dstStageMask,
+				const VkAccessFlags2& srcAccessMask = 0,
+				const VkAccessFlags2& dstAccessMask = 0
+			);
 
 		public:
 			VulkanImage(const VmaAllocator& allocator, const VkDevice& logicalDevice, const VulkanImageSpec& spec);

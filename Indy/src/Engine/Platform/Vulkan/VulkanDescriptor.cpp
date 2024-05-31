@@ -45,7 +45,7 @@ namespace Indy
 
 	void VulkanDescriptor::UpdateDescriptorSets(const VkDevice& logicalDevice)
 	{
-		vkUpdateDescriptorSets(logicalDevice, m_Writes.size(), m_Writes.data(), 0, nullptr);
+		vkUpdateDescriptorSets(logicalDevice, static_cast<uint32_t>(m_Writes.size()), m_Writes.data(), 0, nullptr);
 		m_Writes.clear();
 	}
 }

@@ -51,8 +51,16 @@ namespace Indy
 		vkCmdBlitImage2(commandBuffer, &blitInfo);
 	}
 
-	void VulkanImage::TransitionLayout(const VkCommandBuffer& commandBuffer, const VkImage& image,
-		const VkImageLayout& currentLayout, const VkImageLayout& newLayout)
+	void VulkanImage::TransitionLayout(
+		const VkCommandBuffer& commandBuffer, 
+		const VkImage& image,
+		const VkImageLayout& currentLayout, 
+		const VkImageLayout& newLayout,
+		const VkPipelineStageFlags2& srcStageMask,
+		const VkPipelineStageFlags2& dstStageMask,
+		const VkAccessFlags2& srcAccessMask,
+		const VkAccessFlags2& dstAccessMask
+	)
 	{
 		// NOTE: This is inefficient and binds the pipeline for a bit. Look into improving this
 
@@ -61,10 +69,10 @@ namespace Indy
 		imageBarrier.pNext = nullptr;
 
 		// Set barrier masks
-		imageBarrier.srcStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-		imageBarrier.srcAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT;
-		imageBarrier.dstStageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
-		imageBarrier.dstAccessMask = VK_ACCESS_2_MEMORY_WRITE_BIT | VK_ACCESS_2_MEMORY_READ_BIT;
+		imageBarrier.srcStageMask = srcStageMask;
+		imageBarrier.srcAccessMask = srcAccessMask;
+		imageBarrier.dstStageMask = dstStageMask;
+		imageBarrier.dstAccessMask = dstAccessMask;
 
 		// Transition from old to new layout
 		imageBarrier.oldLayout = currentLayout;
@@ -108,6 +116,7 @@ namespace Indy
 		imageCreateInfo.pNext = nullptr;
 
 		imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+		imageCreateInfo.initialLayout = spec.initialLayout;
 
 		imageCreateInfo.format = spec.format;
 		imageCreateInfo.extent = spec.extent;

@@ -16,6 +16,7 @@ import :Swapchain;
 import :Frame;
 import :Image;
 import :DescriptorPool;
+import :CommandPool;
 
 export
 {
@@ -42,27 +43,27 @@ export
 			void Render();
 
 		private:
-			// Frame preparations
-			void OnBeginFrame(VulkanFrame* frame, uint32_t& swapchainImageIndex);
+			// Execute compute operations
+			void OnBeginFrame(const FrameData& frameData);
 
 			// Vulkan commands are issued here
-			void OnDrawFrame(VulkanFrame* frame, const uint32_t& swapchainImageIndex);
+			void OnDrawFrame(FrameData& frameData);
 
-			// Finalize commands and prepare for presentation
-			void OnEndFrame(VulkanFrame* frame);
+			// Finalize and present frame
+			void OnPresentFrame(const FrameData& frameData);
 
-			// Present finalized frame
-			void OnPresentFrame(VulkanFrame* frame, const uint32_t& swapchainImageIndex);
+			void SubmitComputeQueue(const FrameData& frameData);
+			void SubmitGraphicsQueue(const FrameData& frameData, bool present = true);
 
 			// Retrieve the current frame in the "frame buffer"
-			VulkanFrame* GetCurrentFrame();
+			FrameData GetCurrentFrameData();
 
 		private:
 			uint32_t m_ID;
 			VkInstance m_Instance;
 			VkSurfaceKHR m_Surface;
-
 			VulkanDevice* m_DeviceHandle;
+
 			std::unique_ptr<VulkanSwapchain> m_Swapchain;
 			std::unique_ptr<VulkanImage> m_OffscreenImage;
 
@@ -70,6 +71,8 @@ export
 
 			std::vector<std::unique_ptr<VulkanFrame>> m_Frames;
 			uint8_t m_FrameCount;
+
+			std::unique_ptr<VulkanCommandPool> m_ImmediateCommandPool;
 		};
 	}
 }
