@@ -14,9 +14,9 @@ export
 	{
 		typedef enum ShaderType
 		{
-			INDY_SHADER_TYPE_VERTEX = 0,
-			INDY_SHADER_TYPE_FRAGMENT = 1,
-			INDY_SHADER_TYPE_COMPUTE = 2,
+			INDY_SHADER_TYPE_COMPUTE = 0,
+			INDY_SHADER_TYPE_VERTEX = 1,
+			INDY_SHADER_TYPE_FRAGMENT = 2,
 			INDY_SHADER_TYPE_GEOMETRY = 3,
 			INDY_SHADER_TYPE_TESS_CONTROL = 4,
 			INDY_SHADER_TYPE_TESS_EVAL = 5,
@@ -59,7 +59,7 @@ export
 		private:
 			bool AssertShaderExtension(const std::string& path);
 
-			void CompileFromGLSL(const shaderc::Compiler& compiler, const shaderc::CompileOptions& options);
+			void CompileFromGLSL(const shaderc::Compiler& compiler, shaderc::CompileOptions& options);
 
 			void ReflectGLSL();
 

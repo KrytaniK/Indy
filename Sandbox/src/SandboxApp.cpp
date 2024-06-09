@@ -21,27 +21,28 @@ namespace Indy
 		
 	}
 
-	void Sandbox::OnLoad()
+	void Sandbox::Load()
 	{
 		// Load resources from disk
+		m_GraphicsAPI = GraphicsAPI::Create(GraphicsAPI::Vulkan);
 	}
 
-	void Sandbox::OnStart()
+	void Sandbox::Start()
 	{
 		// Post-Load operations
 
-		auto window = Window::Create({ "First",1280, 760, 0 });
-		window->GetInputContext()->AddInputCallback(0, 0, [](Input::CallbackEvent* event) { INDY_INFO("Left Mouse Button!"); });
+		WindowCreateInfo createInfo{ "First", 1280, 760, 0 };
+		Window::Create(createInfo);
 	}
 
-	void Sandbox::OnUpdate()
+	void Sandbox::Update()
 	{
 		// Fixed Update ("Tick")
 		// Update
 		// Late Update
 	}
 
-	void Sandbox::OnUnload()
+	void Sandbox::Unload()
 	{
 		// Unload all resources
 		// Cleanup phase

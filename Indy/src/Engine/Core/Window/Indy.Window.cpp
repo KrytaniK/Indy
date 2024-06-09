@@ -5,17 +5,13 @@ import Indy.Events;
 
 namespace Indy
 {
-	Window* Window::Create(const WindowCreateInfo& createInfo)
+	void Window::Create(WindowCreateInfo& createInfo)
 	{
-		WindowCreateInfo non_const_create_info(createInfo); // can't reference a const reference with a non-const pointer
-
 		// Send out window create event
 		WindowCreateEvent event;
-		event.createInfo = &non_const_create_info;
+		event.createInfo = &createInfo;
 
 		Events<WindowCreateEvent>::Notify(&event);
-
-		return event.outWindow;
 	}
 
 	void Window::Destroy(const uint8_t& windowID)

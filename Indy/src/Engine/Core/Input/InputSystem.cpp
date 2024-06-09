@@ -21,8 +21,8 @@ namespace Indy
 
 		// Sync Application Events
 		Application& app = Application::Get();
-		app.Load.Subscribe<InputSystem>(this, &InputSystem::OnLoad);
-		app.Unload.Subscribe<InputSystem>(this, &InputSystem::OnUnload);
+		app.OnLoad.Subscribe<InputSystem>(this, &InputSystem::OnLoad);
+		app.OnUnload.Subscribe<InputSystem>(this, &InputSystem::OnUnload);
 
 		// Bind Event Handles
 		Events<Input::Event>::Subscribe<InputSystem>(this, &InputSystem::OnInput);

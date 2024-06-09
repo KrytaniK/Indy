@@ -7,10 +7,11 @@ import Indy.VulkanGraphics;
 
 namespace Indy
 {
-	VulkanDescriptor::VulkanDescriptor(VulkanDescriptorPool* descriptorPool, const VkDescriptorSetLayout& layout)
+	VulkanDescriptor::VulkanDescriptor(const VulkanDescriptorPool& descriptorPool, const VkDescriptorSetLayout& layout)
 	{
 		m_Layout = layout;
-		m_Set = descriptorPool->AllocateDescriptorSet(layout);
+
+		descriptorPool.AllocateDescriptorSet(layout, m_Set);
 	}
 
 	void VulkanDescriptor::UpdateBufferBinding(const VkDescriptorType& descriptorType, uint32_t binding, VkDescriptorBufferInfo* bufferInfos, const uint32_t& elementOffset, const uint32_t& updateCount)

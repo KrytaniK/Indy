@@ -15,7 +15,6 @@ export
 		struct WindowCreateEvent : IEvent
 		{
 			WindowCreateInfo* createInfo;
-			Window* outWindow;
 		};
 
 		struct WindowDestroyEvent : IEvent
@@ -28,6 +27,11 @@ export
 			uint8_t windowID;
 			bool getActiveWindow;
 			Window* outWindow;
+		};
+
+		struct WindowDispatchEvent : IEvent
+		{
+			Window* window;
 		};
 	}
 }

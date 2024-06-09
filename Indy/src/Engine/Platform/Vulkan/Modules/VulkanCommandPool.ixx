@@ -7,12 +7,6 @@ module;
 
 export module Indy.VulkanGraphics:CommandPool;
 
-/* Note:
- *	If commands need to be executed via multiple threads, it is best to create multiple
- *		command pools per frame (one for each thread of access). and reset the entire
- *		command pool once safe.
- */
-
 export
 {
 	namespace Indy
@@ -20,22 +14,27 @@ export
 		class VulkanCommandPool
 		{
 		public:
-			VulkanCommandPool(const VkDevice& logicalDevice, const uint32_t& queueFamilyIndex, const uint8_t& commandBufferCount);
+			VulkanCommandPool() = default;
 			~VulkanCommandPool();
 
 			const VkCommandPool& Get() const { return m_CommandPool; };
 			const VkCommandBuffer& GetCommandBuffer(const uint8_t& index) const;
 
-			void BeginCommandBuffer(const uint8_t& index, const VkCommandBufferUsageFlags& flags) const;
-			void EndCommandBuffer(const uint8_t& index) const;
+			void Allocate(const VkDevice& logicalDevice, const uint32_t& queueFamilyIndex, const uint8_t& commandBufferCount);
+
+			void BeginCommandBuffer(const uint8_t& index, const VkCommandBufferUsageFlags& flags);
+			void EndCommandBuffer(const uint8_t& index);
+
+			void Reset();
 
 		private:
 			void AllocateCommandBuffers(const uint8_t& commandBufferCount);
 
 		private:
-			VkDevice m_LogicalDevice;
-			VkCommandPool m_CommandPool;
+			VkDevice m_LogicalDevice = VK_NULL_HANDLE;
+			VkCommandPool m_CommandPool = VK_NULL_HANDLE;
 			std::vector<VkCommandBuffer> m_CommandBuffers;
+			VkCommandBufferBeginInfo m_CmdBufferBeginInfo{};
 		};
 	}
 }

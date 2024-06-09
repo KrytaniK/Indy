@@ -1,6 +1,6 @@
 module;
 
-#include <span>
+#include <vector>
 
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
@@ -23,21 +23,16 @@ export
 			VkDescriptorSet descriptorSet;
 		};
 
-		class VulkanImage
+		class VulkanImageProcessor
 		{
 		public:
-			static void Copy(
-				const VkCommandBuffer& commandBuffer, 
-				const VkImage& src, 
-				const VkImage& dst, 
-				const VkExtent2D& srcExtent, 
-				const VkExtent2D& dstExtent
-			);
+			VulkanImageProcessor() : m_ImageBarrierCount(0) {};
 
-			static void TransitionLayout(
-				const VkCommandBuffer& commandBuffer, 
-				const VkImage& image, 
-				const VkImageLayout& currentLayout, 
+			~VulkanImageProcessor() = default;
+
+			void AddLayoutTransition(
+				const VkImage& image,
+				const VkImageLayout& currentLayout,
 				const VkImageLayout& newLayout,
 				const VkPipelineStageFlags2& srcStageMask,
 				const VkPipelineStageFlags2& dstStageMask,
@@ -45,24 +40,39 @@ export
 				const VkAccessFlags2& dstAccessMask = 0
 			);
 
-		public:
-			VulkanImage(const VmaAllocator& allocator, const VkDevice& logicalDevice, const VulkanImageSpec& spec);
-			~VulkanImage();
+			void TransitionLayouts(const VkCommandBuffer& commandBuffer);
 
-			const VkExtent3D& GetExtent() { return m_ImageExtent; };
-			const VkImage& Get() { return m_Image; };
-			const VkImageView& GetView() { return m_ImageView; };
+			void ClearTransitions();
+
+			void CopyImage(
+				const VkCommandBuffer& commandBuffer,
+				const VkImage& src,
+				const VkImage& dst,
+				const VkExtent2D& srcExtent,
+				const VkExtent2D& dstExtent
+			);
 
 		private:
-			const VmaAllocator* m_Allocator;
-			VmaAllocation m_Allocation;
+			std::vector<VkImageMemoryBarrier2> m_ImageBarriers;
+			uint32_t m_ImageBarrierCount;
+		};
 
-			VkDevice m_LogicalDevice;
+		struct VulkanImage
+		{
+		public:
+			static VulkanImage Create(
+				const VkDevice& logicalDevice,
+				const VmaAllocator& allocator,
+				const VulkanImageSpec& spec
+			);
 
-			VkImage m_Image;
-			VkImageView m_ImageView;
-			VkExtent3D m_ImageExtent;
-			VkFormat m_Format;
+			VmaAllocation allocation = VK_NULL_HANDLE;
+			VkSampler sampler = VK_NULL_HANDLE;
+			VkImage image = VK_NULL_HANDLE;
+			VkImageView view = VK_NULL_HANDLE;
+			VkExtent3D extent{};
+			VkFormat format{};
+			VkDescriptorSet imguiDescriptor;
 		};
 	}
 }

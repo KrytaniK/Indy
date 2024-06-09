@@ -11,25 +11,20 @@ export
 {
 	namespace Indy
 	{
-		class GraphicsAPI;
-
 		class WindowSystem
 		{
 		public:
 			WindowSystem();
-			virtual ~WindowSystem();
+			~WindowSystem();
 
 		private:
-			virtual void OnLoad();
-			virtual void OnUpdate();
-			virtual void OnUnload();
+			void OnUpdate();
 
-			virtual void OnWindowCreate(WindowCreateEvent* event);
-			virtual void OnWindowDestroy(WindowDestroyEvent* event);
-			virtual void OnWindowGet(WindowGetEvent* event);
+			void OnWindowCreate(WindowCreateEvent* event);
+			void OnWindowDestroy(WindowDestroyEvent* event);
+			void OnWindowGet(WindowGetEvent* event);
 
-		private:
-			std::unique_ptr<GraphicsAPI> m_GraphicsAPI;
+		private: 
 			std::unique_ptr<WindowManager> m_WindowManager;
 		};
 	}

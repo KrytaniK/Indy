@@ -87,6 +87,9 @@ namespace Indy
 			index++;
 		}
 
+		// Using the window count for the window ID makes lookup much simpler
+		createInfo.id = m_WindowCount;
+
 		// Create Platform-Specific Window
 		std::shared_ptr<Window> window;
 	#ifdef ENGINE_PLATFORM_WINDOWS

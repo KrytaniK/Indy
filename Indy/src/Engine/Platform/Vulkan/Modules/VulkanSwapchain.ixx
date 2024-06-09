@@ -22,31 +22,31 @@ export
 	{
 		struct VulkanPhysicalDevice;
 
-		struct VKSwapchainSupport
+		struct VulkanSwapchainSupport
 		{
 			VkSurfaceCapabilitiesKHR capabilities;
 			std::vector<VkSurfaceFormatKHR> formats;
 			std::vector<VkPresentModeKHR> presentModes;
 		};
 
-		struct VkSwapchainImage
+		struct VulkanSwapchainImage
 		{
-			VkImage image;
-			VkImageView imageView;
+			VkImage image = VK_NULL_HANDLE;
+			VkImageView imageView = VK_NULL_HANDLE;
 		};
 
 		class VulkanSwapchain
 		{
 		public:
-			VulkanSwapchain(const std::shared_ptr<VulkanPhysicalDevice>& physicalDevice, const VkDevice& logicalDevice, const VkSurfaceKHR& surface, Window* window);
+			VulkanSwapchain(const VulkanPhysicalDevice& physicalDevice, const VkDevice& logicalDevice, const VkSurfaceKHR& surface, Window* window);
 			~VulkanSwapchain();
 
-			static void QuerySupportDetails(const std::shared_ptr<VulkanPhysicalDevice>& physicalDevice, const VkSurfaceKHR& surface);
+			static void QuerySupportDetails(VulkanPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface);
 
-			const VkSwapchainKHR& Get() const { return m_Swapchain; };
+			VkSwapchainKHR& Get() { return m_Swapchain; };
 			const VkExtent2D& GetExtent() { return m_Extent; };
 			const VkSurfaceFormatKHR& GetFormat() { return m_Format; };
-			const VkSwapchainImage& GetImage(const uint32_t& index);
+			VulkanSwapchainImage& GetImage(const uint32_t& index);
 
 		private:
 			void ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -61,7 +61,7 @@ export
 			VkSurfaceFormatKHR m_Format;
 			VkPresentModeKHR m_PresentMode;
 			VkExtent2D m_Extent;
-			std::vector<VkSwapchainImage> m_Images;
+			std::vector<VulkanSwapchainImage> m_Images;
 		};
 	}
 }

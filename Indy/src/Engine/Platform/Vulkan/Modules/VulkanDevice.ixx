@@ -2,15 +2,14 @@ module;
 
 #include <memory>
 #include <vector>
+#include <optional>
 
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
 
 export module Indy.VulkanGraphics:Device;
 
-import :Queue;
 import :Swapchain;
-import :Events;
 
 export
 {
@@ -32,14 +31,27 @@ export
 			GPUCompatLevel typePreference = COMPAT_PREFER;
 		};
 
+		// Wrapper structure for GPU queue family indices
+		struct QueueFamilyIndices
+		{
+			std::optional<uint32_t> graphics;
+			std::optional<uint32_t> present;
+			std::optional<uint32_t> compute;
+
+			bool Complete()
+			{
+				return graphics.has_value() && present.has_value() && compute.has_value();
+			};
+		};
+
 		// A containing structure for Vulkan Physical Devices and their properties and features.
 		struct VulkanPhysicalDevice
 		{
 			VkPhysicalDevice handle = VK_NULL_HANDLE;
-			VkPhysicalDeviceProperties properties;
-			VkPhysicalDeviceFeatures features;
-			QueueFamilyIndices queueFamilies;
-			VKSwapchainSupport swapchainSupport;
+			VkPhysicalDeviceProperties properties{};
+			VkPhysicalDeviceFeatures features{};
+			QueueFamilyIndices queueFamilies{};
+			VulkanSwapchainSupport swapchainSupport{};
 		};
 
 		class VulkanAPI;
@@ -48,32 +60,36 @@ export
 		class VulkanDevice
 		{
 		private:
-			static std::vector<std::shared_ptr<VulkanPhysicalDevice>> s_PhysicalDevices;
+			static std::vector<VulkanPhysicalDevice> s_PhysicalDevices;
 
 		public:
 			static void GetAllGPUSpecs(const VkInstance& instance);
-			static bool GetGPUSurfaceSupport(const std::shared_ptr<VulkanPhysicalDevice>& gpu, const VkSurfaceKHR& surface);
+			static bool GetGPUSurfaceSupport(VulkanPhysicalDevice& gpu, const VkSurfaceKHR& surface);
+			static VulkanPhysicalDevice ChoosePhysicalDevice(const VulkanDeviceCompatibility& compatibility);
+
+		private:
+			static bool CheckFeatureCompatibility(const GPUCompatLevel& preference, bool hasFeature, uint8_t& rating);
 
 		public:
+			// Creates a logical device based on a physical device, chosen based on some compatibility
 			VulkanDevice(const VkInstance& instance, const VulkanDeviceCompatibility& compatibility);
+
+			// Creates a logical device from a physical device
+			VulkanDevice(const VkInstance& instance, const VulkanPhysicalDevice& physicalDevice);
+
 			~VulkanDevice();
 
-			const std::shared_ptr<VulkanPhysicalDevice>& GetPhysicalDevice();
 			const VkDevice& Get();
+			const VulkanPhysicalDevice& GetPhysicalDevice();
 			const VmaAllocator& GetVmaAllocator() const { return m_Allocator; };
-
-			VulkanQueue* Queues() { return m_Queue.get(); };
 
 		private:
 			void CreateLogicalDevice();
-			void FindCompatibleGPU(const VulkanDeviceCompatibility& compatibility);
-			bool IsCompatibleFeature(const GPUCompatLevel& preference, bool hasFeature, uint8_t& rating);
 
 		private:
 			VmaAllocator m_Allocator;
 			VkDevice m_LogicalDevice = VK_NULL_HANDLE;
-			std::shared_ptr<VulkanPhysicalDevice> m_PhysicalDevice;
-			std::unique_ptr<VulkanQueue> m_Queue;
+			VulkanPhysicalDevice m_PhysicalDevice;
 		};
 	}
 }

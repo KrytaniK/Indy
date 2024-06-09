@@ -1,7 +1,7 @@
 module;
 
-#include <unordered_map>
 #include <vector>
+#include <memory>
 
 #include <vulkan/vulkan.h>
 
@@ -11,6 +11,8 @@ import :DescriptorPool;
 import :Descriptor;
 
 import Indy.Graphics;
+
+// TODO: Separate into Pipeline Builder and Pipeline
 
 export
 {
@@ -23,14 +25,18 @@ export
 			VkPipelineLayout layout = VK_NULL_HANDLE;
 		};
 
+		class VulkanPipelineBuilder
+		{
+
+		};
+
 		class VulkanPipeline : public Pipeline
 		{
 		public:
 			static VkShaderStageFlagBits GetShaderStage(const ShaderType& shaderType);
 
 		public:
-			VulkanPipeline(const VkDevice& logicalDevice, const VulkanPipelineInfo& info)
-				: m_Info(info), m_LogicalDevice(logicalDevice) {};
+			VulkanPipeline(const VkDevice& logicalDevice, const VulkanPipelineInfo& info);
 
 			virtual ~VulkanPipeline() override;
 
@@ -39,11 +45,11 @@ export
 			const VulkanPipelineInfo& GetInfo() const { return m_Info; };
 			const VkPipelineLayout& GetLayout() const { return m_Info.layout; };
 			virtual const PipelineType& GetType() const override { return m_Info.type; };
-			VulkanDescriptor* GetDescriptor(const ShaderType& shaderType);
+			const std::shared_ptr<VulkanDescriptor>& GetDescriptor(const ShaderType& shaderType);
 
 			// Pipeline Build process functions
 			void BindShader(Shader& shader) override;
-			void BindDescriptorSetLayout(const ShaderType& shaderType, VulkanDescriptorPool* descriptorPool, const VkDescriptorSetLayout& layout);
+			void BindDescriptorSetLayout(const ShaderType& shaderType, const VulkanDescriptorPool& descriptorPool, const VkDescriptorSetLayout& layout);
 
 			// Inherited Build function
 			virtual void Build() override;
@@ -57,8 +63,8 @@ export
 		private:
 			VulkanPipelineInfo m_Info;
 			VkDevice m_LogicalDevice;
-			std::unordered_map<ShaderType, VulkanDescriptor> m_Descriptors;
-			std::unordered_map<ShaderType, VkShaderModule> m_ShaderModules;
+			std::vector<std::shared_ptr<VulkanDescriptor>> m_Descriptors;
+			std::vector<VkShaderModule> m_ShaderModules;
 		};
 	}
 }

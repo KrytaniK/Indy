@@ -26,7 +26,7 @@ export
 			virtual void OnStart() = 0;
 			virtual void OnUnload() = 0;
 
-			virtual void CreateRenderTarget(Window* window) = 0;
+			virtual void OnWindowDispatch(WindowDispatchEvent* event) = 0;
 		};
 	}
 }

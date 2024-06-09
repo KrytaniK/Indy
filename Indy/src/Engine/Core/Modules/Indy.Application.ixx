@@ -8,8 +8,10 @@ export module Indy.Application;
 
 import Indy.Layers;
 import Indy.Events;
+
 import Indy.Input;
 import Indy.Window;
+import Indy.Graphics;
 
 export {
 	namespace Indy
@@ -40,16 +42,16 @@ export {
 			void StartAndRun();
 
 		private:
-			virtual void OnLoad() = 0;
-			virtual void OnStart() = 0;
-			virtual void OnUpdate() = 0;
-			virtual void OnUnload() = 0;
+			virtual void Load() = 0;
+			virtual void Start() = 0;
+			virtual void Update() = 0;
+			virtual void Unload() = 0;
 
 		public:
-			EventHandler Load;
-			EventHandler OnStart_Event;
-			EventHandler Update;
-			EventHandler Unload;
+			EventHandler OnLoad;
+			EventHandler OnStart;
+			EventHandler OnUpdate;
+			EventHandler OnUnload;
 
 		protected:
 			ApplicationInfo m_Info;
@@ -60,9 +62,9 @@ export {
 			// Controls application lifetime. Setting this to true terminates the program
 			bool m_ShouldClose = true;
 
-		private:
 			std::unique_ptr<InputSystem> m_InputSystem;
 			std::unique_ptr<WindowSystem> m_WindowSystem;
+			std::unique_ptr<GraphicsAPI> m_GraphicsAPI;
 		};
 
 	}

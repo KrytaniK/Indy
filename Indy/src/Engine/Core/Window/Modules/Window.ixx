@@ -30,7 +30,7 @@ export
 		class Window
 		{
 		public:
-			static Window* Create(const WindowCreateInfo& createInfo);
+			static void Create(WindowCreateInfo& createInfo);
 			static void Destroy(const uint8_t& windowID);
 
 		public:

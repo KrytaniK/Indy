@@ -40,10 +40,10 @@ export
 			};
 
 		public:
-			VulkanDescriptorPool(const VkDevice& logicalDevice, const uint32_t& maxSets, std::span<Ratio>);
+			VulkanDescriptorPool(const VkDevice& logicalDevice, const uint32_t& maxSets, std::span<Ratio> sizes);
 			~VulkanDescriptorPool();
 
-			VkDescriptorSet AllocateDescriptorSet(const VkDescriptorSetLayout& layout);
+			void AllocateDescriptorSet(const VkDescriptorSetLayout& layout, VkDescriptorSet& outDescriptor) const;
 
 			void ClearDescriptors();
 

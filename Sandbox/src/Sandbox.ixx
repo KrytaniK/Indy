@@ -11,10 +11,10 @@ export {
 			Sandbox(const ApplicationCreateInfo& createInfo);
 			virtual ~Sandbox() override;
 
-			virtual void OnLoad() override;
-			virtual void OnStart() override;
-			virtual void OnUpdate() override;
-			virtual void OnUnload() override;
+			virtual void Load() override;
+			virtual void Start() override;
+			virtual void Update() override;
+			virtual void Unload() override;
 		};
 	}
 }

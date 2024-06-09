@@ -1,6 +1,8 @@
 module;
 
 #include <vector>
+
+#include <GLFW/glfw3.h>
 #include <vulkan/vulkan.h>
 
 export module Indy.VulkanGraphics:Constants;

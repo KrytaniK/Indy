@@ -15,7 +15,7 @@ export
 		class VulkanDescriptor
 		{
 		public:
-			VulkanDescriptor(VulkanDescriptorPool* descriptorPool, const VkDescriptorSetLayout& layout);
+			VulkanDescriptor(const VulkanDescriptorPool& descriptorPool, const VkDescriptorSetLayout& layout);
 
 			void UpdateBufferBinding(const VkDescriptorType& descriptorType, uint32_t binding, VkDescriptorBufferInfo* bufferInfos, const uint32_t& elementOffset = 0, const uint32_t& updateCount = 1);
 			void UpdateImageBinding(const VkDescriptorType& descriptorType, uint32_t binding, VkDescriptorImageInfo* imageInfos, const uint32_t& elementOffset = 0, const uint32_t& updateCount = 1);

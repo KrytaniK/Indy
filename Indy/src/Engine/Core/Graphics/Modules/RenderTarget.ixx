@@ -14,8 +14,6 @@ export
 		public:
 			RenderTarget() = default;
 			virtual ~RenderTarget() = default;
-
-			virtual const uint32_t& GetID() const = 0;
 		};
 	}
 }

@@ -6,6 +6,7 @@ import Indy.Application;
 import Indy.Layers;
 import Indy.Input;
 import Indy.Window;
+import Indy.Graphics;
 
 namespace Indy
 {
@@ -26,10 +27,10 @@ namespace Indy
 		m_InputSystem = std::make_unique<InputSystem>();
 		m_WindowSystem = std::make_unique<WindowSystem>();
 
-		Load.Subscribe<Application>(this, &Application::OnLoad);
-		OnStart_Event.Subscribe<Application>(this, &Application::OnStart);
-		Update.Subscribe<Application>(this, &Application::OnUpdate);
-		Unload.Subscribe<Application>(this, &Application::OnUnload);
+		OnLoad.Subscribe<Application>(this, &Application::Load);
+		OnStart.Subscribe<Application>(this, &Application::Start);
+		OnUpdate.Subscribe<Application>(this, &Application::Update);
+		OnUnload.Subscribe<Application>(this, &Application::Unload);
 	}
 
 	Application::~Application()
@@ -39,22 +40,21 @@ namespace Indy
 
 	void Application::StartAndRun()
 	{
-		Load.Notify();
-
-		OnStart_Event.Notify();
+		OnLoad.Notify();
+		OnStart.Notify();
 
 		if (m_ShouldClose) // Application is meant to execute once
 		{
-			Update.Notify();
+			OnUpdate.Notify();
 		}
 		else // Application is meant to run continuously
 		{
 			while (!m_ShouldClose)
 			{
-				Update.Notify();
+				OnUpdate.Notify();
 			}
 		}
 
-		Unload.Notify();
+		OnUnload.Notify();
 	}
 }

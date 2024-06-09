@@ -21,26 +21,32 @@ namespace Indy
 		}
 	}
 
+	VulkanPipeline::VulkanPipeline(const VkDevice& logicalDevice, const VulkanPipelineInfo& info)
+		: m_Info(info), m_LogicalDevice(logicalDevice)
+	{
+		// Resize to max value of shader type enum that isn't enum max
+		m_Descriptors.resize(6); 
+		m_ShaderModules.resize(6); 
+	}
+
 	VulkanPipeline::~VulkanPipeline()
 	{
 		for (const auto& shaderModule : m_ShaderModules)
-			vkDestroyShaderModule(m_LogicalDevice, shaderModule.second, nullptr);
+			vkDestroyShaderModule(m_LogicalDevice, shaderModule, nullptr);
 
 		for (auto& descriptor : m_Descriptors)
-			vkDestroyDescriptorSetLayout(m_LogicalDevice, descriptor.second.GetLayout(), nullptr);
+			vkDestroyDescriptorSetLayout(m_LogicalDevice, descriptor->GetLayout(), nullptr);
 
 		vkDestroyPipelineLayout(m_LogicalDevice, m_Info.layout, nullptr);
 		vkDestroyPipeline(m_LogicalDevice, m_Info.pipeline, nullptr);
 	}
 
-	VulkanDescriptor* VulkanPipeline::GetDescriptor(const ShaderType& shaderType)
+	const std::shared_ptr<VulkanDescriptor>& VulkanPipeline::GetDescriptor(const ShaderType& shaderType)
 	{
-		auto descIt = m_Descriptors.find(shaderType);
-
-		if (descIt == m_Descriptors.end())
+		if (shaderType >= m_Descriptors.size())
 			return nullptr;
 
-		return &descIt->second;
+		return m_Descriptors[shaderType];
 	}
 
 	void VulkanPipeline::BindShader(Shader& shader)
@@ -62,9 +68,9 @@ namespace Indy
 			INDY_CORE_ERROR("failed to create shader module!");
 	}
 
-	void VulkanPipeline::BindDescriptorSetLayout(const ShaderType& shaderType, VulkanDescriptorPool* descriptorPool, const VkDescriptorSetLayout& layout)
+	void VulkanPipeline::BindDescriptorSetLayout(const ShaderType& shaderType, const VulkanDescriptorPool& descriptorPool, const VkDescriptorSetLayout& layout)
 	{
-		m_Descriptors.emplace(shaderType, VulkanDescriptor(descriptorPool, layout));
+		m_Descriptors[shaderType] = std::make_shared<VulkanDescriptor>(descriptorPool, layout);
 	}
 
 	void VulkanPipeline::Build()
@@ -72,7 +78,7 @@ namespace Indy
 		switch(m_Info.type)
 		{
 			case INDY_PIPELINE_TYPE_COMPUTE: { BuildComputePipeline(); return; }
-			case INDY_PIPELINE_TYPE_RAY_TRACING: { BuildRayTracePipeline(); return; }
+			case INDY_PIPELINE_TYPE_RAYTRACE: { BuildRayTracePipeline(); return; }
 			case INDY_PIPELINE_TYPE_GRAPHICS: { BuildGraphicsPipeline(); return; }
 			default:
 			{
@@ -87,8 +93,9 @@ namespace Indy
 		// -------------------------------------------------------------------------------------------------------
 
 		std::vector<VkDescriptorSetLayout> layouts;
-		for (auto& descriptor : m_Descriptors)
-			layouts.emplace_back(descriptor.second.GetLayout());
+		for (std::shared_ptr<VulkanDescriptor>& descriptor : m_Descriptors)
+			if (descriptor)
+				layouts.emplace_back(descriptor->GetLayout());
 
 		// Build pipeline layout
 		// -------------------------------------------------------------------------------------------------------
@@ -133,8 +140,9 @@ namespace Indy
 		// -------------------------------------------------------------------------------------------------------
 
 		std::vector<VkDescriptorSetLayout> layouts;
-		for (auto& descriptor : m_Descriptors)
-			layouts.emplace_back(descriptor.second.GetLayout());
+		for (std::shared_ptr<VulkanDescriptor>& descriptor : m_Descriptors)
+			if (descriptor)
+				layouts.emplace_back(descriptor->GetLayout());
 
 		// Build pipeline layout
 		// -------------------------------------------------------------------------------------------------------
@@ -163,8 +171,9 @@ namespace Indy
 		// -------------------------------------------------------------------------------------------------------
 
 		std::vector<VkDescriptorSetLayout> layouts;
-		for (auto& descriptor : m_Descriptors)
-			layouts.emplace_back(descriptor.second.GetLayout());
+		for (std::shared_ptr<VulkanDescriptor>& descriptor : m_Descriptors)
+			if (descriptor)
+				layouts.emplace_back(descriptor->GetLayout());
 
 		// Build pipeline layout
 		// -------------------------------------------------------------------------------------------------------

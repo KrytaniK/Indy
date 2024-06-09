@@ -15,6 +15,9 @@ export
 			virtual ~Renderer() = default;
 
 			virtual void Render() = 0;
+
+			virtual void Enable() = 0;
+			virtual void Disable() = 0;
 		};
 	}
 }

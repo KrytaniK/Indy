@@ -24,8 +24,8 @@ namespace Indy
 	GraphicsAPI::GraphicsAPI()
 	{
 		Application& app = Application::Get();
-		app.Load.Subscribe<GraphicsAPI>(this, &GraphicsAPI::OnLoad);
-		app.OnStart_Event.Subscribe<GraphicsAPI>(this, &GraphicsAPI::OnStart);
-		app.Unload.Subscribe<GraphicsAPI>(this, &GraphicsAPI::OnUnload);
+		app.OnLoad.Subscribe<GraphicsAPI>(this, &GraphicsAPI::OnLoad);
+		app.OnStart.Subscribe<GraphicsAPI>(this, &GraphicsAPI::OnStart);
+		app.OnUnload.Subscribe<GraphicsAPI>(this, &GraphicsAPI::OnUnload);
 	}
 }

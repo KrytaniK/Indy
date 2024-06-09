@@ -33,7 +33,7 @@ namespace Indy
 		vkDestroyDescriptorPool(m_LogicalDevice, m_DescriptorPool, nullptr);
 	}
 
-	VkDescriptorSet VulkanDescriptorPool::AllocateDescriptorSet(const VkDescriptorSetLayout& layout)
+	void VulkanDescriptorPool::AllocateDescriptorSet(const VkDescriptorSetLayout& layout, VkDescriptorSet& outDescriptor) const
 	{
 		VkDescriptorSetAllocateInfo allocInfo = { .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
 		allocInfo.pNext = nullptr;
@@ -41,14 +41,10 @@ namespace Indy
 		allocInfo.descriptorSetCount = 1;
 		allocInfo.pSetLayouts = &layout;
 
-		VkDescriptorSet descSet;
-		if (vkAllocateDescriptorSets(m_LogicalDevice, &allocInfo, &descSet) != VK_SUCCESS)
+		if (vkAllocateDescriptorSets(m_LogicalDevice, &allocInfo, &outDescriptor) != VK_SUCCESS)
 		{
 			INDY_CORE_ERROR("Failed to create descriptor set!");
-			return {};
 		}
-
-		return descSet;
 	}
 
 	void VulkanDescriptorPool::ClearDescriptors()

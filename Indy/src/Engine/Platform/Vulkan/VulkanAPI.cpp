@@ -22,7 +22,7 @@ namespace Indy
 	VulkanAPI::VulkanAPI()
 		: m_Instance(VK_NULL_HANDLE), m_DebugMessenger(VK_NULL_HANDLE)
 	{
-		Events<VkInstanceFetchEvent>::Subscribe<VulkanAPI>(this, &VulkanAPI::OnFetchInstance);
+		Events<WindowDispatchEvent>::Subscribe<VulkanAPI>(this, &VulkanAPI::OnWindowDispatch);
 	}
 
 	VulkanAPI::~VulkanAPI()
@@ -35,7 +35,7 @@ namespace Indy
 
 	void VulkanAPI::OnLoad()
 	{
-		if (!Init())
+		if (!InitVulkan())
 			INDY_CORE_CRITICAL("Failed to initialize Vulkan!");
 	}
 
@@ -49,36 +49,17 @@ namespace Indy
 		Cleanup();
 	}
 
-	void VulkanAPI::CreateRenderTarget(Window* window)
+	void VulkanAPI::OnWindowDispatch(WindowDispatchEvent* event)
 	{
-		VulkanRTSpec rtSpec;
-		rtSpec.deviceHandle = m_Global_Device.get();
-		rtSpec.useSurface = true;
-		rtSpec.window = window;
-		rtSpec.computePipeline = m_Pipelines["Compute"].get();
-		rtSpec.graphicsPipeline = nullptr;
-		rtSpec.raytracePipeline = nullptr;
+		m_TestRenderer = std::make_unique<VulkanRenderer>(event->window, m_Instance);
 
-		m_Target = std::make_unique<VulkanRenderTarget>(m_Instance, rtSpec);
-
-		Application::Get().Update.Subscribe([this]() { m_Target->Render(); });
-
-		/*VulkanRenderTarget target(m_Instance, rtSpec);
-		target.Render();*/
-	}
-
-	// Event Handles
-	// -----------------------------------------------------------------
-
-	void VulkanAPI::OnFetchInstance(VkInstanceFetchEvent* event)
-	{
-		event->outInstance = &m_Instance;
+		Application::Get().OnUpdate.Subscribe([this]() { m_TestRenderer->Render(); });
 	}
 
 	// Internal Methods
 	// -----------------------------------------------------------------
 
-	bool VulkanAPI::Init()
+	bool VulkanAPI::InitVulkan()
 	{
 		if (!SupportsValidationLayers())
 			return false;
@@ -86,16 +67,8 @@ namespace Indy
 		if (!CreateVulkanInstance())
 			return false;
 
-		if (!CreateGlobalDevice())
-			return false;
-
-		if (!CreateGlobalDescriptorPool())
-			return false;
-
-		if (!CreateBasePipelines())
-			return false;
-
-		INDY_CORE_WARN("Vulkan Successfully Initialized!");
+		// Retreive GPU information
+		VulkanDevice::GetAllGPUSpecs(m_Instance);
 
 		return true;
 	}
@@ -237,60 +210,6 @@ namespace Indy
 			return false;
 		}
 #endif
-		return true;
-	}
-
-	bool VulkanAPI::CreateGlobalDevice()
-	{
-		// Retreive GPU information
-		VulkanDevice::GetAllGPUSpecs(m_Instance);
-
-		// Create Global Logical Device
-		VulkanDeviceCompatibility compat;
-		compat.geometryShader = COMPAT_REQUIRED;	// always require geometry shaders
-		compat.graphics = COMPAT_REQUIRED;	// always require graphics operations
-		compat.compute = COMPAT_PREFER;		// always prefer compute shaders, but don't require it.
-		compat.type = VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;	// Always assume dedicated GPU
-		compat.typePreference = COMPAT_PREFER;		// always prefer a dedicated GPU, but it's not required.
-
-		m_Global_Device = std::make_unique<VulkanDevice>(m_Instance, compat);
-
-		return true;
-	}
-
-	bool VulkanAPI::CreateGlobalDescriptorPool()
-	{
-		// Descriptor Pool Initialization
-		std::vector<VulkanDescriptorPool::Ratio> sizes = {
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 }  // 1 descriptor for each storage image (for compute)
-		};
-
-		m_Global_DescriptorPool = std::make_unique<VulkanDescriptorPool>(m_Global_Device->Get(), 10, sizes);
-
-		return true;
-	}
-
-	bool VulkanAPI::CreateBasePipelines()
-	{
-		{ // Compute
-
-			// Descriptor Set Layout for compute shader
-			VulkanDescriptorLayoutBuilder layoutBuilder;
-			layoutBuilder.AddBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, 1); // Binding 0 is the image the compute shader uses
-
-			VkDescriptorSetLayout layout = layoutBuilder.Build(m_Global_Device->Get(), { VK_SHADER_STAGE_COMPUTE_BIT });
-
-			// Pipeline
-			m_Pipelines["Compute"] = std::make_unique<VulkanPipeline>(m_Global_Device->Get(), VulkanPipelineInfo(INDY_PIPELINE_TYPE_COMPUTE));
-			VulkanPipeline* compute = m_Pipelines["Compute"].get();
-
-			Shader computeShader(INDY_SHADER_TYPE_COMPUTE, INDY_SHADER_FORMAT_GLSL, "shaders/gradient.glsl.comp");
-			compute->BindShader(computeShader);
-			compute->BindDescriptorSetLayout(INDY_SHADER_TYPE_COMPUTE, m_Global_DescriptorPool.get(), layout);
-
-			compute->Build();
-		}
-
 		return true;
 	}
 }

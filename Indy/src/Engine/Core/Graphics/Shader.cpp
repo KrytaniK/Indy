@@ -182,14 +182,15 @@ namespace Indy
 		return true;
 	}
 
-	void Shader::CompileFromGLSL(const shaderc::Compiler& compiler, const shaderc::CompileOptions& options)
+	void Shader::CompileFromGLSL(const shaderc::Compiler& compiler, shaderc::CompileOptions& options)
 	{
+		options.SetSourceLanguage(shaderc_source_language_glsl);
 		shaderc::SpvCompilationResult spvModule = compiler.CompileGlslToSpv(
 			m_Source, GetShaderCType(m_Type), m_FileName.c_str(), options
 		);
 
 		if (spvModule.GetCompilationStatus() != shaderc_compilation_status_success) {
-			INDY_CORE_ERROR("{0}", spvModule.GetErrorMessage());
+			INDY_CORE_ERROR("GLSL COMPILATION ERROR: {0}", spvModule.GetErrorMessage());
 			return;
 		}
 

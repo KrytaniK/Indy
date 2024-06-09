@@ -16,24 +16,14 @@ namespace Indy
 
 		// Sync Application Events
 		Application& app = Application::Get();
-		app.Load.Subscribe<WindowSystem>(this, &WindowSystem::OnLoad);
-		app.Update.Subscribe<WindowSystem>(this, &WindowSystem::OnUpdate);
-		app.Unload.Subscribe<WindowSystem>(this, &WindowSystem::OnUnload);
+		app.OnUpdate.Subscribe<WindowSystem>(this, &WindowSystem::OnUpdate);
 
 		// Bind Event Handles
 		Events<WindowCreateEvent>::Subscribe<WindowSystem>(this, &WindowSystem::OnWindowCreate);
 		Events<WindowDestroyEvent>::Subscribe<WindowSystem>(this, &WindowSystem::OnWindowDestroy);
 		Events<WindowGetEvent>::Subscribe<WindowSystem>(this, &WindowSystem::OnWindowGet);
-	}
 
-	WindowSystem::~WindowSystem()
-	{
-
-	}
-
-	void WindowSystem::OnLoad()
-	{
-		// Initialize Window API
+		// Initialize GLFW for cross-platform window handling
 		glfwInit();
 
 		glfwSetErrorCallback([](int error, const char* description)
@@ -41,30 +31,26 @@ namespace Indy
 				INDY_CORE_ERROR("GLFW Error ({0}): {1}", error, description);
 			}
 		);
+	}
 
-		// Initialize Graphics API
-		m_GraphicsAPI = GraphicsAPI::Create(GraphicsAPI::Vulkan);
+	WindowSystem::~WindowSystem()
+	{
+
 	}
 
 	void WindowSystem::OnUpdate()
 	{
+		// Update all windows
 		m_WindowManager->Update();
-	}
-
-	void WindowSystem::OnUnload()
-	{
-		
 	}
 
 	void WindowSystem::OnWindowCreate(WindowCreateEvent* event)
 	{
-		event->outWindow = m_WindowManager->AddWindow(*event->createInfo); // Create the window
+		// Create the new window and notify the application of the new resource
+		WindowDispatchEvent dispatchEvent;
+		dispatchEvent.window = m_WindowManager->AddWindow(*event->createInfo); // Create the window
 
-		// Bail early if window handle or graphics API is invalid
-		if (!event->outWindow || !m_GraphicsAPI)
-			return;
-
-		m_GraphicsAPI->CreateRenderTarget(event->outWindow); // Generate a render target
+		Events<WindowDispatchEvent>::Notify(&dispatchEvent);
 	}
 
 	void WindowSystem::OnWindowDestroy(WindowDestroyEvent* event)
