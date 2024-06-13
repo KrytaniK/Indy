@@ -90,6 +90,6 @@ namespace Indy
 	}
 	void VulkanCommandPool::Reset()
 	{
-		vkResetCommandPool(m_LogicalDevice, m_CommandPool, 0); // Opt for command buffer re-use
+		vkResetCommandPool(m_LogicalDevice, m_CommandPool, VK_COMMAND_BUFFER_RESET_RELEASE_RESOURCES_BIT); // Opt for command buffer re-use
 	}
 }

@@ -44,15 +44,11 @@ namespace Indy
 		OnStart.Notify();
 
 		if (m_ShouldClose) // Application is meant to execute once
-		{
 			OnUpdate.Notify();
-		}
 		else // Application is meant to run continuously
 		{
 			while (!m_ShouldClose)
-			{
 				OnUpdate.Notify();
-			}
 		}
 
 		OnUnload.Notify();

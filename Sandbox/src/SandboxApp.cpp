@@ -24,6 +24,8 @@ namespace Indy
 	void Sandbox::Load()
 	{
 		// Load resources from disk
+
+		// Initialize Graphics API (Only Vulkan is currently supported)
 		m_GraphicsAPI = GraphicsAPI::Create(GraphicsAPI::Vulkan);
 	}
 
@@ -31,7 +33,8 @@ namespace Indy
 	{
 		// Post-Load operations
 
-		WindowCreateInfo createInfo{ "First", 1280, 760, 0 };
+		// Create the main window
+		WindowCreateInfo createInfo{ "Sandbox - Indy's Testing Ground", 1280, 768, 0 };
 		Window::Create(createInfo);
 	}
 

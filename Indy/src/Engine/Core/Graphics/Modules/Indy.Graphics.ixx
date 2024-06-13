@@ -9,3 +9,11 @@ export import :Texture;
 export import :Pipeline;
 export import :Buffer;
 export import :UniformBuffer;
+
+export
+{
+	namespace Indy::Graphics
+	{
+		
+	}
+}

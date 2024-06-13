@@ -27,7 +27,6 @@ export
 		{
 		public:
 			VulkanImageProcessor() : m_ImageBarrierCount(0) {};
-
 			~VulkanImageProcessor() = default;
 
 			void AddLayoutTransition(
@@ -72,7 +71,6 @@ export
 			VkImageView view = VK_NULL_HANDLE;
 			VkExtent3D extent{};
 			VkFormat format{};
-			VkDescriptorSet imguiDescriptor;
 		};
 	}
 }

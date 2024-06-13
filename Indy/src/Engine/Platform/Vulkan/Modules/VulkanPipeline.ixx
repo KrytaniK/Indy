@@ -25,11 +25,6 @@ export
 			VkPipelineLayout layout = VK_NULL_HANDLE;
 		};
 
-		class VulkanPipelineBuilder
-		{
-
-		};
-
 		class VulkanPipeline : public Pipeline
 		{
 		public:
@@ -50,6 +45,7 @@ export
 			// Pipeline Build process functions
 			void BindShader(Shader& shader) override;
 			void BindDescriptorSetLayout(const ShaderType& shaderType, const VulkanDescriptorPool& descriptorPool, const VkDescriptorSetLayout& layout);
+			void BindPushConstants(const ShaderType& shaderType, const VkPushConstantRange& pushConstantRange);
 
 			// Inherited Build function
 			virtual void Build() override;
@@ -63,8 +59,9 @@ export
 		private:
 			VulkanPipelineInfo m_Info;
 			VkDevice m_LogicalDevice;
-			std::vector<std::shared_ptr<VulkanDescriptor>> m_Descriptors;
 			std::vector<VkShaderModule> m_ShaderModules;
+			std::vector<std::shared_ptr<VulkanDescriptor>> m_Descriptors;
+			std::vector<std::shared_ptr<VkPushConstantRange>>m_PushConstants;
 		};
 	}
 }

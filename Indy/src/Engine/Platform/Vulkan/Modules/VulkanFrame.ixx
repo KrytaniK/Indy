@@ -8,7 +8,6 @@ module;
 export module Indy.VulkanGraphics:Frame;
 
 import :CommandPool;
-import :Image;
 import :Device;
 
 export

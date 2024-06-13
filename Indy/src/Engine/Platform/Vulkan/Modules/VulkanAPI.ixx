@@ -1,7 +1,7 @@
 module;
 
 #include <memory>
-#include <string>
+#include <vector>
 #include <map>
 
 #include <vulkan/vulkan.h>
@@ -22,6 +22,9 @@ export
 	{
 		class VulkanAPI : public GraphicsAPI
 		{
+		private:
+			inline static bool s_IsInitialized = false;
+
 		public:
 			VulkanAPI();
 			virtual ~VulkanAPI() override;
@@ -40,11 +43,13 @@ export
 			bool CreateVulkanInstance();
 			bool CreateDebugMessenger(const VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
+			std::shared_ptr<VulkanDevice> CreateVulkanDevice();
+
 		private:
 			VkInstance m_Instance;
 			VkDebugUtilsMessengerEXT m_DebugMessenger;
 
-			std::unique_ptr<VulkanRenderer> m_TestRenderer;
+			std::shared_ptr<VulkanRenderer> m_Renderer;
 		};
 	}
 }

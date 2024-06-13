@@ -24,8 +24,9 @@ namespace Indy
 	VulkanPipeline::VulkanPipeline(const VkDevice& logicalDevice, const VulkanPipelineInfo& info)
 		: m_Info(info), m_LogicalDevice(logicalDevice)
 	{
-		// Resize to max value of shader type enum that isn't enum max
+		// Resize to max value of shader type enum
 		m_Descriptors.resize(6); 
+		m_PushConstants.resize(6);
 		m_ShaderModules.resize(6); 
 	}
 
@@ -73,6 +74,11 @@ namespace Indy
 		m_Descriptors[shaderType] = std::make_shared<VulkanDescriptor>(descriptorPool, layout);
 	}
 
+	void VulkanPipeline::BindPushConstants(const ShaderType& shaderType, const VkPushConstantRange& pushConstantRange)
+	{
+		m_PushConstants[shaderType] = std::make_shared<VkPushConstantRange>(pushConstantRange);
+	}
+
 	void VulkanPipeline::Build()
 	{
 		switch(m_Info.type)
@@ -97,6 +103,14 @@ namespace Indy
 			if (descriptor)
 				layouts.emplace_back(descriptor->GetLayout());
 
+		// Get all push constant ranges
+		// -------------------------------------------------------------------------------------------------------
+		std::vector<VkPushConstantRange> pushConstants;
+		for (std::shared_ptr<VkPushConstantRange>& pushConstant : m_PushConstants)
+			if (pushConstant)
+				pushConstants.emplace_back(*pushConstant);
+		
+
 		// Build pipeline layout
 		// -------------------------------------------------------------------------------------------------------
 
@@ -105,6 +119,8 @@ namespace Indy
 		createInfo.pNext = nullptr;
 		createInfo.pSetLayouts = layouts.data();
 		createInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+		createInfo.pPushConstantRanges = pushConstants.data();
+		createInfo.pushConstantRangeCount = pushConstants.size();
 
 		if (vkCreatePipelineLayout(m_LogicalDevice, &createInfo, nullptr, &m_Info.layout) != VK_SUCCESS)
 		{

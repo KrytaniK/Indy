@@ -56,11 +56,11 @@ export {
 		protected:
 			ApplicationInfo m_Info;
 
-			// For use with layered architectures
-			std::unique_ptr<LayerStack> m_LayerStack;
-
 			// Controls application lifetime. Setting this to true terminates the program
 			bool m_ShouldClose = true;
+
+			// For use with layered architectures
+			std::unique_ptr<LayerStack> m_LayerStack;
 
 			std::unique_ptr<InputSystem> m_InputSystem;
 			std::unique_ptr<WindowSystem> m_WindowSystem;

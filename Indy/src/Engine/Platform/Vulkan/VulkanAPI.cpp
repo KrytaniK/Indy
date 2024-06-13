@@ -35,7 +35,15 @@ namespace Indy
 
 	void VulkanAPI::OnLoad()
 	{
-		if (!InitVulkan())
+		if (VulkanAPI::s_IsInitialized)
+		{
+			INDY_CORE_ERROR("Vulkan initialization failed! Vulkan has already been initialized!");
+			return;
+		}
+
+		VulkanAPI::s_IsInitialized = InitVulkan();
+
+		if (!VulkanAPI::s_IsInitialized)
 			INDY_CORE_CRITICAL("Failed to initialize Vulkan!");
 	}
 
@@ -47,13 +55,36 @@ namespace Indy
 	void VulkanAPI::OnUnload()
 	{
 		Cleanup();
+
+		VulkanAPI::s_IsInitialized = false;
 	}
 
 	void VulkanAPI::OnWindowDispatch(WindowDispatchEvent* event)
 	{
-		m_TestRenderer = std::make_unique<VulkanRenderer>(event->window, m_Instance);
+		// Generate a surface for the window
+		VkSurfaceKHR surface;
+		if (glfwCreateWindowSurface(m_Instance, static_cast<GLFWwindow*>(event->window->NativeWindow()), nullptr, &surface) != VK_SUCCESS)
+		{
+			INDY_CORE_CRITICAL("Failed to create window surface!");
+			return;
+		}
 
-		Application::Get().OnUpdate.Subscribe([this]() { m_TestRenderer->Render(); });
+		std::shared_ptr<VulkanDevice> device = CreateVulkanDevice();
+
+		// Ensure the logical device can properly support swapchain presentation
+		if (!QueryVulkanSwapchainSupport(device, surface))
+		{
+			INDY_CORE_ERROR("Could not create a renderer for window [{0}]: Presentation is not supported!");
+			return;
+		}
+
+		// Create the renderer
+		m_Renderer = std::make_shared<VulkanRenderer>(event->window, m_Instance, surface, device);
+
+		// This is TEMPORARY, for testing ONLY
+		Application::Get().OnUpdate.Subscribe([this]() { 
+			m_Renderer->Render();
+		});
 	}
 
 	// Internal Methods
@@ -67,9 +98,6 @@ namespace Indy
 		if (!CreateVulkanInstance())
 			return false;
 
-		// Retreive GPU information
-		VulkanDevice::GetAllGPUSpecs(m_Instance);
-
 		return true;
 	}
 
@@ -81,8 +109,6 @@ namespace Indy
 		Vulkan_DestroyDebugUtilsMessengerEXT(m_Instance, m_DebugMessenger, nullptr);
 
 #endif
-
-		INDY_CORE_TRACE("Destroying Vulkan Instance...");
 		vkDestroyInstance(m_Instance, nullptr);
 	}
 
@@ -211,5 +237,40 @@ namespace Indy
 		}
 #endif
 		return true;
+	}
+
+	std::shared_ptr<VulkanDevice> VulkanAPI::CreateVulkanDevice()
+	{
+		// Core Vulkan Features
+		VkPhysicalDeviceFeatures features{};
+
+		// Vulkan 1.2 features
+		VkPhysicalDeviceVulkan12Features features12{};
+		features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+		features12.bufferDeviceAddress = VK_TRUE;
+		features12.descriptorIndexing = VK_TRUE;
+
+		// Vulkan 1.3 features
+		VkPhysicalDeviceVulkan13Features features13{};
+		features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+		features13.dynamicRendering = VK_TRUE;
+		features13.synchronization2 = VK_TRUE;
+		features13.pNext = &features12;
+
+		// Package core and new features
+		VkPhysicalDeviceFeatures2 deviceFeatures2{};
+		deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		deviceFeatures2.features = features;
+		deviceFeatures2.pNext = &features13;
+
+		VulkanDeviceRequirements deviceReqs{};
+		deviceReqs.features = deviceFeatures2;
+		deviceReqs.extensionCount = static_cast<uint32_t>(g_Vulkan_Device_Extensions.size());
+		deviceReqs.extensions = g_Vulkan_Device_Extensions.data();
+		deviceReqs.layerCount = static_cast<uint32_t>(g_Vulkan_Validation_Layers.size());
+		deviceReqs.layers = g_Vulkan_Validation_Layers.data();
+
+		// Create Vulkan Device
+		return VulkanDevice::Create(m_Instance, deviceReqs);
 	}
 }

@@ -5,13 +5,20 @@ import Indy.Events;
 
 namespace Indy
 {
-	void Window::Create(WindowCreateInfo& createInfo)
+	Window* Window::Create(WindowCreateInfo& createInfo)
 	{
 		// Send out window create event
 		WindowCreateEvent event;
 		event.createInfo = &createInfo;
 
 		Events<WindowCreateEvent>::Notify(&event);
+		
+		// Retrieve the created window
+		WindowGetEvent getEvent;
+		getEvent.windowID = createInfo.id;
+
+		Events<WindowGetEvent>::Notify(&getEvent);
+		return getEvent.outWindow;
 	}
 
 	void Window::Destroy(const uint8_t& windowID)

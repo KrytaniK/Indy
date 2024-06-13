@@ -4,8 +4,13 @@ module;
 #include <queue>
 #include <memory>
 
+#include "imgui.h"
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_vulkan.h"
+
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
+#include <glm/glm.hpp>
 
 export module Indy.VulkanGraphics:Renderer;
 
@@ -25,7 +30,6 @@ export
 {
 	namespace Indy
 	{
-
 		struct VulkanRendererPipelineInfo
 		{
 			std::unique_ptr<VulkanDescriptorPool> descriptorPool;
@@ -42,7 +46,7 @@ export
 		class VulkanRenderer : public Renderer
 		{
 		public:
-			VulkanRenderer(Window* window, const VkInstance& instance);
+			VulkanRenderer(Window* window, const VkInstance& instance, const VkSurfaceKHR& surface, const std::shared_ptr<VulkanDevice>& device);
 			virtual ~VulkanRenderer() override;
 
 			virtual void Render() override;
@@ -52,41 +56,36 @@ export
 
 		private:
 			void BuildPipelines();
-			void InitImGui(Window* window, const VkInstance& instance);
+			void InitImGui();
 			void RenderImGui(const VkCommandBuffer& cmdBuffer, const VkImageView& imageView);
 
 		private:
-			bool m_Enabled;
-			uint8_t m_ID;
-			uint8_t m_CurrentFrameIndex;
-			std::vector<VulkanFrameData> m_Frames; // The "in-flight" frames we're recording
-
+			Window* m_Window;
 			VkInstance m_Instance;
-			std::unique_ptr<VulkanDevice> m_Device; // Containing Vulkan Device
-			VkDevice m_LogicalDevice; // A reference to the logical device
-			VulkanPhysicalDevice m_PhysicalDevice; // A reference to the physical device (GPU)
+			VkSurfaceKHR m_Surface;
+			VmaAllocator m_ImageAllocator;
 
-			VkSurfaceKHR m_Surface; // The surface the render image is presented to
-			uint32_t m_SwapchainImageIndex; // Index of the next available swapchain image
-			std::unique_ptr<VulkanSwapchain> m_Swapchain; // Utility for Vulkan's VkSwapchainKHR
+			std::shared_ptr<VulkanDevice> m_Device;
+
+			VulkanSwapchain m_Swapchain;
+			VulkanImage m_RenderImage;
+			VulkanImageProcessor m_ImageProcessor;
+			bool m_RenderAsUITexture = true;
 
 			VkQueue m_ComputeQueue;
 			VkQueue m_GraphicsQueue;
 			VkQueue m_PresentQueue;
 
-			VulkanImage m_RenderImage; // The image this renderer records commands on
-			VmaAllocator m_ImageAllocator; // Vulkan Memory Allocator for the Render Image
-			VulkanImageProcessor m_ImageProcessor; // Member for transitioning and copying images and image layouts
+			std::vector<VulkanFrameData> m_Frames;
+			uint32_t m_CurrentFrameIndex;
 
-			VulkanRendererPipelineInfo m_Pipelines{}; // Pipeline information for this renderer
-
-			// Immediate Commands
 			VulkanCommandPool m_ImmediateCmdPool;
-			VkCommandBuffer m_ImmediateCmdBuffer;
 			VkFence m_ImmediateFence;
 
-			// ImGui
+			VulkanRendererPipelineInfo m_Pipelines;
+
 			VkDescriptorPool m_ImGuiDescriptorPool;
+			VkDescriptorSet m_ImGuiRenderImageDescriptor;
 		};
 	}
 }
