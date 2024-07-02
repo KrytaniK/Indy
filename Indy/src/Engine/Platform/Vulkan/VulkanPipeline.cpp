@@ -96,7 +96,7 @@ namespace Indy
 	{
 		VulkanShader vShader(shader);
 
-		// Compile to spir-v
+		// Compile to SPIR-V
 		vShader.spv = CompileSPIRVFromGLSL(vShader);
 
 		// Create Shader Module
@@ -121,86 +121,99 @@ namespace Indy
 		// Reflect compute shader and retrieve resources
 		spirv_cross::ShaderResources resources = compiler.get_shader_resources();
 
-		INDY_CORE_INFO("Checking Uniform Buffers");
+		VulkanDescriptorSetBuilder layoutBuilder;
+
+		std::vector<VkDescriptorPoolSize> descriptorPoolSizes;
+		std::vector<VkPushConstantRange> pushConstantRanges;
 
 		// Uniform Buffers (such as: uniform UBO)
-		// VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER or VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC
+		VkDescriptorPoolSize uboPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0 }; // or Uniform_Buffer_Dynamic
 		for (const spirv_cross::Resource& res : resources.uniform_buffers)
 		{
-			unsigned set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+			uboPoolSize.descriptorCount++;
+
 			unsigned binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-			INDY_CORE_INFO("Descriptor Set: {0}\nBinding: {1}", set, binding);
+			layoutBuilder.AddBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, binding, 1);
 		}
 
-		INDY_CORE_INFO("Checking Storage Buffers");
+		if (uboPoolSize.descriptorCount)
+			descriptorPoolSizes.emplace_back(uboPoolSize);
 
 		// Storage Buffers (such as: buffer SSBO)
-		// VK_DESCRIPTOR_TYPE_STORAGE_BUFFER or VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC
+		VkDescriptorPoolSize sboPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 0 }; // or Storage_Buffer_Dynamic
 		for (const spirv_cross::Resource& res : resources.storage_buffers)
 		{
-			unsigned set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+			sboPoolSize.descriptorCount++;
+
 			unsigned binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-			INDY_CORE_INFO("Descriptor Set: {0}\nBinding: {1}", set, binding);
+			layoutBuilder.AddBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, binding, 1);
 		}
 
-		INDY_CORE_INFO("Checking Stage Inputs");
+		if (sboPoolSize.descriptorCount)
+			descriptorPoolSizes.emplace_back(sboPoolSize);
 
 		// Stage Inputs (such as: [in vec2 uv] in vertex shader)
 		// VkVertexInputAttributeDescription
-		for (const spirv_cross::Resource& res : resources.stage_inputs)
-		{
-			unsigned set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
-			unsigned binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-			INDY_CORE_INFO("Descriptor Set: {0}\nBinding: {1}", set, binding);
-		}
-
-		INDY_CORE_INFO("Checking Stage Outputs");
+		//for (const spirv_cross::Resource& res : resources.stage_inputs)
+		//{
+		//	unsigned set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+		//	unsigned binding = compiler.get_decoration(res.id, spv::DecorationBinding);
+		//}
 
 		// Stage Outputs (such as: [out vec4 FragColor] in fragment shader)
 		// Maps to several things, but particularly useful to set write mask to 0 in 
 		//	VkPipelineColorBlendAttachmentState if a location is not written to in shader.
-		for (const spirv_cross::Resource& res : resources.stage_outputs)
-		{
-			unsigned set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
-			unsigned binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-			INDY_CORE_INFO("Descriptor Set: {0}\nBinding: {1}", set, binding);
-		}
-
-		INDY_CORE_INFO("Checking Subpass Inputs");
+		//for (const spirv_cross::Resource& res : resources.stage_outputs)
+		//{
+		//	unsigned set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+		//	unsigned binding = compiler.get_decoration(res.id, spv::DecorationBinding);
+		//}
 
 		// Subpass Inputs (such as: subpassInput)
 		// VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT
-		for (const spirv_cross::Resource& res : resources.subpass_inputs)
-		{
-			unsigned set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
-			unsigned binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-			INDY_CORE_INFO("Descriptor Set: {0}\nBinding: {1}", set, binding);
-		}
-
-		INDY_CORE_INFO("Checking Storage Images");
+		//for (const spirv_cross::Resource& res : resources.subpass_inputs)
+		//{
+		//	unsigned set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+		//	unsigned binding = compiler.get_decoration(res.id, spv::DecorationBinding);
+		//}
 
 		// Storage Images (such as: image2D)
-		// 	Can vary:
-		//		for image2D: VK_DESCRIPTOR_TYPE_STORAGE_IMAGE
-		//		for imageBuffer: VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER (Where storage_images (type.image.dim = DimBuffer))
-		// VK_DESCRIPTOR_TYPE_STORAGE_IMAGE
+		VkDescriptorPoolSize storageImagePoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0 };
+		VkDescriptorPoolSize storageTexelBufferPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 0 };
 		for (const spirv_cross::Resource& res : resources.storage_images)
 		{
-			unsigned set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
+			const auto& type = compiler.get_type(res.type_id);
 			unsigned binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-			INDY_CORE_INFO("Descriptor Set: {0}\nBinding: {1}", set, binding);
+
+			if (type.image.dim == spv::DimBuffer)
+			{
+				storageTexelBufferPoolSize.descriptorCount++;
+				layoutBuilder.AddBinding(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, binding, 1);
+			}
+			else
+			{
+				storageImagePoolSize.descriptorCount++;
+				layoutBuilder.AddBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, binding, 1);
+			}
 		}
 
-		INDY_CORE_INFO("Checking Sampled Images");
+		if (storageImagePoolSize.descriptorCount)
+			descriptorPoolSizes.emplace_back(storageImagePoolSize);
+		if (storageTexelBufferPoolSize.descriptorCount)
+			descriptorPoolSizes.emplace_back(storageTexelBufferPoolSize);
 
 		// Sampled Images (such as: sampler2D)
-		// VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+		VkDescriptorPoolSize sampledImagePoolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0 };
 		for (const spirv_cross::Resource& res : resources.sampled_images)
 		{
-			unsigned set = compiler.get_decoration(res.id, spv::DecorationDescriptorSet);
 			unsigned binding = compiler.get_decoration(res.id, spv::DecorationBinding);
-			INDY_CORE_INFO("Descriptor Set: {0}\nBinding: {1}", set, binding);
+
+			sampledImagePoolSize.descriptorCount++;
+			layoutBuilder.AddBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, binding, 1);
 		}
+
+		if (sampledImagePoolSize.descriptorCount)
+			descriptorPoolSizes.emplace_back(sampledImagePoolSize);
 
 		// Atomic Counters
 		// These are GLSL specialized resources used in atomic operations, allowing 
@@ -219,25 +232,53 @@ namespace Indy
 		// VkPushConstantRange in VkPipelineLayoutCreateInfo
 		for (const spirv_cross::Resource& res : resources.push_constant_buffers)
 		{
+			const auto& type = compiler.get_type(res.type_id);
 
+			VkPushConstantRange range{};
+			range.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT; // Alter to be shader specific
+			range.offset = 0;
+			range.size = static_cast<uint32_t>(compiler.get_declared_struct_size(type));
+
+			pushConstantRanges.emplace_back(range);
 		}
 
 		// Separate Images
-		//	Can vary:
-		//		for texture2D: VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
-		//		for samplerBuffer: VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER (Where separate_images (type.image.dim = DimBuffer))
-		// VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+		VkDescriptorPoolSize separateImagePoolSize{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0 };
+		VkDescriptorPoolSize separateBufferPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 0 };
 		for (const spirv_cross::Resource& res : resources.separate_images)
 		{
+			const auto& type = compiler.get_type(res.type_id);
+			unsigned binding = compiler.get_decoration(res.id, spv::DecorationBinding);
 
+			if (type.image.dim == spv::DimBuffer)
+			{
+				separateBufferPoolSize.descriptorCount++;
+				layoutBuilder.AddBinding(VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, binding, 1);
+			}
+			else
+			{
+				separateImagePoolSize.descriptorCount++;
+				layoutBuilder.AddBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, binding, 1);
+			}
 		}
+
+		if (separateImagePoolSize.descriptorCount)
+			descriptorPoolSizes.emplace_back(separateImagePoolSize);
+		if (separateBufferPoolSize.descriptorCount)
+			descriptorPoolSizes.emplace_back(separateBufferPoolSize);
 
 		// Separate Samplers (such as: sampler/samplerShadow)
-		// VK_DESCRIPTOR_TYPE_SAMPLER
+		VkDescriptorPoolSize separateSamplerImagePoolSize{ VK_DESCRIPTOR_TYPE_SAMPLER, 0 };
 		for (const spirv_cross::Resource& res : resources.separate_samplers)
 		{
+			separateSamplerImagePoolSize.descriptorCount++;
 
+			unsigned binding = compiler.get_decoration(res.id, spv::DecorationBinding);
+			layoutBuilder.AddBinding(VK_DESCRIPTOR_TYPE_SAMPLER, binding, 1);
 		}
+
+		if (separateSamplerImagePoolSize.descriptorCount)
+			descriptorPoolSizes.emplace_back(separateSamplerImagePoolSize);
 
 		// Shader Record Buffers are to be used with Vulkan Raytracing.
 		//	These are managed through Vulkan's shader binding table (SBT) instead of
@@ -261,11 +302,55 @@ namespace Indy
 		//	shader-specific variables that are mainly useful for understanding the
 		//	shader, and perhaps some reconstruction. (builtin_inputs, builtin_outputs)
 
-		// Deduce descriptor types, and counts
-
 		// Create Descriptor Pool
+		VkDescriptorPoolCreateInfo poolCreateInfo{};
+		poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolCreateInfo.flags = 0;
+		poolCreateInfo.maxSets = g_Max_Frames_In_Flight;
+		poolCreateInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size());
+		poolCreateInfo.pPoolSizes = descriptorPoolSizes.data();
+
+		if (vkCreateDescriptorPool(m_LogicalDevice, &poolCreateInfo, nullptr, &m_Pipeline.descriptorPool) != VK_SUCCESS) {
+			INDY_CORE_ERROR("Failed to create compute descriptor pool!");
+			return;
+		}
 
 		// Build Descriptor Set Layout
+		m_Pipeline.descriptorSetLayout = layoutBuilder.Build(m_LogicalDevice, VK_SHADER_STAGE_COMPUTE_BIT);
+
+		// Create Pipeline Layout
+		VkPipelineLayoutCreateInfo layoutCreateInfo{};
+		layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		layoutCreateInfo.setLayoutCount = 1;
+		layoutCreateInfo.pSetLayouts = &m_Pipeline.descriptorSetLayout;
+		layoutCreateInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRanges.size());
+		layoutCreateInfo.pPushConstantRanges = pushConstantRanges.data();
+
+		if (vkCreatePipelineLayout(m_LogicalDevice, &layoutCreateInfo, nullptr, &m_Pipeline.layout) != VK_SUCCESS) {
+			INDY_CORE_ERROR("Failed to create compute pipeline layout!");
+			return;
+		}
+
+		// Compute Pipeline Stage Setup
+		VkPipelineShaderStageCreateInfo stageInfo{};
+		stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		stageInfo.pNext = nullptr;
+		stageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		stageInfo.module = m_ShaderModules[computeShader.type];
+		stageInfo.pName = "main";
+
+		// Compute Pipeline Creation
+		VkComputePipelineCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		createInfo.pNext = nullptr;
+		createInfo.layout = m_Pipeline.layout;
+		createInfo.stage = stageInfo;
+
+		if (vkCreateComputePipelines(m_LogicalDevice, VK_NULL_HANDLE, 1, &createInfo, nullptr, &m_Pipeline.pipeline) != VK_SUCCESS)
+		{
+			INDY_CORE_ERROR("Failed to create Compute Pipeline!");
+			return;
+		}
 	}
 
 	// ---------------------------------------------------------------------------------

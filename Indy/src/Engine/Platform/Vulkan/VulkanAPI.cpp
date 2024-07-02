@@ -74,7 +74,7 @@ namespace Indy
 		auto device = CreateVulkanDevice();
 		m_Renderer = std::make_unique<VulkanRenderer>(event->window, m_Instance, device);
 
-		//Application::Get().OnUpdate.Subscribe([this]() { m_Renderer->Render(); });
+		Application::Get().OnUpdate.Subscribe([this]() { m_Renderer->Render(); });
 	}
 
 	// Internal Methods

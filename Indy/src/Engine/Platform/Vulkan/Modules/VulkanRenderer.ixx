@@ -20,7 +20,6 @@ import :Frame;
 import :Image;
 import :Pipeline;
 import :Descriptor;
-import :DescriptorPool;
 import :CommandPool;
 
 import Indy.Graphics;
@@ -30,19 +29,6 @@ export
 {
 	namespace Indy
 	{
-		struct VulkanRendererPipelineInfo
-		{
-			std::unique_ptr<VulkanDescriptorPool> descriptorPool;
-
-			std::unique_ptr<VulkanPipeline> compute;
-			std::unique_ptr<VulkanPipeline> graphics;
-			std::unique_ptr<VulkanPipeline> raytrace;
-
-			std::shared_ptr<VulkanDescriptor> computeDescriptor;
-			std::shared_ptr<VulkanDescriptor> graphicsDescriptor;
-			std::shared_ptr<VulkanDescriptor> raytraceDescriptor;
-		};
-
 		class VulkanRenderer : public Renderer
 		{
 		public:
@@ -82,8 +68,8 @@ export
 			VulkanCommandPool m_ImmediateCmdPool;
 			VkFence m_ImmediateFence;
 
-			VulkanRendererPipelineInfo m_Pipelines;
 			VulkanPipeline m_ComputePipeline;
+			VkDescriptorSet m_ComputeDescriptorSet;
 			VulkanPipeline m_GraphicsPipeline;
 			VulkanPipeline m_RaytracePipeline;
 

@@ -9,7 +9,6 @@ module;
 
 export module Indy.VulkanGraphics:Pipeline;
 
-import :DescriptorPool;
 import :Descriptor;
 import :Device;
 
@@ -28,9 +27,8 @@ export
 		{
 			VkPipeline pipeline = VK_NULL_HANDLE;
 			VkPipelineLayout layout = VK_NULL_HANDLE;
-
-			std::shared_ptr<VulkanDescriptorPool> descriptorPool;
-			std::vector<VulkanDescriptor> descriptors;
+			VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+			VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
 		};
 
 		class VulkanPipelineBuilder : public PipelineBuilder
@@ -57,6 +55,8 @@ export
 			std::vector<VulkanShader> m_Shaders;
 			std::vector<VkShaderModule> m_ShaderModules;
 		};
+
+		//VkShaderStageFlags
 
 		shaderc_shader_kind GetShadercType(const ShaderType& type);
 

@@ -237,16 +237,16 @@ namespace Indy
 
 			// Compute Commands
 			{
-				/*vkCmdBindPipeline(frameData.computeCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_Pipelines.compute->Get());
+				vkCmdBindPipeline(frameData.computeCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline.pipeline);
 
-				vkCmdBindDescriptorSets(frameData.computeCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_Pipelines.compute->GetLayout(), 0, 1, &m_Pipelines.computeDescriptor->GetSet(), 0, nullptr);
+				vkCmdBindDescriptorSets(frameData.computeCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline.layout, 0, 1, &m_ComputeDescriptorSet, 0, nullptr);
 
 				vkCmdDispatch(
 					frameData.computeCmdBuffer,
 					static_cast<uint32_t>(std::ceil(m_Swapchain.extent.width) / 16.f),
 					static_cast<uint32_t>(std::ceil(m_Swapchain.extent.height) / 16.f),
 					1
-				);*/
+				);
 			}
 
 			vkEndCommandBuffer(frameData.computeCmdBuffer);
@@ -439,14 +439,40 @@ namespace Indy
 		INDY_CORE_WARN("Building Compute Pipeline...");
 		// Build Compute Pipeline
 		{
-			//Temp
+			// Temp Build Options
 			PipelineBuildOptions options{};
 			options.type = INDY_PIPELINE_TYPE_COMPUTE;
 
+			// Bind Shaders
 			builder.BindShader("shaders/gradient.glsl.comp");
+
+			// Build and retrieve pipeline
 			builder.Build(&options);
 			m_ComputePipeline = builder.GetPipeline();
 
+			// Allocate any descriptor sets
+			VulkanDescriptorSetAllocator dsAllocator(m_ComputePipeline.descriptorPool);
+			m_ComputeDescriptorSet = dsAllocator.Allocate(m_Device->handle, m_ComputePipeline.descriptorSetLayout);
+
+			// Render Image Info
+			VkDescriptorImageInfo imageInfos{};
+			imageInfos.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+			imageInfos.imageView = m_RenderImage.view;
+
+			// Update Descriptor Set Write Information
+			VulkanDescriptorUpdateInfo updateInfo;
+			updateInfo.set = m_ComputeDescriptorSet;
+			updateInfo.type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			updateInfo.binding = 0;
+			updateInfo.count = 1;
+			updateInfo.elementOffset = 0;
+
+			// Update Descriptor Set
+			VulkanDescriptorSetModifier dsModifier;
+			dsModifier.UpdateImageBinding(updateInfo, &imageInfos);
+			dsModifier.ModifySets(m_Device->handle);
+
+			// Clear the builder for the next pipeline
 			builder.Clear();
 		}
 
@@ -468,7 +494,7 @@ namespace Indy
 		// Old Impl -----------------------
 		// --------------------------------
 
-		//// Descriptor Pool Initialization
+		// Descriptor Pool Initialization
 		//std::vector<VulkanDescriptorPool::Ratio> sizes = {
 		//	{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 }  // 1 descriptor for each storage image (for compute)
 		//};
@@ -477,43 +503,42 @@ namespace Indy
 		//// Pipeline Layout Builder
 		//VulkanDescriptorLayoutBuilder layoutBuilder;
 
-		//{ // Compute Pipeline
+		{ // Compute Pipeline
+			//// Descriptor Set Layout for compute shader
+			//layoutBuilder.AddBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, 1); // Binding 0 is the image the compute shader uses
 
-		//	// Descriptor Set Layout for compute shader
-		//	layoutBuilder.AddBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, 1); // Binding 0 is the image the compute shader uses
+			//// Build descriptor set layout
+			//VkDescriptorSetLayout layout = layoutBuilder.Build(m_Device->handle, { VK_SHADER_STAGE_COMPUTE_BIT });
+			//layoutBuilder.Clear();
 
-		//	// Build descriptor set layout
-		//	VkDescriptorSetLayout layout = layoutBuilder.Build(m_Device->handle, { VK_SHADER_STAGE_COMPUTE_BIT });
-		//	layoutBuilder.Clear();
+			//// Get Compute Shader
+			//Shader computeShader("shaders/gradient.glsl.comp");
+			//
+			//PipelineBuildOptions options{};
 
-		//	// Get Compute Shader
-		//	Shader computeShader("shaders/gradient.glsl.comp");
-		//	
-		//	PipelineBuildOptions options{};
+			//VulkanPipelineBuilder builder;
+			//builder.BindShader(computeShader);
+			//builder.BindDescriptorSetLayout(INDY_SHADERINDY_SHADER_TYPE_COMPUTE, /* Pipeline Descriptor Pool */, );
+			//m_ComputePipeline = builder.Build<VulkanPipeline>();
 
-		//	VulkanPipelineBuilder builder;
-		//	builder.BindShader(computeShader);
-		//	builder.BindDescriptorSetLayout(INDY_SHADERINDY_SHADER_TYPE_COMPUTE, /* Pipeline Descriptor Pool */, );
-		//	m_ComputePipeline = builder.Build<VulkanPipeline>();
+			//// Pipeline
+			//m_Pipelines.compute = std::make_unique<VulkanPipeline>(m_Device->handle, VulkanPipelineInfo(INDY_PIPELINE_TYPE_COMPUTE));
+			//m_Pipelines.compute->BindShader(computeShader);
+			//m_Pipelines.compute->BindDescriptorSetLayout(INDY_SHADER_TYPE_COMPUTE, *m_Pipelines.descriptorPool, layout);
+			//m_Pipelines.compute->Build();
 
-		//	// Pipeline
-		//	m_Pipelines.compute = std::make_unique<VulkanPipeline>(m_Device->handle, VulkanPipelineInfo(INDY_PIPELINE_TYPE_COMPUTE));
-		//	m_Pipelines.compute->BindShader(computeShader);
-		//	m_Pipelines.compute->BindDescriptorSetLayout(INDY_SHADER_TYPE_COMPUTE, *m_Pipelines.descriptorPool, layout);
-		//	m_Pipelines.compute->Build();
+			//// Get pipeline descriptor
+			//m_Pipelines.computeDescriptor = m_Pipelines.compute->GetDescriptor(INDY_SHADER_TYPE_COMPUTE);
 
-		//	// Get pipeline descriptor
-		//	m_Pipelines.computeDescriptor = m_Pipelines.compute->GetDescriptor(INDY_SHADER_TYPE_COMPUTE);
+			//// Render Image Info
+			//VkDescriptorImageInfo imageInfo{};
+			//imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+			//imageInfo.imageView = m_RenderImage.view;
 
-		//	// Render Image Info
-		//	VkDescriptorImageInfo imageInfo{};
-		//	imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		//	imageInfo.imageView = m_RenderImage.view;
-
-		//	// Attach render image to compute pipeline descriptor set
-		//	m_Pipelines.computeDescriptor->UpdateImageBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &imageInfo);
-		//	m_Pipelines.computeDescriptor->UpdateDescriptorSets(m_Device->handle);
-		//}
+			//// Attach render image to compute pipeline descriptor set
+			//m_Pipelines.computeDescriptor->UpdateImageBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &imageInfo);
+			//m_Pipelines.computeDescriptor->UpdateDescriptorSets(m_Device->handle);
+		}
 	}
 
 	void VulkanRenderer::InitImGui()

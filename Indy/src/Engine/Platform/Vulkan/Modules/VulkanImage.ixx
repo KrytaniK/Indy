@@ -7,8 +7,6 @@ module;
 
 export module Indy.VulkanGraphics:Image;
 
-import :DescriptorPool;
-
 export
 {
 	namespace Indy

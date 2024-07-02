@@ -12,5 +12,4 @@ export import :Image;
 export import :Swapchain;
 export import :Pipeline;
 export import :CommandPool;
-export import :DescriptorPool;
 export import :Descriptor;

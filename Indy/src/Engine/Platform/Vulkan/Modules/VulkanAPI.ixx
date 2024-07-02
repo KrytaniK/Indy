@@ -12,7 +12,6 @@ import Indy.Graphics;
 import Indy.Window;
 
 import :Device;
-import :DescriptorPool;
 import :Pipeline;
 import :Renderer;
 

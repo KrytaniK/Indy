@@ -22,6 +22,6 @@ export
 		};
 
 		// Allows for the buffering of frames (triple-buffering in this case)
-		constexpr uint8_t g_Max_Frames_In_Flight = 3;
+		constexpr uint32_t g_Max_Frames_In_Flight = 3;
 	}
 }
