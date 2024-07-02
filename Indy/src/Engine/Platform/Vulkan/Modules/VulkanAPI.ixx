@@ -49,7 +49,7 @@ export
 			VkInstance m_Instance;
 			VkDebugUtilsMessengerEXT m_DebugMessenger;
 
-			std::shared_ptr<VulkanRenderer> m_Renderer;
+			std::unique_ptr<VulkanRenderer> m_Renderer;
 		};
 	}
 }

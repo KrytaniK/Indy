@@ -19,12 +19,28 @@ import Indy.Graphics;
 import Indy.VulkanGraphics;
 import Indy.Window;
 
+import Indy.Profiler;
+
 namespace Indy
 {
-	VulkanRenderer::VulkanRenderer(Window* window, const VkInstance& instance, const VkSurfaceKHR& surface, const std::shared_ptr<VulkanDevice>& device)
-		: m_Window(window), m_Instance(instance), m_Surface(surface), m_Device(device), m_CurrentFrameIndex(0)
+	VulkanRenderer::VulkanRenderer(Window* window, const VkInstance& instance, const std::shared_ptr<VulkanDevice>& device)
+		: m_Window(window), m_Instance(instance), m_Device(device), m_CurrentFrameIndex(0)
 	{
-		m_Swapchain = VulkanSwapchain::Create(window, surface, device);
+		// Generate a surface for the window
+		if (glfwCreateWindowSurface(m_Instance, static_cast<GLFWwindow*>(m_Window->NativeWindow()), nullptr, &m_Surface) != VK_SUCCESS)
+		{
+			INDY_CORE_CRITICAL("Failed to create window surface!");
+			return;
+		}
+
+		// Ensure the logical device can properly support swapchain presentation
+		if (!QueryVulkanSwapchainSupport(m_Device, m_Surface))
+		{
+			INDY_CORE_ERROR("Failed to initialize Renderer for window [{0}]: Presentation is not supported!", m_Window->Properties().title);
+			return;
+		}
+
+		m_Swapchain = VulkanSwapchain::Create(m_Window, m_Surface, m_Device);
 
 		// Retrieve Vulkan Queue Handles
 		{
@@ -221,7 +237,7 @@ namespace Indy
 
 			// Compute Commands
 			{
-				vkCmdBindPipeline(frameData.computeCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_Pipelines.compute->Get());
+				/*vkCmdBindPipeline(frameData.computeCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_Pipelines.compute->Get());
 
 				vkCmdBindDescriptorSets(frameData.computeCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_Pipelines.compute->GetLayout(), 0, 1, &m_Pipelines.computeDescriptor->GetSet(), 0, nullptr);
 
@@ -230,7 +246,7 @@ namespace Indy
 					static_cast<uint32_t>(std::ceil(m_Swapchain.extent.width) / 16.f),
 					static_cast<uint32_t>(std::ceil(m_Swapchain.extent.height) / 16.f),
 					1
-				);
+				);*/
 			}
 
 			vkEndCommandBuffer(frameData.computeCmdBuffer);
@@ -315,17 +331,6 @@ namespace Indy
 
 			// Post UI Image Transitions
 			{
-				if (m_RenderAsUITexture)
-				{
-					// Transfer render image to shader read only (To use as a texture)
-					m_ImageProcessor.AddLayoutTransition(
-						m_RenderImage.image,
-						VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
-						VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,  VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT,
-						VK_ACCESS_2_MEMORY_READ_BIT, VK_ACCESS_2_MEMORY_WRITE_BIT
-					);
-				}
-
 				// Transfer swapchain image to presentation source
 				m_ImageProcessor.AddLayoutTransition(
 					swapImage,
@@ -428,48 +433,87 @@ namespace Indy
 
 	void VulkanRenderer::BuildPipelines()
 	{
-		// TODO: Eventually, I'd like to make it such that users can build/use their own pipelines for a renderer, rather than use default stuff
+		INDY_CORE_WARN("Building Vulkan Pipelines...");
+		VulkanPipelineBuilder builder(m_Device->handle);
+		
+		INDY_CORE_WARN("Building Compute Pipeline...");
+		// Build Compute Pipeline
+		{
+			//Temp
+			PipelineBuildOptions options{};
+			options.type = INDY_PIPELINE_TYPE_COMPUTE;
 
-		// Render Image Info (for binding to shaders)
-		VkDescriptorImageInfo imageInfo{};
-		imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		imageInfo.imageView = m_RenderImage.view;
+			builder.BindShader("shaders/gradient.glsl.comp");
+			builder.Build(&options);
+			m_ComputePipeline = builder.GetPipeline();
 
-		// Descriptor Pool Initialization
-		std::vector<VulkanDescriptorPool::Ratio> sizes = {
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 }  // 1 descriptor for each storage image (for compute)
-		};
-
-		m_Pipelines.descriptorPool = std::make_unique<VulkanDescriptorPool>(m_Device->handle, 10, sizes);
-
-		// Pipeline Layout Builder
-		VulkanDescriptorLayoutBuilder layoutBuilder;
-
-		{ // Compute Pipeline
-
-			// Descriptor Set Layout for compute shader
-			layoutBuilder.AddBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, 1); // Binding 0 is the image the compute shader uses
-
-			// Build descriptor set layout
-			VkDescriptorSetLayout layout = layoutBuilder.Build(m_Device->handle, { VK_SHADER_STAGE_COMPUTE_BIT });
-			layoutBuilder.Clear();
-
-			// Get Compute Shader
-			Shader computeShader(INDY_SHADER_TYPE_COMPUTE, INDY_SHADER_FORMAT_GLSL, "shaders/gradient.glsl.comp");
-
-			// Pipeline
-			m_Pipelines.compute = std::make_unique<VulkanPipeline>(m_Device->handle, VulkanPipelineInfo(INDY_PIPELINE_TYPE_COMPUTE));
-			m_Pipelines.compute->BindShader(computeShader);
-			m_Pipelines.compute->BindDescriptorSetLayout(INDY_SHADER_TYPE_COMPUTE, *m_Pipelines.descriptorPool, layout);
-			m_Pipelines.compute->Build();
-
-			// Get pipeline descriptor
-			m_Pipelines.computeDescriptor = m_Pipelines.compute->GetDescriptor(INDY_SHADER_TYPE_COMPUTE);
-
-			// Attach render image to compute pipeline descriptor set
-			m_Pipelines.computeDescriptor->UpdateImageBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &imageInfo);
-			m_Pipelines.computeDescriptor->UpdateDescriptorSets(m_Device->handle);
+			builder.Clear();
 		}
+
+		INDY_CORE_WARN("Done!");
+		// Build Graphics Pipeline
+		{
+			/*buildOptions.type = INDY_PIPELINE_TYPE_GRAPHICS;
+
+			VulkanShader vertexShader("shaders/vertex.glsl.vert");
+			builder.BindShader(vertexShader, INDY_PIPELINE_SHADER_STAGE_VERTEX);
+
+			VulkanShader  fragmentShader("shaders/fragmet.glsl.frag");
+			builder.BindShader(fragmentShader, INDY_PIPELINE_SHADER_STAGE_FRAGMENT);
+
+			m_GraphicsPipeline = *static_cast<VulkanPipeline*>(builder.Build(buildOptions));
+			builder.Clear();*/
+		}
+
+		// Old Impl -----------------------
+		// --------------------------------
+
+		//// Descriptor Pool Initialization
+		//std::vector<VulkanDescriptorPool::Ratio> sizes = {
+		//	{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 }  // 1 descriptor for each storage image (for compute)
+		//};
+		//m_Pipelines.descriptorPool = std::make_unique<VulkanDescriptorPool>(m_Device->handle, 10, sizes);
+
+		//// Pipeline Layout Builder
+		//VulkanDescriptorLayoutBuilder layoutBuilder;
+
+		//{ // Compute Pipeline
+
+		//	// Descriptor Set Layout for compute shader
+		//	layoutBuilder.AddBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, 1); // Binding 0 is the image the compute shader uses
+
+		//	// Build descriptor set layout
+		//	VkDescriptorSetLayout layout = layoutBuilder.Build(m_Device->handle, { VK_SHADER_STAGE_COMPUTE_BIT });
+		//	layoutBuilder.Clear();
+
+		//	// Get Compute Shader
+		//	Shader computeShader("shaders/gradient.glsl.comp");
+		//	
+		//	PipelineBuildOptions options{};
+
+		//	VulkanPipelineBuilder builder;
+		//	builder.BindShader(computeShader);
+		//	builder.BindDescriptorSetLayout(INDY_SHADERINDY_SHADER_TYPE_COMPUTE, /* Pipeline Descriptor Pool */, );
+		//	m_ComputePipeline = builder.Build<VulkanPipeline>();
+
+		//	// Pipeline
+		//	m_Pipelines.compute = std::make_unique<VulkanPipeline>(m_Device->handle, VulkanPipelineInfo(INDY_PIPELINE_TYPE_COMPUTE));
+		//	m_Pipelines.compute->BindShader(computeShader);
+		//	m_Pipelines.compute->BindDescriptorSetLayout(INDY_SHADER_TYPE_COMPUTE, *m_Pipelines.descriptorPool, layout);
+		//	m_Pipelines.compute->Build();
+
+		//	// Get pipeline descriptor
+		//	m_Pipelines.computeDescriptor = m_Pipelines.compute->GetDescriptor(INDY_SHADER_TYPE_COMPUTE);
+
+		//	// Render Image Info
+		//	VkDescriptorImageInfo imageInfo{};
+		//	imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		//	imageInfo.imageView = m_RenderImage.view;
+
+		//	// Attach render image to compute pipeline descriptor set
+		//	m_Pipelines.computeDescriptor->UpdateImageBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &imageInfo);
+		//	m_Pipelines.computeDescriptor->UpdateDescriptorSets(m_Device->handle);
+		//}
 	}
 
 	void VulkanRenderer::InitImGui()
@@ -571,7 +615,7 @@ namespace Indy
 				ImGui::SetNextWindowPos(viewport->Pos);
 				ImGui::SetNextWindowSize(viewport->Size);
 
-				ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoMove;
+				ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration;
 
 				ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
 				ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);

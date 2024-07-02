@@ -2,7 +2,7 @@ project "Indy"
 	kind "StaticLib"
 	language "C++"
 	cppdialect "C++20"
-	staticruntime "on"
+	staticruntime "off"
 
 	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
@@ -35,13 +35,13 @@ project "Indy"
 
 	libdirs
 	{
-		"%{VulkanSDK}/Lib"
+		"%{VulkanSDK}/Lib",
 	}
 
 	links
 	{
 		"GLFW",
-		"vulkan-1.lib"
+		"vulkan-1.lib",
 	}
 
 	filter "system:windows"
@@ -60,9 +60,10 @@ project "Indy"
 
 		links
 		{
-			"%{VulkanSDK}/Lib/shaderc_shared.lib",
-			"%{VulkanSDK}/Lib/spirv-cross-core.lib",
-			"%{VulkanSDK}/Lib/spirv-cross-glsl.lib",
+			"shaderc_sharedd.lib",
+			"spirv-cross-c-sharedd.lib",
+			"spirv-cross-cored.lib",
+			"spirv-cross-glsld.lib",
 		}
 
 	filter "configurations:Release"
@@ -72,9 +73,10 @@ project "Indy"
 
 		links
 		{
-			"%{VulkanSDK}/Lib/shaderc_shared.lib",
-			"%{VulkanSDK}/Lib/spirv-cross-core.lib",
-			"%{VulkanSDK}/Lib/spirv-cross-glsl.lib",
+			"shaderc_shared.lib",
+			"spirv-cross-c-shared.lib",
+			"spirv-cross-core.lib",
+			"spirv-cross-glsl.lib"
 		}
 
 	filter "configurations:Dist"
@@ -84,7 +86,8 @@ project "Indy"
 
 		links
 		{
-			"%{VulkanSDK}/Lib/shaderc_shared.lib",
-			"%{VulkanSDK}/Lib/spirv-cross-core.lib",
-			"%{VulkanSDK}/Lib/spirv-cross-glsl.lib",
+			"shaderc_shared.lib",
+			"spirv-cross-c-shared.lib",
+			"spirv-cross-core.lib",
+			"spirv-cross-glsl.lib"
 		}

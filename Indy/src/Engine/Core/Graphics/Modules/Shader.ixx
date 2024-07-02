@@ -1,8 +1,6 @@
 module;
 
 #include <string>
-#include <vector>
-#include <cstdint>
 
 #include <shaderc/shaderc.hpp>
 
@@ -30,19 +28,34 @@ export
 			INDY_SHADER_FORMAT_MAX_ENUM = UINT32_MAX,
 		} ShaderFormat;
 
-		struct SPIRV
+		struct Shader
 		{
-			size_t size = 0;
-			uint32_t* data = nullptr;
+			ShaderType type = INDY_SHADER_TYPE_MAX_ENUM;
+			ShaderFormat format = INDY_SHADER_FORMAT_MAX_ENUM;
+			std::string name = "";
+			std::string path = "";
+			std::string fileContent = "";
+			void* rawContent = nullptr;
 		};
 
-		class Shader
+		void WriteShaderToDisk(const Shader& shader, const size_t& size);
+
+		void ReadShader(const std::string& path, Shader* outShader);
+
+		std::string GetShaderExtension(const Shader& shader);
+
+		ShaderFormat GetShaderFormat(const std::string& fileName);
+
+		ShaderType GetShaderType(const std::string& fileName);
+
+		/*class Shader
 		{
 		public:
 			static void WriteToDisk(const std::string& shaderName, const std::string& shaderSource, const ShaderFormat& format, const ShaderType& type = INDY_SHADER_TYPE_MAX_ENUM);
 			static std::string GetFileExtension(const ShaderType& type, const ShaderFormat& format);
 
 		public:
+			Shader() {};
 			Shader(const ShaderType& type, const ShaderFormat& format, const std::string& filePath);
 			~Shader() = default;
 
@@ -73,6 +86,6 @@ export
 			std::string m_Source;
 			SPIRV m_SPIRV;
 			std::vector<uint32_t> m_SPIRV_Raw;
-		};
+		};*/
 	}
 }

@@ -22,7 +22,11 @@ namespace Indy
 	VulkanAPI::VulkanAPI()
 		: m_Instance(VK_NULL_HANDLE), m_DebugMessenger(VK_NULL_HANDLE)
 	{
+		// Window Detection
 		Events<WindowDispatchEvent>::Subscribe<VulkanAPI>(this, &VulkanAPI::OnWindowDispatch);
+
+		// Graphics Events
+		// ---
 	}
 
 	VulkanAPI::~VulkanAPI()
@@ -61,30 +65,16 @@ namespace Indy
 
 	void VulkanAPI::OnWindowDispatch(WindowDispatchEvent* event)
 	{
-		// Generate a surface for the window
-		VkSurfaceKHR surface;
-		if (glfwCreateWindowSurface(m_Instance, static_cast<GLFWwindow*>(event->window->NativeWindow()), nullptr, &surface) != VK_SUCCESS)
+		if (m_Renderer)
 		{
-			INDY_CORE_CRITICAL("Failed to create window surface!");
+			INDY_CORE_ERROR("Vulkan Renderer has already been created! Multiple windows are not yet supported.");
 			return;
 		}
 
-		std::shared_ptr<VulkanDevice> device = CreateVulkanDevice();
+		auto device = CreateVulkanDevice();
+		m_Renderer = std::make_unique<VulkanRenderer>(event->window, m_Instance, device);
 
-		// Ensure the logical device can properly support swapchain presentation
-		if (!QueryVulkanSwapchainSupport(device, surface))
-		{
-			INDY_CORE_ERROR("Could not create a renderer for window [{0}]: Presentation is not supported!");
-			return;
-		}
-
-		// Create the renderer
-		m_Renderer = std::make_shared<VulkanRenderer>(event->window, m_Instance, surface, device);
-
-		// This is TEMPORARY, for testing ONLY
-		Application::Get().OnUpdate.Subscribe([this]() { 
-			m_Renderer->Render();
-		});
+		//Application::Get().OnUpdate.Subscribe([this]() { m_Renderer->Render(); });
 	}
 
 	// Internal Methods

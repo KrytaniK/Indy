@@ -3,7 +3,7 @@ project "Sandbox"
 	language "C++"
 	cppdialect "C++20"
 	systemversion "latest"
-	staticruntime "on"
+	staticruntime "off"
 
 	targetdir ("%{wks.location}/bin/" .. outputdir .. "/%{prj.name}")
 	objdir ("%{wks.location}/bin-int/" .. outputdir .. "/%{prj.name}")
@@ -32,7 +32,11 @@ project "Sandbox"
 	links
 	{
 		"Indy",
-		"vulkan-1.lib"
+		"vulkan-1.lib",
+		"shaderc_shared.lib",
+		"spirv-cross-c-shared.lib",
+		"spirv-cross-core.lib",
+		"spirv-cross-glsl.lib",
 	}
 
 	filter "system:windows"

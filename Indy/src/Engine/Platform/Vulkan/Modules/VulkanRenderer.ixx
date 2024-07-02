@@ -46,7 +46,7 @@ export
 		class VulkanRenderer : public Renderer
 		{
 		public:
-			VulkanRenderer(Window* window, const VkInstance& instance, const VkSurfaceKHR& surface, const std::shared_ptr<VulkanDevice>& device);
+			VulkanRenderer(Window* window, const VkInstance& instance, const std::shared_ptr<VulkanDevice>& device);
 			virtual ~VulkanRenderer() override;
 
 			virtual void Render() override;
@@ -60,14 +60,14 @@ export
 			void RenderImGui(const VkCommandBuffer& cmdBuffer, const VkImageView& imageView);
 
 		private:
-			Window* m_Window;
 			VkInstance m_Instance;
-			VkSurfaceKHR m_Surface;
-			VmaAllocator m_ImageAllocator;
-
 			std::shared_ptr<VulkanDevice> m_Device;
 
+			Window* m_Window;
+			VkSurfaceKHR m_Surface;
 			VulkanSwapchain m_Swapchain;
+
+			VmaAllocator m_ImageAllocator;
 			VulkanImage m_RenderImage;
 			VulkanImageProcessor m_ImageProcessor;
 			bool m_RenderAsUITexture = true;
@@ -83,6 +83,9 @@ export
 			VkFence m_ImmediateFence;
 
 			VulkanRendererPipelineInfo m_Pipelines;
+			VulkanPipeline m_ComputePipeline;
+			VulkanPipeline m_GraphicsPipeline;
+			VulkanPipeline m_RaytracePipeline;
 
 			VkDescriptorPool m_ImGuiDescriptorPool;
 			VkDescriptorSet m_ImGuiRenderImageDescriptor;

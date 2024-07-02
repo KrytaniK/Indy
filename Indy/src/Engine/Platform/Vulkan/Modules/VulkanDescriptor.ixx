@@ -15,6 +15,7 @@ export
 		class VulkanDescriptor
 		{
 		public:
+			VulkanDescriptor() = default;
 			VulkanDescriptor(const VulkanDescriptorPool& descriptorPool, const VkDescriptorSetLayout& layout);
 
 			void UpdateBufferBinding(const VkDescriptorType& descriptorType, uint32_t binding, VkDescriptorBufferInfo* bufferInfos, const uint32_t& elementOffset = 0, const uint32_t& updateCount = 1);
