@@ -23,6 +23,13 @@ import Indy.Profiler;
 
 namespace Indy
 {
+	struct ComputePushConstants {
+		glm::vec4 data1;
+		glm::vec4 data2;
+		glm::vec4 data3;
+		glm::vec4 data4;
+	};
+
 	VulkanRenderer::VulkanRenderer(Window* window, const VkInstance& instance, const std::shared_ptr<VulkanDevice>& device)
 		: m_Window(window), m_Instance(instance), m_Device(device), m_CurrentFrameIndex(0)
 	{
@@ -241,6 +248,12 @@ namespace Indy
 
 				vkCmdBindDescriptorSets(frameData.computeCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline.layout, 0, 1, &m_ComputeDescriptorSet, 0, nullptr);
 
+				/*ComputePushConstants pc;
+				pc.data1 = glm::vec4(1, 0, 0, 1);
+				pc.data2 = glm::vec4(0, 0, 1, 1);
+
+				vkCmdPushConstants(frameData.computeCmdBuffer, m_ComputePipeline.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &pc);*/
+
 				vkCmdDispatch(
 					frameData.computeCmdBuffer,
 					static_cast<uint32_t>(std::ceil(m_Swapchain.extent.width) / 16.f),
@@ -256,9 +269,65 @@ namespace Indy
 		{
 			vkBeginCommandBuffer(frameData.graphicsCmdBuffer, &beginInfo);
 
+			// Transition image to correct layout for writing
+			m_ImageProcessor.AddLayoutTransition(
+				m_RenderImage.image,
+				VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
+				VK_ACCESS_2_MEMORY_WRITE_BIT, VK_ACCESS_2_MEMORY_WRITE_BIT
+			);
+
+			m_ImageProcessor.TransitionLayouts(frameData.graphicsCmdBuffer);
+			m_ImageProcessor.ClearTransitions();
+
+			// Begin a render pass
+			VkRenderingAttachmentInfo colorAttachment{};
+			colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+			colorAttachment.imageView = m_RenderImage.view;
+			colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+			colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+			VkExtent2D drawExtent = { m_RenderImage.extent.width, m_RenderImage.extent.height };
+
+			VkRenderingInfo renderInfo{};
+			renderInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+			renderInfo.renderArea.extent = drawExtent;
+			renderInfo.colorAttachmentCount = 1;
+			renderInfo.pColorAttachments = &colorAttachment;
+			renderInfo.flags = 0;
+			renderInfo.layerCount = 2;
+
 			// General Graphics Commands
 			{
+				vkCmdBeginRendering(frameData.graphicsCmdBuffer, &renderInfo);
 
+				vkCmdBindPipeline(frameData.graphicsCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline.pipeline);
+
+				//set dynamic viewport and scissor
+				VkViewport viewport = {};
+				viewport.x = 0;
+				viewport.y = 0;
+				viewport.width = drawExtent.width;
+				viewport.height = drawExtent.height;
+				viewport.minDepth = 0.f;
+				viewport.maxDepth = 1.f;
+
+				vkCmdSetViewport(frameData.graphicsCmdBuffer, 0, 1, &viewport);
+
+				VkRect2D scissor = {};
+				scissor.offset.x = 0;
+				scissor.offset.y = 0;
+				scissor.extent.width = drawExtent.width;
+				scissor.extent.height = drawExtent.height;
+
+				vkCmdSetScissor(frameData.graphicsCmdBuffer, 0, 1, &scissor);
+
+				//launch a draw command to draw 3 vertices
+				vkCmdDraw(frameData.graphicsCmdBuffer, 3, 1, 0, 0);
+
+				vkCmdEndRendering(frameData.graphicsCmdBuffer);
+			
 			}
 
 			// Prepare Render Image for UI rendering
@@ -268,8 +337,8 @@ namespace Indy
 					// Transfer render image to shader read only (To use as a texture)
 					m_ImageProcessor.AddLayoutTransition(
 						m_RenderImage.image,
-						VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-						VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
+						VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+						VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
 						VK_ACCESS_2_MEMORY_WRITE_BIT, VK_ACCESS_2_MEMORY_READ_BIT
 					);
 
@@ -435,14 +504,14 @@ namespace Indy
 	{
 		INDY_CORE_WARN("Building Vulkan Pipelines...");
 		VulkanPipelineBuilder builder(m_Device->handle);
+
+		// Temp Build Options
+		VulkanPipelineBuildOptions options{};
+		options.type = INDY_PIPELINE_TYPE_COMPUTE;
 		
 		INDY_CORE_WARN("Building Compute Pipeline...");
 		// Build Compute Pipeline
 		{
-			// Temp Build Options
-			PipelineBuildOptions options{};
-			options.type = INDY_PIPELINE_TYPE_COMPUTE;
-
 			// Bind Shaders
 			builder.BindShader("shaders/gradient.glsl.comp");
 
@@ -476,69 +545,29 @@ namespace Indy
 			builder.Clear();
 		}
 
-		INDY_CORE_WARN("Done!");
+		INDY_CORE_WARN("Building Graphics Pipeline...");
 		// Build Graphics Pipeline
 		{
-			/*buildOptions.type = INDY_PIPELINE_TYPE_GRAPHICS;
+			options.type = INDY_PIPELINE_TYPE_GRAPHICS;
 
-			VulkanShader vertexShader("shaders/vertex.glsl.vert");
-			builder.BindShader(vertexShader, INDY_PIPELINE_SHADER_STAGE_VERTEX);
+			// Bind Shaders
+			builder.BindShader("shaders/triangle.glsl.vert");
+			builder.BindShader("shaders/triangle.glsl.frag");
 
-			VulkanShader  fragmentShader("shaders/fragmet.glsl.frag");
-			builder.BindShader(fragmentShader, INDY_PIPELINE_SHADER_STAGE_FRAGMENT);
+			// Build and retrieve pipeline
+			builder.Build(&options);
+			m_GraphicsPipeline = builder.GetPipeline();
 
-			m_GraphicsPipeline = *static_cast<VulkanPipeline*>(builder.Build(buildOptions));
-			builder.Clear();*/
+			// Clear the builder for the next pipeline
+			builder.Clear();
 		}
 
-		// Old Impl -----------------------
-		// --------------------------------
+		// Build Raytrace Pipeline
+		{
 
-		// Descriptor Pool Initialization
-		//std::vector<VulkanDescriptorPool::Ratio> sizes = {
-		//	{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1 }  // 1 descriptor for each storage image (for compute)
-		//};
-		//m_Pipelines.descriptorPool = std::make_unique<VulkanDescriptorPool>(m_Device->handle, 10, sizes);
-
-		//// Pipeline Layout Builder
-		//VulkanDescriptorLayoutBuilder layoutBuilder;
-
-		{ // Compute Pipeline
-			//// Descriptor Set Layout for compute shader
-			//layoutBuilder.AddBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, 1); // Binding 0 is the image the compute shader uses
-
-			//// Build descriptor set layout
-			//VkDescriptorSetLayout layout = layoutBuilder.Build(m_Device->handle, { VK_SHADER_STAGE_COMPUTE_BIT });
-			//layoutBuilder.Clear();
-
-			//// Get Compute Shader
-			//Shader computeShader("shaders/gradient.glsl.comp");
-			//
-			//PipelineBuildOptions options{};
-
-			//VulkanPipelineBuilder builder;
-			//builder.BindShader(computeShader);
-			//builder.BindDescriptorSetLayout(INDY_SHADERINDY_SHADER_TYPE_COMPUTE, /* Pipeline Descriptor Pool */, );
-			//m_ComputePipeline = builder.Build<VulkanPipeline>();
-
-			//// Pipeline
-			//m_Pipelines.compute = std::make_unique<VulkanPipeline>(m_Device->handle, VulkanPipelineInfo(INDY_PIPELINE_TYPE_COMPUTE));
-			//m_Pipelines.compute->BindShader(computeShader);
-			//m_Pipelines.compute->BindDescriptorSetLayout(INDY_SHADER_TYPE_COMPUTE, *m_Pipelines.descriptorPool, layout);
-			//m_Pipelines.compute->Build();
-
-			//// Get pipeline descriptor
-			//m_Pipelines.computeDescriptor = m_Pipelines.compute->GetDescriptor(INDY_SHADER_TYPE_COMPUTE);
-
-			//// Render Image Info
-			//VkDescriptorImageInfo imageInfo{};
-			//imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-			//imageInfo.imageView = m_RenderImage.view;
-
-			//// Attach render image to compute pipeline descriptor set
-			//m_Pipelines.computeDescriptor->UpdateImageBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 0, &imageInfo);
-			//m_Pipelines.computeDescriptor->UpdateDescriptorSets(m_Device->handle);
 		}
+
+		INDY_CORE_WARN("Done!");
 	}
 
 	void VulkanRenderer::InitImGui()

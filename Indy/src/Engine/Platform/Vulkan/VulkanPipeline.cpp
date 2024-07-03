@@ -48,83 +48,13 @@ namespace Indy
 		return std::vector<uint32_t>(spvModule.begin(), spvModule.end());
 	}
 
-	VulkanPipelineBuilder::VulkanPipelineBuilder(const VkDevice& device)
-		: m_LogicalDevice(device)
+	void ReflectVulkanShader(const VulkanShader& shader, VulkanDescriptorSetBuilder& layoutBuilder, std::vector<VkDescriptorPoolSize>& poolSizes, std::vector<VkPushConstantRange>& pcRanges)
 	{
-		m_Shaders.resize(INDY_PIPELINE_SHADER_STAGE_MAX_ENUM);
-		m_ShaderModules.resize(INDY_PIPELINE_SHADER_STAGE_MAX_ENUM);
-	}
-
-	// Vulkan Pipeline Builder Class Definitions
-
-	void VulkanPipelineBuilder::Build(PipelineBuildOptions* options)
-	{
-		switch (options->type)
-		{
-			case INDY_PIPELINE_TYPE_COMPUTE:	BuildComputePipeline(); break;
-			case INDY_PIPELINE_TYPE_GRAPHICS:	break;
-			case INDY_PIPELINE_TYPE_RAYTRACE:	break;
-		}
-	}
-
-	void VulkanPipelineBuilder::Clear()
-	{
-		m_Shaders.clear();
-		m_ShaderModules.clear();
-	}
-
-	void VulkanPipelineBuilder::BindShader(const std::string& shaderPath)
-	{
-		VulkanShader shader{};
-		ReadShader(shaderPath, &shader);
-		shader.spv = CompileSPIRVFromGLSL(shader);
-
-		// Create Shader Module
-		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = shader.spv.size() * sizeof(uint32_t);
-		createInfo.pCode = shader.spv.data();
-
-		if (vkCreateShaderModule(m_LogicalDevice, &createInfo, nullptr, &m_ShaderModules[shader.type]) != VK_SUCCESS)
-			INDY_CORE_ERROR("failed to create shader module!");
-
-		// Store Shader
-		m_Shaders[shader.type] = shader;
-	}
-
-	void VulkanPipelineBuilder::BindShader(const Shader& shader, const PipelineShaderStage& stage)
-	{
-		VulkanShader vShader(shader);
-
-		// Compile to SPIR-V
-		vShader.spv = CompileSPIRVFromGLSL(vShader);
-
-		// Create Shader Module
-		VkShaderModuleCreateInfo createInfo{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		createInfo.codeSize = vShader.spv.size() * sizeof(uint32_t);
-		createInfo.pCode = vShader.spv.data();
-
-		if (vkCreateShaderModule(m_LogicalDevice, &createInfo, nullptr, &m_ShaderModules[stage]) != VK_SUCCESS)
-			INDY_CORE_ERROR("failed to create shader module!");
-
-		// Store Shader
-		m_Shaders[stage] = vShader;
-	}
-
-	void VulkanPipelineBuilder::BuildComputePipeline()
-	{
-		VulkanShader computeShader = m_Shaders[INDY_PIPELINE_SHADER_STAGE_COMPUTE];
-
-		spirv_cross::Compiler compiler(computeShader.spv);
+		// Set up spirv_cross compiler
+		spirv_cross::Compiler compiler(shader.spv);
 
 		// Reflect compute shader and retrieve resources
 		spirv_cross::ShaderResources resources = compiler.get_shader_resources();
-
-		VulkanDescriptorSetBuilder layoutBuilder;
-
-		std::vector<VkDescriptorPoolSize> descriptorPoolSizes;
-		std::vector<VkPushConstantRange> pushConstantRanges;
 
 		// Uniform Buffers (such as: uniform UBO)
 		VkDescriptorPoolSize uboPoolSize{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0 }; // or Uniform_Buffer_Dynamic
@@ -137,7 +67,7 @@ namespace Indy
 		}
 
 		if (uboPoolSize.descriptorCount)
-			descriptorPoolSizes.emplace_back(uboPoolSize);
+			poolSizes.emplace_back(uboPoolSize);
 
 		// Storage Buffers (such as: buffer SSBO)
 		VkDescriptorPoolSize sboPoolSize{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 0 }; // or Storage_Buffer_Dynamic
@@ -150,7 +80,7 @@ namespace Indy
 		}
 
 		if (sboPoolSize.descriptorCount)
-			descriptorPoolSizes.emplace_back(sboPoolSize);
+			poolSizes.emplace_back(sboPoolSize);
 
 		// Stage Inputs (such as: [in vec2 uv] in vertex shader)
 		// VkVertexInputAttributeDescription
@@ -198,9 +128,9 @@ namespace Indy
 		}
 
 		if (storageImagePoolSize.descriptorCount)
-			descriptorPoolSizes.emplace_back(storageImagePoolSize);
+			poolSizes.emplace_back(storageImagePoolSize);
 		if (storageTexelBufferPoolSize.descriptorCount)
-			descriptorPoolSizes.emplace_back(storageTexelBufferPoolSize);
+			poolSizes.emplace_back(storageTexelBufferPoolSize);
 
 		// Sampled Images (such as: sampler2D)
 		VkDescriptorPoolSize sampledImagePoolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0 };
@@ -213,7 +143,7 @@ namespace Indy
 		}
 
 		if (sampledImagePoolSize.descriptorCount)
-			descriptorPoolSizes.emplace_back(sampledImagePoolSize);
+			poolSizes.emplace_back(sampledImagePoolSize);
 
 		// Atomic Counters
 		// These are GLSL specialized resources used in atomic operations, allowing 
@@ -239,7 +169,7 @@ namespace Indy
 			range.offset = 0;
 			range.size = static_cast<uint32_t>(compiler.get_declared_struct_size(type));
 
-			pushConstantRanges.emplace_back(range);
+			pcRanges.emplace_back(range);
 		}
 
 		// Separate Images
@@ -263,9 +193,9 @@ namespace Indy
 		}
 
 		if (separateImagePoolSize.descriptorCount)
-			descriptorPoolSizes.emplace_back(separateImagePoolSize);
+			poolSizes.emplace_back(separateImagePoolSize);
 		if (separateBufferPoolSize.descriptorCount)
-			descriptorPoolSizes.emplace_back(separateBufferPoolSize);
+			poolSizes.emplace_back(separateBufferPoolSize);
 
 		// Separate Samplers (such as: sampler/samplerShadow)
 		VkDescriptorPoolSize separateSamplerImagePoolSize{ VK_DESCRIPTOR_TYPE_SAMPLER, 0 };
@@ -278,7 +208,7 @@ namespace Indy
 		}
 
 		if (separateSamplerImagePoolSize.descriptorCount)
-			descriptorPoolSizes.emplace_back(separateSamplerImagePoolSize);
+			poolSizes.emplace_back(separateSamplerImagePoolSize);
 
 		// Shader Record Buffers are to be used with Vulkan Raytracing.
 		//	These are managed through Vulkan's shader binding table (SBT) instead of
@@ -301,6 +231,97 @@ namespace Indy
 		// The remaining fields of spirv_cross::ShaderResources are for built-in,
 		//	shader-specific variables that are mainly useful for understanding the
 		//	shader, and perhaps some reconstruction. (builtin_inputs, builtin_outputs)
+	}
+
+	VulkanPipelineBuilder::VulkanPipelineBuilder(const VkDevice& device)
+		: m_LogicalDevice(device)
+	{
+		m_Shaders.resize(INDY_PIPELINE_SHADER_STAGE_MAX_ENUM);
+		m_ShaderModules.resize(INDY_PIPELINE_SHADER_STAGE_MAX_ENUM);
+	}
+
+	VulkanPipelineBuilder::~VulkanPipelineBuilder()
+	{
+		Clear();
+	}
+
+	// Vulkan Pipeline Builder Class Definitions
+
+	void VulkanPipelineBuilder::Build(PipelineBuildOptions* options)
+	{
+		switch (options->type)
+		{
+			case INDY_PIPELINE_TYPE_COMPUTE:	BuildComputePipeline(); break;
+			case INDY_PIPELINE_TYPE_GRAPHICS:	BuildGraphicsPipeline(static_cast<VulkanPipelineBuildOptions*>(options));  break;
+			case INDY_PIPELINE_TYPE_RAYTRACE:	break;
+		}
+	}
+
+	void VulkanPipelineBuilder::Clear()
+	{
+		m_Shaders.clear();
+
+		for (const auto& module : m_ShaderModules)
+			vkDestroyShaderModule(m_LogicalDevice, module, nullptr);
+
+		m_ShaderModules.clear();
+
+		m_Pipeline = {};
+		m_Shaders.resize(INDY_PIPELINE_SHADER_STAGE_MAX_ENUM);
+		m_ShaderModules.resize(INDY_PIPELINE_SHADER_STAGE_MAX_ENUM);
+	}
+
+	void VulkanPipelineBuilder::BindShader(const std::string& shaderPath)
+	{
+		// TODO:
+		//	Deduce file name from file extension and search for cached SPIR-V file.
+		//	Otherwise, read file and cache SPIR-V for next app load
+
+		VulkanShader shader{};
+		ReadShader(shaderPath, &shader);
+		shader.spv = CompileSPIRVFromGLSL(shader);
+
+		// Create Shader Module
+		VkShaderModuleCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+		createInfo.codeSize = shader.spv.size() * sizeof(uint32_t);
+		createInfo.pCode = shader.spv.data();
+
+		if (vkCreateShaderModule(m_LogicalDevice, &createInfo, nullptr, &m_ShaderModules[shader.type]) != VK_SUCCESS)
+			INDY_CORE_ERROR("failed to create shader module!");
+
+		// Store Shader
+		m_Shaders[shader.type] = shader;
+	}
+
+	void VulkanPipelineBuilder::BindShader(const Shader& shader, const PipelineShaderStage& stage)
+	{
+		VulkanShader vShader(shader);
+
+		// Compile to SPIR-V
+		vShader.spv = CompileSPIRVFromGLSL(vShader);
+
+		// Create Shader Module
+		VkShaderModuleCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+		createInfo.codeSize = vShader.spv.size() * sizeof(uint32_t);
+		createInfo.pCode = vShader.spv.data();
+
+		if (vkCreateShaderModule(m_LogicalDevice, &createInfo, nullptr, &m_ShaderModules[stage]) != VK_SUCCESS)
+			INDY_CORE_ERROR("failed to create shader module!");
+
+		// Store Shader
+		m_Shaders[stage] = vShader;
+	}
+
+	void VulkanPipelineBuilder::BuildComputePipeline()
+	{
+		VulkanShader computeShader = m_Shaders[INDY_PIPELINE_SHADER_STAGE_COMPUTE];
+		VulkanDescriptorSetBuilder layoutBuilder;
+		std::vector<VkDescriptorPoolSize> descriptorPoolSizes;
+		std::vector<VkPushConstantRange> pushConstantRanges;
+
+		ReflectVulkanShader(computeShader, layoutBuilder, descriptorPoolSizes, pushConstantRanges);
 
 		// Create Descriptor Pool
 		VkDescriptorPoolCreateInfo poolCreateInfo{};
@@ -353,185 +374,178 @@ namespace Indy
 		}
 	}
 
-	// ---------------------------------------------------------------------------------
-	// OLD IMPL ------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------
+	void VulkanPipelineBuilder::BuildGraphicsPipeline(VulkanPipelineBuildOptions* options)
+	{
+		std::vector<VkPipelineShaderStageCreateInfo> shaderStages{};
+		VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{};
+		VkPipelineRasterizationStateCreateInfo rasterizerState{};
+		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+		VkPipelineMultisampleStateCreateInfo multisamplingState{};
+		VkPipelineDepthStencilStateCreateInfo depthStencilState{};
+		VkPipelineRenderingCreateInfo renderInfo{};
+		VkFormat colorAttachmentformat{};
 
+		inputAssemblyState.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+		rasterizerState.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		multisamplingState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		depthStencilState.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		renderInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
 
-	//VkShaderStageFlagBits VulkanPipeline::GetShaderStage(const ShaderType& shaderType)
-	//{
-	//	switch(shaderType)
-	//	{
-	//		case INDY_SHADER_TYPE_COMPUTE: return VK_SHADER_STAGE_COMPUTE_BIT;
-	//		case INDY_SHADER_TYPE_VERTEX: return VK_SHADER_STAGE_VERTEX_BIT;
-	//		case INDY_SHADER_TYPE_FRAGMENT: return VK_SHADER_STAGE_FRAGMENT_BIT;
-	//		case INDY_SHADER_TYPE_TESS_CONTROL: return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-	//		case INDY_SHADER_TYPE_TESS_EVAL: return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-	//		default: return VK_SHADER_STAGE_ALL;
-	//	}
-	//}
+		// Assign shader modules
+		VkShaderModule vertexModule = m_ShaderModules[INDY_PIPELINE_SHADER_STAGE_VERTEX];
+		VkShaderModule fragmentModule = m_ShaderModules[INDY_PIPELINE_SHADER_STAGE_FRAGMENT];
 
-	//VulkanPipeline::VulkanPipeline(const VkDevice& logicalDevice, const VulkanPipelineInfo& info)
-	//	: m_Info(info), m_LogicalDevice(logicalDevice)
-	//{
-	//	// Resize to max value of shader type enum
-	//	m_Descriptors.resize(6); 
-	//	m_PushConstants.resize(6);
-	//	m_ShaderModules.resize(6); 
-	//}
+		VkPipelineShaderStageCreateInfo vertexShaderStage{};
+		vertexShaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		vertexShaderStage.pNext = nullptr;
+		vertexShaderStage.stage = VK_SHADER_STAGE_VERTEX_BIT;
+		vertexShaderStage.module = vertexModule;
+		vertexShaderStage.pName = "main";
 
-	//VulkanPipeline::~VulkanPipeline()
-	//{
-	//	for (const auto& shaderModule : m_ShaderModules)
-	//		vkDestroyShaderModule(m_LogicalDevice, shaderModule, nullptr);
+		VkPipelineShaderStageCreateInfo fragmentShaderStage{};
+		fragmentShaderStage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		fragmentShaderStage.pNext = nullptr;
+		fragmentShaderStage.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		fragmentShaderStage.module = fragmentModule;
+		fragmentShaderStage.pName = "main";
 
-	//	for (auto& descriptor : m_Descriptors)
-	//		vkDestroyDescriptorSetLayout(m_LogicalDevice, descriptor->GetLayout(), nullptr);
+		shaderStages.emplace_back(vertexShaderStage);
+		shaderStages.emplace_back(fragmentShaderStage);
 
-	//	vkDestroyPipelineLayout(m_LogicalDevice, m_Info.layout, nullptr);
-	//	vkDestroyPipeline(m_LogicalDevice, m_Info.pipeline, nullptr);
-	//}
+		// Set up viewport state. Doesn't support multiple viewports yet.
+		VkPipelineViewportStateCreateInfo viewportState{};
+		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+		viewportState.pNext = nullptr;
+		viewportState.viewportCount = 1;
+		viewportState.scissorCount = 1;
 
-	//void VulkanPipeline::BindDescriptorSetLayout(const ShaderType& shaderType, const VulkanDescriptorPool& descriptorPool, const VkDescriptorSetLayout& layout)
-	//{
-	//	m_Descriptors[shaderType] = std::make_shared<VulkanDescriptor>(descriptorPool, layout);
-	//}
+		// Dummy Color Blend State. No transparent objects yet.
+		// If we need to render more than one color attachment, this can easily be extended.
+		VkPipelineColorBlendStateCreateInfo colorBlendState{};
+		colorBlendState.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		colorBlendState.pNext = nullptr;
+		colorBlendState.logicOpEnable = VK_FALSE;
+		colorBlendState.logicOp = VK_LOGIC_OP_COPY;
+		colorBlendState.attachmentCount = 1;
+		colorBlendState.pAttachments = &colorBlendAttachment;
 
-	//void VulkanPipeline::BindPushConstants(const ShaderType& shaderType, const VkPushConstantRange& pushConstantRange)
-	//{
-	//	m_PushConstants[shaderType] = std::make_shared<VkPushConstantRange>(pushConstantRange);
-	//}
+		// Input Assembly State
+		inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		inputAssemblyState.primitiveRestartEnable = VK_FALSE;
 
-	//void VulkanPipeline::Build()
-	//{
-	//	switch(m_Info.type)
-	//	{
-	//		case INDY_PIPELINE_TYPE_COMPUTE: { BuildComputePipeline(); return; }
-	//		case INDY_PIPELINE_TYPE_RAYTRACE: { BuildRayTracePipeline(); return; }
-	//		case INDY_PIPELINE_TYPE_GRAPHICS: { BuildGraphicsPipeline(); return; }
-	//		default:
-	//		{
-	//			INDY_CORE_ERROR("Invalid Pipeline Type");
-	//		}
-	//	}
-	//}
+		// Rasterizer state
+		rasterizerState.polygonMode = VK_POLYGON_MODE_FILL;
+		rasterizerState.lineWidth = 1.f;
+		rasterizerState.cullMode = VK_CULL_MODE_NONE; // No culling
+		rasterizerState.frontFace = VK_FRONT_FACE_CLOCKWISE; // Render vertices clockwise
 
-	//void VulkanPipeline::BuildComputePipeline() 
-	//{
-	//	// Get all layouts
-	//	// -------------------------------------------------------------------------------------------------------
+		// Multisampling State. Default for now (none)
+		multisamplingState.sampleShadingEnable = VK_FALSE;
+		multisamplingState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT; // no multisampling (1 sample per pixel)
+		multisamplingState.minSampleShading = 1.0f;
+		multisamplingState.pSampleMask = nullptr;
+		multisamplingState.alphaToCoverageEnable = VK_FALSE; // no alpha to coverage either
+		multisamplingState.alphaToOneEnable = VK_FALSE;
 
-	//	std::vector<VkDescriptorSetLayout> layouts;
-	//	for (std::shared_ptr<VulkanDescriptor>& descriptor : m_Descriptors)
-	//		if (descriptor)
-	//			layouts.emplace_back(descriptor->GetLayout());
+		// Color Blending (Disabled for now)
+		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		colorBlendAttachment.blendEnable = VK_FALSE;
 
-	//	// Get all push constant ranges
-	//	// -------------------------------------------------------------------------------------------------------
-	//	std::vector<VkPushConstantRange> pushConstants;
-	//	for (std::shared_ptr<VkPushConstantRange>& pushConstant : m_PushConstants)
-	//		if (pushConstant)
-	//			pushConstants.emplace_back(*pushConstant);
-	//	
+		// Color Attachment Format
+		colorAttachmentformat = VK_FORMAT_B8G8R8A8_UNORM; // This is temporary. Test for correct values
 
-	//	// Build pipeline layout
-	//	// -------------------------------------------------------------------------------------------------------
+		// render Info color attachment
+		renderInfo.colorAttachmentCount = 1;
+		renderInfo.pColorAttachmentFormats = &colorAttachmentformat;
 
-	//	VkPipelineLayoutCreateInfo createInfo{};
-	//	createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	//	createInfo.pNext = nullptr;
-	//	createInfo.pSetLayouts = layouts.data();
-	//	createInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
-	//	createInfo.pPushConstantRanges = pushConstants.data();
-	//	createInfo.pushConstantRangeCount = pushConstants.size();
+		// Render Info Depth Format
+		renderInfo.depthAttachmentFormat = VK_FORMAT_UNDEFINED;
+		
+		// Disable Depth Test
+		depthStencilState.depthTestEnable = VK_FALSE;
+		depthStencilState.depthWriteEnable = VK_FALSE;
+		depthStencilState.depthCompareOp = VK_COMPARE_OP_NEVER;
+		depthStencilState.depthBoundsTestEnable = VK_FALSE;
+		depthStencilState.stencilTestEnable = VK_FALSE;
+		depthStencilState.front = {};
+		depthStencilState.back = {};
+		depthStencilState.minDepthBounds = 0.f;
+		depthStencilState.maxDepthBounds = 1.f;
 
-	//	if (vkCreatePipelineLayout(m_LogicalDevice, &createInfo, nullptr, &m_Info.layout) != VK_SUCCESS)
-	//	{
-	//		INDY_CORE_ERROR("Could not create compute pipeline layout!");
-	//		return;
-	//	}
+		// Cleared Vertex Input State. This engine will use a single vertex buffer and index via shaders.
+		VkPipelineVertexInputStateCreateInfo vertexInputState{};
+		vertexInputState.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
-	//	// Build Pipeline
-	//	// -------------------------------------------------------------------------------------------------------
+		// Shader Reflection
+		VulkanShader vertexShader = m_Shaders[INDY_PIPELINE_SHADER_STAGE_VERTEX];
+		VulkanShader fragmentShader = m_Shaders[INDY_PIPELINE_SHADER_STAGE_FRAGMENT];
 
-	//	VkPipelineShaderStageCreateInfo stageInfo{};
-	//	stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	//	stageInfo.pNext = nullptr;
-	//	stageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-	//	stageInfo.module = m_ShaderModules[INDY_SHADER_TYPE_COMPUTE];
-	//	stageInfo.pName = "main";
+		VulkanDescriptorSetBuilder layoutBuilder;
+		std::vector<VkDescriptorPoolSize> descriptorPoolSizes;
+		std::vector<VkPushConstantRange> pushConstantRanges;
 
-	//	VkComputePipelineCreateInfo computePipelineCreateInfo{};
-	//	computePipelineCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-	//	computePipelineCreateInfo.pNext = nullptr;
-	//	computePipelineCreateInfo.layout = m_Info.layout;
-	//	computePipelineCreateInfo.stage = stageInfo;
+		ReflectVulkanShader(vertexShader, layoutBuilder, descriptorPoolSizes, pushConstantRanges);
+		ReflectVulkanShader(fragmentShader, layoutBuilder, descriptorPoolSizes, pushConstantRanges);
 
-	//	if (vkCreateComputePipelines(m_LogicalDevice, VK_NULL_HANDLE, 1, &computePipelineCreateInfo, nullptr, &m_Info.pipeline) != VK_SUCCESS)
-	//	{
-	//		INDY_CORE_ERROR("Failed to create compute pipeline!");
-	//	}
-	//}
+		// Create Descriptor Pool
+		VkDescriptorPoolCreateInfo poolCreateInfo{};
+		poolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolCreateInfo.flags = 0;
+		poolCreateInfo.maxSets = g_Max_Frames_In_Flight;
+		poolCreateInfo.poolSizeCount = static_cast<uint32_t>(descriptorPoolSizes.size());
+		poolCreateInfo.pPoolSizes = descriptorPoolSizes.data();
 
-	//void VulkanPipeline::BuildGraphicsPipeline()
-	//{
-	//	// Get all layouts
-	//	// -------------------------------------------------------------------------------------------------------
+		if (vkCreateDescriptorPool(m_LogicalDevice, &poolCreateInfo, nullptr, &m_Pipeline.descriptorPool) != VK_SUCCESS) {
+			INDY_CORE_ERROR("Failed to create graphics descriptor pool!");
+			return;
+		}
 
-	//	std::vector<VkDescriptorSetLayout> layouts;
-	//	for (std::shared_ptr<VulkanDescriptor>& descriptor : m_Descriptors)
-	//		if (descriptor)
-	//			layouts.emplace_back(descriptor->GetLayout());
+		// Build Descriptor Set Layout
+		m_Pipeline.descriptorSetLayout = layoutBuilder.Build(m_LogicalDevice, 0);
 
-	//	// Build pipeline layout
-	//	// -------------------------------------------------------------------------------------------------------
+		// Create Pipeline Layout
+		VkPipelineLayoutCreateInfo layoutCreateInfo{};
+		layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		layoutCreateInfo.setLayoutCount = 1;
+		layoutCreateInfo.pSetLayouts = &m_Pipeline.descriptorSetLayout;
+		layoutCreateInfo.pushConstantRangeCount = static_cast<uint32_t>(pushConstantRanges.size());
+		layoutCreateInfo.pPushConstantRanges = pushConstantRanges.data();
 
-	//	VkPipelineLayoutCreateInfo createInfo{};
-	//	createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	//	createInfo.pNext = nullptr;
-	//	createInfo.pSetLayouts = layouts.data();
-	//	createInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
+		if (vkCreatePipelineLayout(m_LogicalDevice, &layoutCreateInfo, nullptr, &m_Pipeline.layout) != VK_SUCCESS) {
+			INDY_CORE_ERROR("Failed to create graphics pipeline layout!");
+			return;
+		}
 
-	//	if (vkCreatePipelineLayout(m_LogicalDevice, &createInfo, nullptr, &m_Info.layout) != VK_SUCCESS)
-	//	{
-	//		INDY_CORE_ERROR("Could not create compute pipeline layout!");
-	//		return;
-	//	}
+		// Pipeline Create Info Setup
+		VkGraphicsPipelineCreateInfo pipelineInfo{};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipelineInfo.pNext = &renderInfo; // Connect render info
+		pipelineInfo.stageCount = static_cast<uint32_t>(shaderStages.size());
+		pipelineInfo.pStages = shaderStages.data();
+		pipelineInfo.pVertexInputState = &vertexInputState;
+		pipelineInfo.pInputAssemblyState = &inputAssemblyState;
+		pipelineInfo.pViewportState = &viewportState;
+		pipelineInfo.pRasterizationState = &rasterizerState;
+		pipelineInfo.pMultisampleState = &multisamplingState;
+		pipelineInfo.pColorBlendState = &colorBlendState;
+		pipelineInfo.pDepthStencilState = &depthStencilState;
+		pipelineInfo.layout = m_Pipeline.layout;
+		
+		// Setup dynamic state
+		VkDynamicState dynamicState[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 
-	//	// Build Pipeline
-	//	// -------------------------------------------------------------------------------------------------------
+		VkPipelineDynamicStateCreateInfo dynamicStateInfo{};
+		dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamicStateInfo.dynamicStateCount = 2;
+		dynamicStateInfo.pDynamicStates = dynamicState;
 
-	//	// TODO: Implement Graphics Pipeline!
-	//}
+		pipelineInfo.pDynamicState = &dynamicStateInfo;
 
-	//void VulkanPipeline::BuildRayTracePipeline()
-	//{
-	//	// Get all layouts
-	//	// -------------------------------------------------------------------------------------------------------
-
-	//	std::vector<VkDescriptorSetLayout> layouts;
-	//	for (std::shared_ptr<VulkanDescriptor>& descriptor : m_Descriptors)
-	//		if (descriptor)
-	//			layouts.emplace_back(descriptor->GetLayout());
-
-	//	// Build pipeline layout
-	//	// -------------------------------------------------------------------------------------------------------
-
-	//	VkPipelineLayoutCreateInfo createInfo{};
-	//	createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	//	createInfo.pNext = nullptr;
-	//	createInfo.pSetLayouts = layouts.data();
-	//	createInfo.setLayoutCount = static_cast<uint32_t>(layouts.size());
-
-	//	if (vkCreatePipelineLayout(m_LogicalDevice, &createInfo, nullptr, &m_Info.layout) != VK_SUCCESS)
-	//	{
-	//		INDY_CORE_ERROR("Could not create compute pipeline layout!");
-	//		return;
-	//	}
-
-	//	// Build Pipeline
-	//	// -------------------------------------------------------------------------------------------------------
-
-	//	// TODO: Implement Ray Tracing Pipeline!
-	//}
+		// Build Pipeline
+		if (vkCreateGraphicsPipelines(m_LogicalDevice, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_Pipeline.pipeline) != VK_SUCCESS)
+		{
+			INDY_CORE_ERROR("Failed to create Graphics Pipeline!");
+			return;
+		}
+	}
 }

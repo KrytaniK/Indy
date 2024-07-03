@@ -31,13 +31,18 @@ export
 			VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
 		};
 
+		struct VulkanPipelineBuildOptions : PipelineBuildOptions
+		{
+
+		};
+
 		class VulkanPipelineBuilder : public PipelineBuilder
 		{
 		public:
 			VulkanPipelineBuilder(const VkDevice& device);
-			virtual ~VulkanPipelineBuilder() override = default;
+			virtual ~VulkanPipelineBuilder() override;
 
-			virtual void Build(PipelineBuildOptions* options = nullptr) override;
+			virtual void Build(PipelineBuildOptions* options) override;
 
 			virtual void Clear() override;
 
@@ -48,66 +53,27 @@ export
 
 		private:
 			void BuildComputePipeline();
+			void BuildGraphicsPipeline(VulkanPipelineBuildOptions* options);
 
 		private:
-			VkDevice m_LogicalDevice;
-			VulkanPipeline m_Pipeline;
-			std::vector<VulkanShader> m_Shaders;
-			std::vector<VkShaderModule> m_ShaderModules;
-		};
+			VkDevice m_LogicalDevice; // GPU Interface
+			VulkanPipeline m_Pipeline; // Finalized Pipeline
 
-		//VkShaderStageFlags
+			std::vector<VulkanShader> m_Shaders; // Bound Shaders
+			std::vector<VkShaderModule> m_ShaderModules; // Created Shader Modules
+
+
+		};
 
 		shaderc_shader_kind GetShadercType(const ShaderType& type);
 
 		std::vector<uint32_t> CompileSPIRVFromGLSL(const VulkanShader& shader);
 
-
-
-		//struct VulkanPipelineInfo
-		//{
-		//	PipelineType type = INDY_PIPELINE_TYPE_GRAPHICS;
-		//	VkPipeline pipeline = VK_NULL_HANDLE;
-		//	VkPipelineLayout layout = VK_NULL_HANDLE;
-		//};
-
-		//class VulkanPipeline : public Pipeline
-		//{
-		//public:
-		//	static VkShaderStageFlagBits GetShaderStage(const ShaderType& shaderType);
-
-		//public:
-		//	VulkanPipeline(const VkDevice& logicalDevice, const VulkanPipelineInfo& info);
-
-		//	virtual ~VulkanPipeline() override;
-
-		//	// Resource fetching
-		//	const VkPipeline& Get() const { return m_Info.pipeline; };
-		//	const VulkanPipelineInfo& GetInfo() const { return m_Info; };
-		//	const VkPipelineLayout& GetLayout() const { return m_Info.layout; };
-		//	virtual const PipelineType& GetType() const override { return m_Info.type; };
-		//	const std::shared_ptr<VulkanDescriptor>& GetDescriptor(const ShaderType& shaderType);
-
-		//	// Pipeline Build process functions
-		//	void BindShader(Shader& shader) override;
-		//	void BindDescriptorSetLayout(const ShaderType& shaderType, const VulkanDescriptorPool& descriptorPool, const VkDescriptorSetLayout& layout);
-		//	void BindPushConstants(const ShaderType& shaderType, const VkPushConstantRange& pushConstantRange);
-
-		//	// Inherited Build function
-		//	virtual void Build() override;
-
-		//private:
-		//	// Internal build functions
-		//	void BuildComputePipeline();
-		//	void BuildGraphicsPipeline();
-		//	void BuildRayTracePipeline();
-
-		//private:
-		//	VulkanPipelineInfo m_Info;
-		//	VkDevice m_LogicalDevice;
-		//	std::vector<VkShaderModule> m_ShaderModules;
-		//	std::vector<std::shared_ptr<VulkanDescriptor>> m_Descriptors;
-		//	std::vector<std::shared_ptr<VkPushConstantRange>> m_PushConstants;
-		//};
+		void ReflectVulkanShader(
+			const VulkanShader& shader,
+			VulkanDescriptorSetBuilder& layoutBuilder,
+			std::vector<VkDescriptorPoolSize>& poolSizes,
+			std::vector<VkPushConstantRange>& pcRanges
+		);
 	}
 }

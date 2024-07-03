@@ -44,7 +44,7 @@ export
 			PipelineBuilder() = default;
 			virtual ~PipelineBuilder() = default;
 
-			virtual void Build(PipelineBuildOptions* options = nullptr) = 0;
+			virtual void Build(PipelineBuildOptions* options) = 0;
 
 			virtual void Clear() = 0;
 
