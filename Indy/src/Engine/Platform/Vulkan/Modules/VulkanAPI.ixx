@@ -42,6 +42,8 @@ export
 			bool CreateVulkanInstance();
 			bool CreateDebugMessenger(const VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 
+			void OnImmediateCommand();
+
 			std::shared_ptr<VulkanDevice> CreateVulkanDevice();
 
 		private:

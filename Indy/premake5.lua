@@ -29,7 +29,6 @@ project "Indy"
 		"%{IncludeDirs.spdlog}",
 		"%{IncludeDirs.GLFW}",
 		"%{IncludeDirs.Vulkan}",
-		"%{IncludeDirs.VMA}",
 		"%{IncludeDirs.ImGui}",
 	}
 

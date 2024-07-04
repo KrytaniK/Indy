@@ -13,3 +13,5 @@ export import :Swapchain;
 export import :Pipeline;
 export import :CommandPool;
 export import :Descriptor;
+export import :Buffer;
+export import :MeshData;

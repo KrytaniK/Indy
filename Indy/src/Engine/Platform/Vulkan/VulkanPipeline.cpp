@@ -16,6 +16,20 @@ namespace Indy
 {
 	// Pipeline Shader Helper Functions
 
+	VkShaderStageFlagBits GetVulkanShaderStage(const ShaderType& type)
+	{
+		switch (type)
+		{
+			case INDY_SHADER_TYPE_VERTEX: return VK_SHADER_STAGE_VERTEX_BIT;
+			case INDY_SHADER_TYPE_FRAGMENT: return VK_SHADER_STAGE_FRAGMENT_BIT;
+			case INDY_SHADER_TYPE_COMPUTE: return VK_SHADER_STAGE_COMPUTE_BIT;
+			case INDY_SHADER_TYPE_GEOMETRY: return VK_SHADER_STAGE_GEOMETRY_BIT;
+			case INDY_SHADER_TYPE_TESS_CONTROL: return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+			case INDY_SHADER_TYPE_TESS_EVAL: return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+			default: return VK_SHADER_STAGE_ALL_GRAPHICS;
+		}
+	}
+
 	shaderc_shader_kind GetShadercType(const ShaderType& type)
 	{
 		switch (type)
@@ -165,7 +179,8 @@ namespace Indy
 			const auto& type = compiler.get_type(res.type_id);
 
 			VkPushConstantRange range{};
-			range.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT; // Alter to be shader specific
+
+			range.stageFlags = GetVulkanShaderStage(shader.type);
 			range.offset = 0;
 			range.size = static_cast<uint32_t>(compiler.get_declared_struct_size(type));
 
@@ -501,7 +516,7 @@ namespace Indy
 		}
 
 		// Build Descriptor Set Layout
-		m_Pipeline.descriptorSetLayout = layoutBuilder.Build(m_LogicalDevice, 0);
+		m_Pipeline.descriptorSetLayout = layoutBuilder.Build(m_LogicalDevice, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
 
 		// Create Pipeline Layout
 		VkPipelineLayoutCreateInfo layoutCreateInfo{};

@@ -4,26 +4,13 @@
 #include <vector>
 #include <set>
 
-#include <vulkan/vulkan.h>
-
 #define VMA_IMPLEMENTATION
-#include <vk_mem_alloc.h>
+#include <vulkan/vulkan.h>
+#include <vma/vk_mem_alloc.h>
 
 import Indy.VulkanGraphics;
 
 import Indy.Events;
-
-/* Creating a VmaAllocator
-
-	VmaAllocatorCreateInfo allocatorInfo{};
-	allocatorInfo.physicalDevice = physicalDevice;
-	allocatorInfo.device = logicalDevice;
-	allocatorInfo.instance = instance;
-	allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT; // or other flags
-
-	vmaCreateAllocator(&allocatorInfo, &m_Allocator);
-
-*/
 
 namespace Indy
 {

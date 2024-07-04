@@ -5,13 +5,9 @@ module;
 #include <optional>
 
 #include <vulkan/vulkan.h>
-#include <vk_mem_alloc.h>
+#include <vma/vk_mem_alloc.h>
 
 export module Indy.VulkanGraphics:Device;
-
-/* Future TODO:
-	It would be nice to let the user choose which physical device they want to use for rendering.
-*/
 
 export
 {

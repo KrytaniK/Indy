@@ -10,10 +10,12 @@
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
 
+#define GLM_FORCE_RADIANS
 #include <vulkan/vulkan.h>
-#include <vk_mem_alloc.h>
+#include <vma/vk_mem_alloc.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 import Indy.Graphics;
 import Indy.VulkanGraphics;
@@ -23,12 +25,11 @@ import Indy.Profiler;
 
 namespace Indy
 {
-	struct ComputePushConstants {
-		glm::vec4 data1;
-		glm::vec4 data2;
-		glm::vec4 data3;
-		glm::vec4 data4;
-	};
+	void VulkanRenderer::SubmitImmediate(const std::function<void(const VkCommandBuffer&)>& command)
+	{
+		if (VulkanRenderer::s_Renderer)
+			s_Renderer->SubmitImmediateCommand(command);
+	}
 
 	VulkanRenderer::VulkanRenderer(Window* window, const VkInstance& instance, const std::shared_ptr<VulkanDevice>& device)
 		: m_Window(window), m_Instance(instance), m_Device(device), m_CurrentFrameIndex(0)
@@ -94,7 +95,7 @@ namespace Indy
 			}
 		}
 
-		// Create the image allocator
+		// Create the resource allocator
 		{
 			VmaAllocatorCreateInfo allocatorInfo{};
 			allocatorInfo.physicalDevice = m_Device->physicalDevice;
@@ -102,7 +103,7 @@ namespace Indy
 			allocatorInfo.instance = m_Instance;
 			allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT; // or other flags
 
-			if (vmaCreateAllocator(&allocatorInfo, &m_ImageAllocator) != VK_SUCCESS)
+			if (vmaCreateAllocator(&allocatorInfo, &m_ResourceAllocator) != VK_SUCCESS)
 			{
 				INDY_CORE_ERROR("Failed to initialize Vulkan Renderer: Image Allocation Failed!");
 				return;
@@ -130,7 +131,7 @@ namespace Indy
 			imageSpec.aspectFlags = VK_IMAGE_ASPECT_COLOR_BIT;
 
 			// Create Image
-			m_RenderImage = VulkanImage::Create(m_Device->handle, m_ImageAllocator, imageSpec);
+			m_RenderImage = VulkanImage::Create(m_Device->handle, m_ResourceAllocator, imageSpec);
 		}
 
 		// Build Render Pipelines
@@ -141,12 +142,49 @@ namespace Indy
 
 		// Create the image descriptor for ImGui's backend
 		m_ImGuiRenderImageDescriptor = ImGui_ImplVulkan_AddTexture(m_RenderImage.sampler, m_RenderImage.view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		
+		// Set static renderer
+		VulkanRenderer::s_Renderer = this;
+
+		// -------------------------------
+		// -------------------------------
+		// Temp Rectangle Data -----------
+		// -------------------------------
+		// -------------------------------
+
+		m_Rectangle.vertices.resize(4);
+		m_Rectangle.indices.resize(6);
+
+		// Note: This is in SCREEN SPACE
+		m_Rectangle.vertices[0].position = { 0.75,-0.5, 0 };
+		m_Rectangle.vertices[1].position = { 0.75,0.5, 0 };
+		m_Rectangle.vertices[2].position = { -0.75,-0.5, 0 };
+		m_Rectangle.vertices[3].position = { -0.75,0.5, 0 };
+
+		m_Rectangle.vertices[0].color = { 1, 0, 0, 1 };
+		m_Rectangle.vertices[1].color = { 0, 1, 0 ,1 };
+		m_Rectangle.vertices[2].color = { 0, 0, 1 ,1 };
+		m_Rectangle.vertices[3].color = { 0, 1, 1 ,1 };
+
+		m_Rectangle.indices[0] = 0;
+		m_Rectangle.indices[1] = 1;
+		m_Rectangle.indices[2] = 2;
+
+		m_Rectangle.indices[3] = 2;
+		m_Rectangle.indices[4] = 1;
+		m_Rectangle.indices[5] = 3;
+
+		m_RectMeshData = VulkanMeshData::Create(m_Rectangle, m_Device->handle, m_ResourceAllocator);
 	}
 
 	VulkanRenderer::~VulkanRenderer()
 	{
 		// Wait for graphics operations to finish
 		vkDeviceWaitIdle(m_Device->handle);
+
+		// Temp destroy mesh buffers
+		VulkanBuffer::Destroy(m_ResourceAllocator, m_RectMeshData.vertexBuffer);
+		VulkanBuffer::Destroy(m_ResourceAllocator, m_RectMeshData.indexBuffer);
 
 		// Shutdown ImGui
 		{
@@ -179,8 +217,8 @@ namespace Indy
 		{
 			vkDestroySampler(m_Device->handle, m_RenderImage.sampler, nullptr);
 			vkDestroyImageView(m_Device->handle, m_RenderImage.view, nullptr);
-			vmaDestroyImage(m_ImageAllocator, m_RenderImage.image, m_RenderImage.allocation);
-			vmaDestroyAllocator(m_ImageAllocator);
+			vmaDestroyImage(m_ResourceAllocator, m_RenderImage.image, m_RenderImage.allocation);
+			vmaDestroyAllocator(m_ResourceAllocator);
 		}
 
 		// Cleanup Swapchain
@@ -200,9 +238,7 @@ namespace Indy
 	void VulkanRenderer::Render()
 	{
 		// Frame Time Calculation Start
-		{
-			//auto start = std::chrono::high_resolution_clock::now();
-		}
+		//auto start = std::chrono::high_resolution_clock::now();
 
 		VulkanFrameData& frameData = m_Frames[m_CurrentFrameIndex];
 		VkCommandBufferBeginInfo beginInfo{};
@@ -247,12 +283,6 @@ namespace Indy
 				vkCmdBindPipeline(frameData.computeCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline.pipeline);
 
 				vkCmdBindDescriptorSets(frameData.computeCmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_ComputePipeline.layout, 0, 1, &m_ComputeDescriptorSet, 0, nullptr);
-
-				/*ComputePushConstants pc;
-				pc.data1 = glm::vec4(1, 0, 0, 1);
-				pc.data2 = glm::vec4(0, 0, 1, 1);
-
-				vkCmdPushConstants(frameData.computeCmdBuffer, m_ComputePipeline.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(ComputePushConstants), &pc);*/
 
 				vkCmdDispatch(
 					frameData.computeCmdBuffer,
@@ -323,8 +353,14 @@ namespace Indy
 
 				vkCmdSetScissor(frameData.graphicsCmdBuffer, 0, 1, &scissor);
 
-				//launch a draw command to draw 3 vertices
-				vkCmdDraw(frameData.graphicsCmdBuffer, 3, 1, 0, 0);
+				VulkanMeshPushConstants pushConstants{};
+				pushConstants.worldMatrix = glm::mat4(1.f); // Note: This is in SCREEN SPACE
+				pushConstants.vertexBufferAddress = m_RectMeshData.vertexBufferAddress;
+
+				vkCmdPushConstants(frameData.graphicsCmdBuffer, m_GraphicsPipeline.layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VulkanMeshPushConstants), &pushConstants);
+				vkCmdBindIndexBuffer(frameData.graphicsCmdBuffer, m_RectMeshData.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+
+				vkCmdDrawIndexed(frameData.graphicsCmdBuffer, 6, 1, 0, 0, 0);
 
 				vkCmdEndRendering(frameData.graphicsCmdBuffer);
 			
@@ -498,6 +534,32 @@ namespace Indy
 	void VulkanRenderer::Disable()
 	{
 		//m_Enabled = false;
+	}
+
+	void VulkanRenderer::SubmitImmediateCommand(const std::function<void(const VkCommandBuffer&)>& command)
+	{
+		vkResetFences(m_Device->handle, 1, &m_ImmediateFence);
+
+		m_ImmediateCmdPool.Reset();
+		m_ImmediateCmdPool.BeginCommandBuffer(0, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+		VkCommandBuffer cmdBuffer = m_ImmediateCmdPool.GetCommandBuffer(0);
+
+		command(cmdBuffer);
+
+		m_ImmediateCmdPool.EndCommandBuffer(0);
+
+		VkCommandBufferSubmitInfo cmdSubmitInfo{};
+		cmdSubmitInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO;
+		cmdSubmitInfo.commandBuffer = cmdBuffer;
+
+		VkSubmitInfo2 submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2;
+		submitInfo.commandBufferInfoCount = 1;
+		submitInfo.pCommandBufferInfos = &cmdSubmitInfo;
+
+		vkQueueSubmit2(m_GraphicsQueue, 1, &submitInfo, m_ImmediateFence);
+		vkWaitForFences(m_Device->handle, 1, &m_ImmediateFence, VK_TRUE, UINT64_MAX);
 	}
 
 	void VulkanRenderer::BuildPipelines()

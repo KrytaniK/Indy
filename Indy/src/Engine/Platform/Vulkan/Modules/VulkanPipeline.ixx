@@ -61,9 +61,9 @@ export
 
 			std::vector<VulkanShader> m_Shaders; // Bound Shaders
 			std::vector<VkShaderModule> m_ShaderModules; // Created Shader Modules
-
-
 		};
+
+		VkShaderStageFlagBits GetVulkanShaderStage(const ShaderType& type);
 
 		shaderc_shader_kind GetShadercType(const ShaderType& type);
 

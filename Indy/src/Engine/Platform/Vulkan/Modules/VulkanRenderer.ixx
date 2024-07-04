@@ -3,13 +3,14 @@ module;
 #include <vector>
 #include <queue>
 #include <memory>
+#include <functional>
 
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_vulkan.h"
 
 #include <vulkan/vulkan.h>
-#include <vk_mem_alloc.h>
+#include <vma/vk_mem_alloc.h>
 #include <glm/glm.hpp>
 
 export module Indy.VulkanGraphics:Renderer;
@@ -21,6 +22,7 @@ import :Image;
 import :Pipeline;
 import :Descriptor;
 import :CommandPool;
+import :MeshData;
 
 import Indy.Graphics;
 import Indy.Window;
@@ -32,6 +34,12 @@ export
 		class VulkanRenderer : public Renderer
 		{
 		public:
+			static void SubmitImmediate(const std::function<void(const VkCommandBuffer&)>& command);
+
+		private:
+			inline static VulkanRenderer* s_Renderer = nullptr; // Instance of the most recently created VulkanRenderer
+
+		public:
 			VulkanRenderer(Window* window, const VkInstance& instance, const std::shared_ptr<VulkanDevice>& device);
 			virtual ~VulkanRenderer() override;
 
@@ -39,6 +47,8 @@ export
 			
 			virtual void Enable() override;
 			virtual void Disable() override;
+
+			void SubmitImmediateCommand(const std::function<void(const VkCommandBuffer&)>& command);
 
 		private:
 			void BuildPipelines();
@@ -53,7 +63,7 @@ export
 			VkSurfaceKHR m_Surface;
 			VulkanSwapchain m_Swapchain;
 
-			VmaAllocator m_ImageAllocator;
+			VmaAllocator m_ResourceAllocator;
 			VulkanImage m_RenderImage;
 			VulkanImageProcessor m_ImageProcessor;
 			bool m_RenderAsUITexture = true;
@@ -75,6 +85,10 @@ export
 
 			VkDescriptorPool m_ImGuiDescriptorPool;
 			VkDescriptorSet m_ImGuiRenderImageDescriptor;
+
+			// Temp Stuff
+			Mesh m_Rectangle;
+			VulkanMeshData m_RectMeshData;
 		};
 	}
 }

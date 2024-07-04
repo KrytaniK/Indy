@@ -1,7 +1,7 @@
 #include<Engine/Core/LogMacros.h>
 
 #include <vulkan/vulkan.h>
-#include <vk_mem_alloc.h>
+#include <vma/vk_mem_alloc.h>
 
 import Indy.VulkanGraphics;
 
