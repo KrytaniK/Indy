@@ -1,6 +1,6 @@
 export module Sandbox;
 
-import Indy.Application;
+export import Indy.Application;
 
 export {
 	namespace Indy
@@ -14,6 +14,7 @@ export {
 			virtual void Load() override;
 			virtual void Start() override;
 			virtual void Update() override;
+			virtual void Shutdown() override;
 			virtual void Unload() override;
 		};
 	}

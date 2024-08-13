@@ -14,10 +14,6 @@ namespace Indy
 	{
 		m_WindowManager = std::make_unique<WindowManager>();
 
-		// Sync Application Events
-		Application& app = Application::Get();
-		app.OnUpdate.Subscribe<WindowSystem>(this, &WindowSystem::OnUpdate);
-
 		// Bind Event Handles
 		Events<WindowCreateEvent>::Subscribe<WindowSystem>(this, &WindowSystem::OnWindowCreate);
 		Events<WindowDestroyEvent>::Subscribe<WindowSystem>(this, &WindowSystem::OnWindowDestroy);
@@ -40,17 +36,12 @@ namespace Indy
 
 	void WindowSystem::OnUpdate()
 	{
-		// Update all windows
 		m_WindowManager->Update();
 	}
 
 	void WindowSystem::OnWindowCreate(WindowCreateEvent* event)
 	{
-		// Create the new window and notify the application of the new resource
-		WindowDispatchEvent dispatchEvent;
-		dispatchEvent.window = m_WindowManager->AddWindow(*event->createInfo); // Create the window
-
-		Events<WindowDispatchEvent>::Notify(&dispatchEvent);
+		m_WindowManager->AddWindow(*event->createInfo);
 	}
 
 	void WindowSystem::OnWindowDestroy(WindowDestroyEvent* event)

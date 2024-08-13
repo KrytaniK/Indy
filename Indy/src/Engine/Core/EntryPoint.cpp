@@ -2,6 +2,6 @@ import Indy.Application;
 
 int main(int argc, char** argv)
 {
-    auto app = CreateApplication();
+    auto app = Indy::CreateApplication();
     app->StartAndRun();
 }

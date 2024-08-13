@@ -4,16 +4,22 @@
 
 import Sandbox;
 
-import Indy.Application;
-import Indy.Events;
-import Indy.Window;
+import Indy.Graphics;
 
 namespace Indy
 {
+	std::unique_ptr<Indy::Application> CreateApplication()
+	{
+		Indy::ApplicationCreateInfo createInfo;
+		createInfo.name = "Sandbox App";
+
+		return std::make_unique<Indy::Sandbox>(createInfo);
+	};
+
 	Sandbox::Sandbox(const ApplicationCreateInfo& createInfo)
 		: Application(createInfo)
 	{
-		m_ShouldClose = false;
+		m_ShouldClose = true;
 	}
 
 	Sandbox::~Sandbox()
@@ -23,41 +29,33 @@ namespace Indy
 
 	void Sandbox::Load()
 	{
-		// Load resources from disk
-
-		// Initialize Graphics API (Only Vulkan is currently supported)
-		m_GraphicsAPI = GraphicsAPI::Create(GraphicsAPI::Vulkan);
+		Graphics::Init(Graphics::Driver::Vulkan);
 	}
 
 	void Sandbox::Start()
 	{
-		// Post-Load operations
+		Graphics::RenderContext* context = Graphics::AddRenderContext(0);
 
-		// Create the main window
-		WindowCreateInfo createInfo{ "Sandbox - Indy's Testing Ground", 1280, 768, 0 };
-		Window::Create(createInfo);
+		if (context)
+		{
+			context->AddRenderPass("Main Pass");
+			// Configuration Stuff (Chaining is possible)
+			context->EndRenderPass();
+		}
 	}
 
 	void Sandbox::Update()
 	{
-		// Fixed Update ("Tick")
-		// Update
-		// Late Update
+		
+	}
+
+	void Sandbox::Shutdown()
+	{
+		
 	}
 
 	void Sandbox::Unload()
 	{
-		// Unload all resources
-		// Cleanup phase
+		
 	}
 }
-
-std::unique_ptr<Indy::Application> CreateApplication()
-{
-	Indy::ApplicationCreateInfo createInfo;
-	createInfo.name = "Sandbox App";
-
-	std::unique_ptr<Indy::Application> app = std::make_unique<Indy::Sandbox>(createInfo);
-
-	return app;
-};

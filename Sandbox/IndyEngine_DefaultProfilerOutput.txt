@@ -1,4 +1,0 @@
-{
-	"profiles": [
-		{},
-		{ "scope": "Build Compute Pipeline", "duration": "1095.75" }

@@ -2,13 +2,11 @@ module;
 
 export module Indy.Graphics:Renderer;
 
-import Indy.Events;
-
 export
 {
 	namespace Indy
 	{
-		// Interface for platform-specific renderers.
+		// Interface for API-specific renderers.
 		class Renderer
 		{
 		public:

@@ -7,7 +7,6 @@ module;
 export module Indy.WindowsWindow;
 
 import Indy.Window;
-import Indy.Input;
 
 export
 {
@@ -25,8 +24,6 @@ export
 			virtual void* NativeWindow() const override;
 			virtual const WindowProps& Properties() const override;
 
-			virtual Input::Context* GetInputContext();
-
 			virtual void SetExtent(const int& width, const int& height);
 			virtual void SetFocus(bool isFocused);
 			virtual void SetMinimized(bool isMinimized);
@@ -38,7 +35,6 @@ export
 		private:
 			WindowProps m_Props;
 			GLFWwindow* m_NativeWindow;
-			std::unique_ptr<Input::Context> m_InputContext;
 		};
 	}
 }

@@ -4,8 +4,6 @@
 
 import Indy.WindowsWindow;
 import Indy.Window;
-import Indy.Input;
-import Indy.Events;
 
 namespace Indy
 {
@@ -33,13 +31,6 @@ namespace Indy
 		m_Props.width = createInfo.width;
 		m_Props.height = createInfo.height;
 		m_Props.id = createInfo.id;
-
-		// Create Input Context and set it to be the active context
-		m_InputContext = std::make_unique<Input::Context>();
-
-		Input::SetContextEvent event;
-		event.newContext = m_InputContext.get();
-		Events<Input::SetContextEvent>::Notify(&event);
 	}
 
 	WindowsWindow::~WindowsWindow()
@@ -75,11 +66,6 @@ namespace Indy
 	const WindowProps& WindowsWindow::Properties() const
 	{
 		return m_Props;
-	}
-
-	Input::Context* WindowsWindow::GetInputContext()
-	{
-		return m_InputContext.get();
 	}
 
 	void WindowsWindow::SetExtent(const int& width, const int& height)
@@ -144,10 +130,7 @@ namespace Indy
 
 				if (focused)
 				{
-					Input::SetContextEvent event;
-					event.newContext = _this->m_InputContext.get();
 					
-					Events<Input::SetContextEvent>::Notify(&event);
 				}
 
 				_this->SetFocus(focused);
@@ -179,12 +162,7 @@ namespace Indy
 			{
 				double scroll[] = { xoffset, yoffset };
 
-				Input::Event event;
-				event.device_name = "GLFW Mouse";
-				event.control_alias = "Scroll";
-				event.data = &scroll;
-
-				Events<Input::Event>::Notify(&event);
+				
 			}
 		);
 
@@ -192,24 +170,14 @@ namespace Indy
 			{
 				double position[] = { xpos, ypos };
 
-				Input::Event event;
-				event.device_name = "GLFW Mouse";
-				event.control_alias = "Position";
-				event.data = &position;
-
-				Events<Input::Event>::Notify(&event);
+				
 
 			}
 		);
 
 		glfwSetMouseButtonCallback(m_NativeWindow, [](GLFWwindow* window, int button, int action, int mods)
 			{
-				Input::Event event;
-				event.device_name = "GLFW Mouse";
-				event.control_alias = std::to_string(button);
-				event.data = &action;
-
-				Events<Input::Event>::Notify(&event);
+				
 			}
 		);
 
@@ -219,12 +187,7 @@ namespace Indy
 
 		glfwSetKeyCallback(m_NativeWindow, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 			{
-				Input::Event event;
-				event.device_name = "GLFW Keyboard";
-				event.control_alias = std::to_string(key);
-				event.data = &action;
-
-				Events<Input::Event>::Notify(&event);
+				
 			}
 		);
 	}

@@ -5,8 +5,6 @@ module;
 
 export module Indy.Window:Window;
 
-import Indy.Input;
-
 export
 {
 	namespace Indy
@@ -40,8 +38,6 @@ export
 
 			virtual void* NativeWindow() const = 0;
 			virtual const WindowProps& Properties() const = 0;
-
-			virtual Input::Context* GetInputContext() = 0;
 		};
 	}
 }

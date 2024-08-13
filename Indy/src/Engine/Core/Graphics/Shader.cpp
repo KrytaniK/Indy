@@ -99,6 +99,8 @@ namespace Indy
 
 		if (fileName.find("spv") != std::string::npos)
 			return INDY_SHADER_FORMAT_SPIR_V;
+
+		return INDY_SHADER_FORMAT_MAX_ENUM;
 	}
 
 	ShaderType GetShaderType(const std::string& fileName)

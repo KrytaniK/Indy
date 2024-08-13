@@ -28,10 +28,5 @@ export
 			bool getActiveWindow;
 			Window* outWindow;
 		};
-
-		struct WindowDispatchEvent : IEvent
-		{
-			Window* window;
-		};
 	}
 }

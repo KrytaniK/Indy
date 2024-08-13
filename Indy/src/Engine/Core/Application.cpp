@@ -4,7 +4,6 @@
 
 import Indy.Application;
 import Indy.Layers;
-import Indy.Input;
 import Indy.Window;
 import Indy.Graphics;
 
@@ -22,15 +21,6 @@ namespace Indy
 		m_Info.name = createInfo.name;
 
 		Application::s_Instance = this;
-
-		m_LayerStack = std::make_unique<LayerStack>();
-		m_InputSystem = std::make_unique<InputSystem>();
-		m_WindowSystem = std::make_unique<WindowSystem>();
-
-		OnLoad.Subscribe<Application>(this, &Application::Load);
-		OnStart.Subscribe<Application>(this, &Application::Start);
-		OnUpdate.Subscribe<Application>(this, &Application::Update);
-		OnUnload.Subscribe<Application>(this, &Application::Unload);
 	}
 
 	Application::~Application()
@@ -40,17 +30,30 @@ namespace Indy
 
 	void Application::StartAndRun()
 	{
-		OnLoad.Notify();
-		OnStart.Notify();
-
-		if (m_ShouldClose) // Application is meant to execute once
-			OnUpdate.Notify();
-		else // Application is meant to run continuously
+		// While loop to support application restarting.
+		m_Restart = true;
+		while (m_Restart)
 		{
-			while (!m_ShouldClose)
-				OnUpdate.Notify();
-		}
+			m_Restart = false;
 
-		OnUnload.Notify();
+			// Load app data
+			Load();
+
+			// Start core processes
+			Start();
+
+			// Run once, even if m_ShouldClose = false
+			Update();
+
+			// Primary run loop (m_ShouldClose = true)
+			while (!m_ShouldClose)
+				Update();
+
+			// Shutdown core processes
+			Shutdown();
+
+			// Unload app data
+			Unload();
+		}
 	}
 }

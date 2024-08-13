@@ -24,8 +24,6 @@ export
 		{
 			std::vector<Vertex> vertices;
 			std::vector<uint32_t> indices;
-			glm::mat4 worldMatrix;
-			glm::mat4 localMatrix;
 		};
 	}
 }

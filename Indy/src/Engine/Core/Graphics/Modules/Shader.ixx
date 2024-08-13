@@ -1,6 +1,7 @@
 module;
 
 #include <string>
+#include <sstream>
 
 #include <shaderc/shaderc.hpp>
 
@@ -47,45 +48,5 @@ export
 		ShaderFormat GetShaderFormat(const std::string& fileName);
 
 		ShaderType GetShaderType(const std::string& fileName);
-
-		/*class Shader
-		{
-		public:
-			static void WriteToDisk(const std::string& shaderName, const std::string& shaderSource, const ShaderFormat& format, const ShaderType& type = INDY_SHADER_TYPE_MAX_ENUM);
-			static std::string GetFileExtension(const ShaderType& type, const ShaderFormat& format);
-
-		public:
-			Shader() {};
-			Shader(const ShaderType& type, const ShaderFormat& format, const std::string& filePath);
-			~Shader() = default;
-
-			const ShaderType& GetType() const { return m_Type; };
-			const ShaderFormat& GetFormat() const { return m_Format; };
-			const std::string& GetSource() const { return m_Source; };
-			const SPIRV& GetSPIRV() const { return m_SPIRV; };
-			std::string GetSPIRVSource() const;
-
-			void CompileSPIRV();
-
-			void Reflect(const ShaderFormat& format);
-
-		private:
-			bool AssertShaderExtension(const std::string& path);
-
-			void CompileFromGLSL(const shaderc::Compiler& compiler, shaderc::CompileOptions& options);
-
-			void ReflectGLSL();
-
-			shaderc_shader_kind GetShaderCType(const ShaderType& type);
-
-		private:
-			ShaderType m_Type;
-			ShaderFormat m_Format;
-			std::string m_filePath;
-			std::string m_FileName;
-			std::string m_Source;
-			SPIRV m_SPIRV;
-			std::vector<uint32_t> m_SPIRV_Raw;
-		};*/
 	}
 }
