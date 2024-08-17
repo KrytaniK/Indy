@@ -4,6 +4,7 @@
 
 import Sandbox;
 
+import Indy.Window;
 import Indy.Graphics;
 
 namespace Indy
@@ -34,13 +35,20 @@ namespace Indy
 
 	void Sandbox::Start()
 	{
-		Graphics::RenderContext* context = Graphics::AddRenderContext(0);
+		Graphics::RenderContext* context = Graphics::CreateRenderContext(0, "Scene Example");
+		Graphics::SetActiveRenderContext(context);
 
 		if (context)
 		{
-			context->AddRenderPass("Main Pass");
-			// Configuration Stuff (Chaining is possible)
-			context->EndRenderPass();
+			// Basic example of deferred rendering
+			context->BeginRenderPass("Opaque")
+				->EndRenderPass();
+
+			context->BeginRenderPass("Transparent")
+				->EndRenderPass();
+
+			context->BeginRenderPass("Post Process")
+				->EndRenderPass();
 		}
 	}
 

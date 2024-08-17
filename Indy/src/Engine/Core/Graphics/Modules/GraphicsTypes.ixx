@@ -9,28 +9,23 @@ export
 {
 	namespace Indy::Graphics
 	{
-
-		// --------------
-		// Pipeline State
-		// --------------
-
 		typedef enum PipelineType
 		{
-			INDY_PIPELINE_TYPE_COMPUTE = 0,
-			INDY_PIPELINE_TYPE_GRAPHICS = 1,
-			INDY_PIPELINE_TYPE_RAYTRACE = 2,
-			INDY_PIPELINE_TYPE_MAX_ENUM = 3
+			PIPELINE_TYPE_COMPUTE = 0,
+			PIPELINE_TYPE_GRAPHICS = 1,
+			PIPELINE_TYPE_RAYTRACE = 2,
+			PIPELINE_TYPE_MAX_ENUM = 3
 		} PipelineType;
 
 		typedef enum PipelineShaderStage
 		{
-			INDY_PIPELINE_SHADER_STAGE_COMPUTE = 0,
-			INDY_PIPELINE_SHADER_STAGE_VERTEX = 1,
-			INDY_PIPELINE_SHADER_STAGE_FRAGMENT = 2,
-			INDY_PIPELINE_SHADER_STAGE_GEOMETRY = 3,
-			INDY_PIPELINE_SHADER_STAGE_TESS_CONTROL = 4,
-			INDY_PIPELINE_SHADER_STAGE_TESS_EVAL = 5,
-			INDY_PIPELINE_SHADER_STAGE_MAX_ENUM = 6
+			PIPELINE_SHADER_STAGE_COMPUTE = 0,
+			PIPELINE_SHADER_STAGE_VERTEX = 1,
+			PIPELINE_SHADER_STAGE_FRAGMENT = 2,
+			PIPELINE_SHADER_STAGE_GEOMETRY = 3,
+			PIPELINE_SHADER_STAGE_TESS_CONTROL = 4,
+			PIPELINE_SHADER_STAGE_TESS_EVAL = 5,
+			PIPELINE_SHADER_STAGE_MAX_ENUM = 6
 		} PipelineShaderStage;
 
 		typedef enum PrimitiveTopology
@@ -108,6 +103,14 @@ export
 			uint32_t id;
 			std::string debugName;
 			PipelineState pipelineState{};
+		};
+
+		struct Viewport
+		{
+			uint32_t id;
+			std::string debugName;
+			std::vector<uint32_t> renderPassIDs;
+			bool enabled;
 		};
 	}
 }

@@ -9,18 +9,9 @@ import Indy.Graphics;
 
 namespace Indy
 {
-	Application* Application::s_Instance = nullptr;
-
-	Application& Application::Get()
-	{
-		return *Application::s_Instance;
-	}
-
 	Application::Application(const ApplicationCreateInfo& createInfo)
 	{
 		m_Info.name = createInfo.name;
-
-		Application::s_Instance = this;
 	}
 
 	Application::~Application()

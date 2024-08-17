@@ -16,12 +16,15 @@ project "Sandbox"
 		"src/**.h",
 		"src/**.cpp",
 		"src/**.ixx",
+		"%{wks.location}/Indy/lib/ImGui/*.cpp",
+		"%{wks.location}/Indy/lib/ImGui/*.h",
 	}
 
 	includedirs
 	{
 		"%{wks.location}/Indy/src",
 		"%{wks.location}/Indy/lib/spdlog/include",
+		"%{IncludeDirs.ImGui}",
 	}
 
 	libdirs
@@ -33,10 +36,6 @@ project "Sandbox"
 	{
 		"Indy",
 		"vulkan-1.lib",
-		"shaderc_shared.lib",
-		"spirv-cross-c-shared.lib",
-		"spirv-cross-core.lib",
-		"spirv-cross-glsl.lib",
 	}
 
 	filter "system:windows"

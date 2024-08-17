@@ -21,12 +21,6 @@ export {
 		class Application
 		{
 		public:
-			static Application& Get();
-
-		private:
-			static Application* s_Instance;
-
-		public:
 			Application(const ApplicationCreateInfo& appInfo);
 			virtual ~Application();
 

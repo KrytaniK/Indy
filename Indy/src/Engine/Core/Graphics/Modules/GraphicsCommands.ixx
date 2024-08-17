@@ -7,23 +7,36 @@ export module Indy.Graphics:Commands;
 
 import :Driver;
 import :RenderContext;
+import :Camera;
+import :Types;
 
 export
 {
 	namespace Indy::Graphics
 	{
-		class Window;
+		// ---------- Driver Initialization ----------
 
 		bool Init(const Driver::Type& driverType);
 
-		RenderContext* AddRenderContext(const uint32_t& id, Window* window = nullptr);
-		RenderContext* AddRenderContext(const std::string& key, Window* window = nullptr);
-		RenderContext* AddRenderContext(const uint32_t& id, const RenderContext& context, Window* window = nullptr);
-		RenderContext* AddRenderContext(const std::string& key, const RenderContext& context, Window* window = nullptr);
+		// ---------- Render Context ----------
 
-		bool RemoveContext(RenderContext* context);
+		RenderContext* CreateRenderContext(const uint32_t& id, const std::string& debugName);
 
-		RenderContext* GetContext(const uint32_t& key);
-		RenderContext* GetContext(const std::string& key);
+		RenderContext* AddRenderContext(const RenderContext& context);
+
+		bool RemoveContext(const uint32_t& id);
+
+		RenderContext* GetRenderContext(const uint32_t& key);
+
+		bool SetActiveRenderContext(const uint32_t& id);
+		bool SetActiveRenderContext(const RenderContext* context);
+
+		// ---------- Data Submission ----------
+
+		// void DrawMesh(...MeshData...)
+
+		// ---------- Rendering ----------
+
+		bool Render(const Camera& camera);
 	}
 }

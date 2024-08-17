@@ -34,7 +34,7 @@ namespace Indy::Graphics
 		return true;
 	}
 
-	RenderContext* AddRenderContext(const uint32_t& id, Window* window)
+	RenderContext* CreateRenderContext(const uint32_t& id, const std::string& debugName)
 	{
 		if (!g_GraphicsDriver)
 		{
@@ -42,10 +42,10 @@ namespace Indy::Graphics
 			return nullptr;
 		}
 
-		return g_GraphicsDriver->AddContext(id, window);
+		return g_GraphicsDriver->CreateContext(id, debugName);
 	}
 
-	RenderContext* AddRenderContext(const std::string& key, Window* window)
+	RenderContext* AddRenderContext(const RenderContext& context)
 	{
 		if (!g_GraphicsDriver)
 		{
@@ -53,10 +53,21 @@ namespace Indy::Graphics
 			return nullptr;
 		}
 
-		return g_GraphicsDriver->AddContext(key, window);
+		return g_GraphicsDriver->AddContext(context);
 	}
 
-	RenderContext* AddRenderContext(const uint32_t& id, const RenderContext& context, Window* window)
+	bool RemoveContext(const uint32_t& id)
+	{
+		if (!g_GraphicsDriver)
+		{
+			INDY_CORE_WARN("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
+			return false;
+		}
+
+		return g_GraphicsDriver->RemoveContext(id);
+	}
+
+	RenderContext* GetRenderContext(const uint32_t& key)
 	{
 		if (!g_GraphicsDriver)
 		{
@@ -64,33 +75,40 @@ namespace Indy::Graphics
 			return nullptr;
 		}
 
-		return g_GraphicsDriver->AddContext(id, context, window);
-	}
-
-	RenderContext* AddRenderContext(const std::string& key, const RenderContext& context, Window* window)
-	{
-		if (!g_GraphicsDriver)
-		{
-			INDY_CORE_WARN("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
-			return nullptr;
-		}
-
-		return g_GraphicsDriver->AddContext(key, context, window);
-	}
-
-	bool RemoveContext(RenderContext* context)
-	{
-		return g_GraphicsDriver->RemoveContext(context);
-	}
-
-	RenderContext* GetContext(const uint32_t& key)
-	{
 		return g_GraphicsDriver->GetContext(key);
 	}
 
-	RenderContext* GetContext(const std::string& key)
+	bool SetActiveRenderContext(const uint32_t& id)
 	{
-		return g_GraphicsDriver->GetContext(key);
+		if (!g_GraphicsDriver)
+		{
+			INDY_CORE_WARN("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
+			return false;
+		}
+
+		return g_GraphicsDriver->SetActiveContext(id);
+	}
+
+	bool SetActiveRenderContext(const RenderContext* context)
+	{
+		if (!g_GraphicsDriver)
+		{
+			INDY_CORE_WARN("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
+			return false;
+		}
+
+		return g_GraphicsDriver->SetActiveContext(context);
+	}
+
+	bool Render(const Camera& camera)
+	{
+		if (!g_GraphicsDriver)
+		{
+			INDY_CORE_WARN("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
+			return false;
+		}
+
+		return g_GraphicsDriver->Render(camera);
 	}
 
 }
