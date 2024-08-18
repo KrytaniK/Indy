@@ -20,22 +20,26 @@ export
 
 		// ---------- Render Context ----------
 
-		RenderContext* CreateRenderContext(const uint32_t& id, const std::string& debugName);
+		RenderContext* CreateRenderContext(const uint32_t& id, const std::string& alias);
 
 		RenderContext* AddRenderContext(const RenderContext& context);
 
 		bool RemoveContext(const uint32_t& id);
 
-		RenderContext* GetRenderContext(const uint32_t& key);
+		RenderContext* GetRenderContext(const uint32_t& id);
+		RenderContext* GetRenderContext(const std::string& alias);
 
-		bool SetActiveRenderContext(const uint32_t& id);
-		bool SetActiveRenderContext(const RenderContext* context);
+		bool SetActiveRenderContext(const uint32_t& id, const uint32_t& defaultViewportID = 0);
+		bool SetActiveRenderContext(const RenderContext* context, const uint32_t& defaultViewportID = 0);
 
 		// ---------- Data Submission ----------
 
-		// void DrawMesh(...MeshData...)
+		
 
 		// ---------- Rendering ----------
+
+		bool SetActiveViewport(const uint32_t& id);
+		bool SetActiveViewport(const std::string& alias);
 
 		bool Render(const Camera& camera);
 	}

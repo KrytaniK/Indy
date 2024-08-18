@@ -3,6 +3,7 @@
 #include <glm/glm.hpp>
 
 import Indy.Graphics;
+//import Indy.VulkanGraphics;
 
 import Indy.Window;
 import Indy.Events;
@@ -21,6 +22,10 @@ namespace Indy::Graphics
 			}
 			case Driver::Type::Vulkan:
 			{
+				/*
+				g_GraphicsDriver = std::make_unique<VulkanDriver>();
+				return true;
+				*/
 				INDY_CORE_WARN("The Vulkan Driver Has Not Been Implemented!");
 				return false;
 			}
@@ -34,7 +39,7 @@ namespace Indy::Graphics
 		return true;
 	}
 
-	RenderContext* CreateRenderContext(const uint32_t& id, const std::string& debugName)
+	RenderContext* CreateRenderContext(const uint32_t& id, const std::string& alias)
 	{
 		if (!g_GraphicsDriver)
 		{
@@ -42,7 +47,7 @@ namespace Indy::Graphics
 			return nullptr;
 		}
 
-		return g_GraphicsDriver->CreateContext(id, debugName);
+		return g_GraphicsDriver->CreateContext(id, alias);
 	}
 
 	RenderContext* AddRenderContext(const RenderContext& context)
@@ -78,18 +83,15 @@ namespace Indy::Graphics
 		return g_GraphicsDriver->GetContext(key);
 	}
 
-	bool SetActiveRenderContext(const uint32_t& id)
+	RenderContext* GetRenderContext(const std::string& alias)
 	{
-		if (!g_GraphicsDriver)
-		{
-			INDY_CORE_WARN("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
-			return false;
-		}
+		if (alias.empty())
+			return nullptr;
 
-		return g_GraphicsDriver->SetActiveContext(id);
+		return g_GraphicsDriver->GetContext(alias);
 	}
 
-	bool SetActiveRenderContext(const RenderContext* context)
+	bool SetActiveRenderContext(const uint32_t& id, const uint32_t& defaultViewportID)
 	{
 		if (!g_GraphicsDriver)
 		{
@@ -97,7 +99,35 @@ namespace Indy::Graphics
 			return false;
 		}
 
-		return g_GraphicsDriver->SetActiveContext(context);
+		return g_GraphicsDriver->SetActiveContext(id) && g_GraphicsDriver->SetActiveViewport(defaultViewportID);
+	}
+
+	bool SetActiveRenderContext(const RenderContext* context, const uint32_t& defaultViewportID)
+	{
+		if (!context)
+		{
+			INDY_CORE_ERROR("Failed to set the active render context: Invalid context pointer.");
+			return false;
+		}
+
+		if (!g_GraphicsDriver)
+		{
+			INDY_CORE_WARN("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
+			return false;
+		}
+
+		// Set driver active context and default viewport
+		return g_GraphicsDriver->SetActiveContext(context) && g_GraphicsDriver->SetActiveViewport(defaultViewportID);
+	}
+
+	bool SetActiveViewport(const uint32_t& id)
+	{
+		return g_GraphicsDriver->SetActiveViewport(id);
+	}
+
+	bool SetActiveViewport(const std::string& alias)
+	{
+		return g_GraphicsDriver->SetActiveViewport(alias);
 	}
 
 	bool Render(const Camera& camera)

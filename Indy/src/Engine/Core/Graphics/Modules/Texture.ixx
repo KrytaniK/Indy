@@ -8,10 +8,13 @@ export
 {
 	namespace Indy::Graphics
 	{
+		
 		struct Texture
 		{
 			virtual uint32_t& GetWidth() = 0;
 			virtual uint32_t& GetHeight() = 0;
+
+			uint32_t id;
 		};
 	}
 }

@@ -108,7 +108,7 @@ export
 		struct Viewport
 		{
 			uint32_t id;
-			std::string debugName;
+			std::string alias;
 			std::vector<uint32_t> renderPassIDs;
 			bool enabled;
 		};
