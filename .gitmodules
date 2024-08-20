@@ -1,3 +1,0 @@
-[submodule "Indy/lib/spdlog"]
-	path = Indy/lib/spdlog
-	url = https://github.com/gabime/spdlog.git
