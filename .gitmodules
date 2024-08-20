@@ -1,0 +1,6 @@
+[submodule "Indy/lib/imgui"]
+	path = Indy/lib/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "Indy/lib/spdlog"]
+	path = Indy/lib/spdlog
+	url = https://github.com/gabime/spdlog.git
