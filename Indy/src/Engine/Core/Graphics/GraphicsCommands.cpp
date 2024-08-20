@@ -1,9 +1,12 @@
 #include <Engine/Core/LogMacros.h>
 
+#include <memory>
 #include <glm/glm.hpp>
 
+#include <GLFW/glfw3.h>
+
 import Indy.Graphics;
-//import Indy.VulkanGraphics;
+import Indy.VulkanGraphics;
 
 import Indy.Window;
 import Indy.Events;
@@ -12,6 +15,18 @@ namespace Indy::Graphics
 {
 	bool Init(const Driver::Type& driverType)
 	{
+		// Initialize the GLFW utility library
+		if (glfwInit() == GLFW_FALSE)
+			return false;
+
+		// Set GLFW's error callback
+		glfwSetErrorCallback([](int error, const char* description)
+			{
+				INDY_CORE_ERROR("GLFW Error ({0}): {1}", error, description);
+			}
+		);
+
+		// Initialize the graphics driver of choice
 		switch (driverType)
 		{
 			case Driver::Type::None:
@@ -22,12 +37,13 @@ namespace Indy::Graphics
 			}
 			case Driver::Type::Vulkan:
 			{
-				/*
+				// Tell GLFW not to create OpenGL contexts for created windows
+				glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+				// Create the graphics driver
 				g_GraphicsDriver = std::make_unique<VulkanDriver>();
+
 				return true;
-				*/
-				INDY_CORE_WARN("The Vulkan Driver Has Not Been Implemented!");
-				return false;
 			}
 			default:
 			{
@@ -39,23 +55,26 @@ namespace Indy::Graphics
 		return true;
 	}
 
-	RenderContext* CreateRenderContext(const uint32_t& id, const std::string& alias)
+	void Shutdown()
 	{
-		if (!g_GraphicsDriver)
-		{
-			INDY_CORE_WARN("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
-			return nullptr;
-		}
-
-		return g_GraphicsDriver->CreateContext(id, alias);
+		g_GraphicsDriver = nullptr;
 	}
 
-	RenderContext* AddRenderContext(const RenderContext& context)
+	const RenderContext& CreateRenderContext(const std::string& alias)
 	{
 		if (!g_GraphicsDriver)
 		{
 			INDY_CORE_WARN("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
-			return nullptr;
+		}
+
+		return g_GraphicsDriver->CreateContext(alias);
+	}
+
+	const RenderContext& AddRenderContext(const RenderContext& context)
+	{
+		if (!g_GraphicsDriver)
+		{
+			throw std::runtime_error("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
 		}
 
 		return g_GraphicsDriver->AddContext(context);
@@ -65,28 +84,27 @@ namespace Indy::Graphics
 	{
 		if (!g_GraphicsDriver)
 		{
-			INDY_CORE_WARN("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
+			throw std::runtime_error("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
 			return false;
 		}
 
 		return g_GraphicsDriver->RemoveContext(id);
 	}
 
-	RenderContext* GetRenderContext(const uint32_t& key)
+	const RenderContext& GetRenderContext(const uint32_t& key)
 	{
 		if (!g_GraphicsDriver)
 		{
-			INDY_CORE_WARN("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
-			return nullptr;
+			throw std::runtime_error("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
 		}
 
 		return g_GraphicsDriver->GetContext(key);
 	}
 
-	RenderContext* GetRenderContext(const std::string& alias)
+	const RenderContext& GetRenderContext(const std::string& alias)
 	{
 		if (alias.empty())
-			return nullptr;
+			throw std::runtime_error("Invalid alias passed to Indy::Graphics::GetRenderContext(const std::string& alias)");
 
 		return g_GraphicsDriver->GetContext(alias);
 	}
@@ -95,25 +113,18 @@ namespace Indy::Graphics
 	{
 		if (!g_GraphicsDriver)
 		{
-			INDY_CORE_WARN("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
+			throw std::runtime_error("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
 			return false;
 		}
 
 		return g_GraphicsDriver->SetActiveContext(id) && g_GraphicsDriver->SetActiveViewport(defaultViewportID);
 	}
 
-	bool SetActiveRenderContext(const RenderContext* context, const uint32_t& defaultViewportID)
+	bool SetActiveRenderContext(const RenderContext& context, const uint32_t& defaultViewportID)
 	{
-		if (!context)
-		{
-			INDY_CORE_ERROR("Failed to set the active render context: Invalid context pointer.");
-			return false;
-		}
-
 		if (!g_GraphicsDriver)
 		{
-			INDY_CORE_WARN("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
-			return false;
+			throw std::runtime_error("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
 		}
 
 		// Set driver active context and default viewport

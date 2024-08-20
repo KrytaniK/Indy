@@ -20,24 +20,23 @@ export
 			enum Type : uint8_t { None = 0x00, Vulkan };
 
 		public:
-			Driver() = default;
 			virtual ~Driver() = default;
 
 			virtual Type GetType() = 0;
 
 			// ---------- Render Context ----------
 
-			virtual RenderContext* CreateContext(const uint32_t& id, const std::string& alias) = 0;
+			virtual const RenderContext& CreateContext(const std::string& alias) = 0;
 
-			virtual RenderContext* AddContext(const RenderContext& context) = 0;
+			virtual const RenderContext& AddContext(const RenderContext& context) = 0;
 
 			virtual bool RemoveContext(const uint32_t& id) = 0;
 
-			virtual RenderContext* GetContext(const uint32_t& key) = 0;
-			virtual RenderContext* GetContext(const std::string& alias) = 0;
+			virtual const RenderContext& GetContext(const uint32_t& id) = 0;
+			virtual const RenderContext& GetContext(const std::string& alias) = 0;
 
 			virtual bool SetActiveContext(const uint32_t& id) = 0;
-			virtual bool SetActiveContext(const RenderContext* context) = 0;
+			virtual bool SetActiveContext(const RenderContext& context) = 0;
 
 			// ---------- Data Submission ----------
 
@@ -51,6 +50,6 @@ export
 			virtual bool Render(const Camera& camera) = 0;
 		};
 
-		std::unique_ptr<Driver> g_GraphicsDriver;
+		std::unique_ptr<Driver> g_GraphicsDriver = nullptr;
 	}
 }

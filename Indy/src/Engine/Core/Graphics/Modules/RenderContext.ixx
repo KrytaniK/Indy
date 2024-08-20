@@ -16,67 +16,77 @@ export
 	namespace Indy::Graphics
 	{
 		// An interface for defining, configuring, and modifying rendering contexts
-		struct RenderContext
+		class RenderContext
 		{
+		public:
+			virtual ~RenderContext() = default;
+
+			virtual uint32_t GetID() const = 0;
+
 			// ----- Render Pass Operations -----
 
 			// Copies an existing render pass to this render context
-			virtual bool AddRenderPass(const RenderPass& renderPass) = 0;
+			virtual bool AddRenderPass(const RenderPass& renderPass) const = 0;
 
 			// Starts the configuration chain for a new or existing render pass
-			virtual RenderContext* BeginRenderPass(const std::string& debugName) = 0;
+			virtual const RenderContext& BeginRenderPass(const std::string& debugName) const = 0;
 			// Starts the configuration chain for a new or existing render pass
-			virtual RenderContext* BeginRenderPass(const uint32_t& id) = 0;
+			virtual const RenderContext& BeginRenderPass(const uint32_t& id) const = 0;
 
 			// Ends the configuration chain for the current render pass
-			virtual void EndRenderPass() = 0;
+			virtual void EndRenderPass() const = 0;
 
 			// Retrieves a render pass from the current render context via numerical id, if it exists.
-			virtual RenderPass* GetRenderPass(const uint32_t& id) = 0;
+			virtual const RenderPass& GetRenderPass(const uint32_t& id) const = 0;
 
 			// ----- Shader Configurations -----
 
 			// Adds a pre-processing shader to the render pass
-			virtual RenderContext* AddPreProcessShader(const std::string& shaderPath) = 0;
+			virtual const RenderContext& AddPreProcessShader(const std::string& shaderPath) const = 0;
 
 			// Binds the vertex shader for the current render pass
-			virtual RenderContext* BindVertexShader(const std::string& shaderPath) = 0;
+			virtual const RenderContext& BindVertexShader(const std::string& shaderPath) const = 0;
 
 			// Binds the tessellation control shader for the current render pass
-			virtual RenderContext* BindTessellationControlShader(const std::string& shaderPath) = 0;
+			virtual const RenderContext& BindTessellationControlShader(const std::string& shaderPath) const = 0;
 
 			// Binds the tessellation evaluation shader for the current render pass
-			virtual RenderContext* BindTessellationEvalShader(const std::string& shaderPath) = 0;
+			virtual const RenderContext& BindTessellationEvalShader(const std::string& shaderPath) const = 0;
 
 			// Binds the geometry shader for the current render pass
-			virtual RenderContext* BindGeometryShader(const std::string& shaderPath) = 0;
+			virtual const RenderContext& BindGeometryShader(const std::string& shaderPath) const = 0;
 
 			// Binds the fragment shader for the current render pass
-			virtual RenderContext* BindFragmentShader(const std::string& shaderPath) = 0;
+			virtual const RenderContext& BindFragmentShader(const std::string& shaderPath) const = 0;
 
 			// Adds a post-processing shader to the render pass
-			virtual RenderContext* AddPostProcessShader(const std::string& shaderPath) = 0;
+			virtual const RenderContext& AddPostProcessShader(const std::string& shaderPath) const = 0;
 
 			// ----- Rendering Configurations -----
 
 			// Determines how vertices are constructed during graphics rendering for the current render pass
-			virtual RenderContext* SetTopology(const PrimitiveTopology& topology) = 0;
+			virtual const RenderContext& SetTopology(const PrimitiveTopology& topology) const = 0;
 
 			// Determines how polygons are rendered on screen for the current render pass
-			virtual RenderContext* SetPolygonMode(const PolygonMode& mode) = 0;
+			virtual const RenderContext& SetPolygonMode(const PolygonMode& mode) const = 0;
 
 			// Determines the direction that vertices will be constructed in, resulting in
 			// either a front or rear facing face, for the current render pass
-			virtual RenderContext* SetFrontFace(const FrontFace& frontFace) = 0;
+			virtual const RenderContext& SetFrontFace(const FrontFace& frontFace) const = 0;
 
 			// Enables color blending for the current render pass
-			virtual RenderContext* SetBlendState(const bool enabled, const std::vector<ColorComponent>& masks = {}) = 0;
+			virtual const RenderContext& SetBlendState(const bool enabled, const std::vector<ColorComponent>& masks = {}) const = 0;
 
 			// Enables or disabled depth testing for the current render pass
-			virtual RenderContext* EnableDepthTesting(const bool enabled = true) = 0;
+			virtual const RenderContext& EnableDepthTesting(const bool enabled = true) const = 0;
 
 			// Enables or disables depth writing for the current render pass
-			virtual RenderContext* EnableDepthWriting(const bool enabled = false) = 0;
+			virtual const RenderContext& EnableDepthWriting(const bool enabled = false) const = 0;
+
+			// ----- Viewport Configurations -----
+
+			virtual bool SetActiveViewport(const uint32_t& id) const = 0;
+			virtual bool SetActiveViewport(const std::string& alias) const = 0;
 		};
 	}
 }
