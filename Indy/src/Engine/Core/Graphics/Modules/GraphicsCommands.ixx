@@ -25,7 +25,7 @@ export
 
 		const RenderContext& CreateRenderContext(const std::string& alias);
 
-		const RenderContext& AddRenderContext(const RenderContext& context);
+		const RenderContext& AddRenderContext(RenderContext* context, const std::string& alias);
 
 		bool RemoveContext(const uint32_t& id);
 

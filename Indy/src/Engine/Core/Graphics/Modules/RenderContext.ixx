@@ -21,6 +21,7 @@ export
 		public:
 			virtual ~RenderContext() = default;
 
+			virtual const std::string& GetAlias() const = 0;
 			virtual uint32_t GetID() const = 0;
 
 			// ----- Render Pass Operations -----

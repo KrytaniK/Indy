@@ -17,9 +17,11 @@ export
 		class VulkanContext : public RenderContext
 		{
 		public:
-			VulkanContext(const VkInstance& instance, const uint32_t& id);
-			VulkanContext(const RenderContext& context, const VkInstance& instance, const uint32_t& id);
+			VulkanContext(const VkInstance& instance, const uint32_t& id, const std::string& alias);
+			VulkanContext(RenderContext* context, const VkInstance& instance);
 			virtual ~VulkanContext() override;
+
+			virtual const std::string& GetAlias() const override { return m_Alias; };
 
 			virtual uint32_t GetID() const override { return m_ID; };
 
@@ -63,6 +65,8 @@ export
 
 		private:
 			uint32_t m_ID;
+			std::string m_Alias;
+			VkInstance m_Instance;
 			// Vulkan Device
 
 			std::vector<Viewport> m_Viewports;

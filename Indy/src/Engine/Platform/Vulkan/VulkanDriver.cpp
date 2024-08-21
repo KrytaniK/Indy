@@ -31,31 +31,61 @@ namespace Indy::Graphics
 
 	const RenderContext& VulkanDriver::CreateContext(const std::string& alias)
 	{
-		uint32_t id = m_Contexts.size();
+		uint32_t id = static_cast<uint32_t>(m_Contexts.size());
 
-		m_Contexts.emplace(id, std::make_unique<VulkanContext>(m_Instance, id));
+		m_Contexts.emplace(id, std::make_unique<VulkanContext>(m_Instance, id, alias));
 
 		return *m_Contexts[id];
 	}
 
-	const RenderContext& VulkanDriver::AddContext(const RenderContext& context)
+	const RenderContext& VulkanDriver::AddContext(RenderContext* context, const std::string& alias)
 	{
-		return *m_Contexts[0];
+		uint32_t id = static_cast<uint32_t>(m_Contexts.size());
+
+		m_Contexts.emplace(id, std::make_unique<VulkanContext>(context, m_Instance));
+
+		return *m_Contexts[id];
 	}
 
 	bool VulkanDriver::RemoveContext(const uint32_t& id)
 	{
-		return false;
+		auto it = m_Contexts.find(id);
+
+		// Error if no context with that id was found
+		if (it == m_Contexts.end())
+		{
+			INDY_CORE_ERROR("Could not find a Vulkan Render Context with ID: {0}", id);
+			return false;
+		}
+
+		// Remove the entry, forcing destructor call of VulkanContext
+		m_Contexts.erase(it);
+
+		return true;
 	}
 
 	const RenderContext& VulkanDriver::GetContext(const uint32_t& id)
 	{
-		return *m_Contexts[0];
+		auto it = m_Contexts.find(id);
+
+		// Error if no context with that id was found
+		if (it == m_Contexts.end())
+		{
+			INDY_CORE_ERROR("Could not find a Vulkan Render Context with ID: {0}", id);
+			return *m_Contexts.begin()->second;
+		}
+
+		return *it->second;
 	}
 
 	const RenderContext& VulkanDriver::GetContext(const std::string& alias)
 	{
-		return *m_Contexts[0];
+		for (auto& context : m_Contexts)
+			if (context.second->GetAlias() == alias)
+				return *context.second;
+
+		// Always return default context
+		return *m_Contexts.begin()->second;
 	}
 
 	bool VulkanDriver::SetActiveContext(const uint32_t& id)

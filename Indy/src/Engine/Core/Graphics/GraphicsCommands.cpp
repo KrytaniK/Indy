@@ -70,14 +70,14 @@ namespace Indy::Graphics
 		return g_GraphicsDriver->CreateContext(alias);
 	}
 
-	const RenderContext& AddRenderContext(const RenderContext& context)
+	const RenderContext& AddRenderContext(RenderContext* context, const std::string& alias)
 	{
 		if (!g_GraphicsDriver)
 		{
 			throw std::runtime_error("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
 		}
 
-		return g_GraphicsDriver->AddContext(context);
+		return g_GraphicsDriver->AddContext(context, alias);
 	}
 
 	bool RemoveContext(const uint32_t& id)

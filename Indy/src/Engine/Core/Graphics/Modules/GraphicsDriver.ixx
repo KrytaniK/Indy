@@ -28,7 +28,7 @@ export
 
 			virtual const RenderContext& CreateContext(const std::string& alias) = 0;
 
-			virtual const RenderContext& AddContext(const RenderContext& context) = 0;
+			virtual const RenderContext& AddContext(RenderContext* context, const std::string& alias) = 0;
 
 			virtual bool RemoveContext(const uint32_t& id) = 0;
 

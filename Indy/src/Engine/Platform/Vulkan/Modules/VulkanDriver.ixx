@@ -31,7 +31,7 @@ export
 
 			virtual const RenderContext& CreateContext(const std::string& alias) override;
 
-			virtual const RenderContext& AddContext(const RenderContext& context) override;
+			virtual const RenderContext& AddContext(RenderContext* context, const std::string& alias) override;
 
 			virtual bool RemoveContext(const uint32_t& id) override;
 
