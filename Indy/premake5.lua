@@ -15,12 +15,6 @@ project "Indy"
 		"src/**.h",
 		"src/**.cpp",
 		"src/**.ixx",
-		"lib/ImGui/*.cpp",
-		"lib/ImGui/*.h",
-		"lib/ImGui/backends/imgui_impl_glfw.cpp",
-		"lib/ImGui/backends/imgui_impl_glfw.h",
-		"lib/ImGui/backends/imgui_impl_vulkan.cpp",
-		"lib/ImGui/backends/imgui_impl_vulkan.h",
 	}
 
 	includedirs

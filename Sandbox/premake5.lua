@@ -16,14 +16,13 @@ project "Sandbox"
 		"src/**.h",
 		"src/**.cpp",
 		"src/**.ixx",
-		"%{wks.location}/Indy/lib/ImGui/*.cpp",
-		"%{wks.location}/Indy/lib/ImGui/*.h",
 	}
 
 	includedirs
 	{
 		"%{wks.location}/Indy/src",
-		"%{wks.location}/Indy/lib/spdlog/include",
+		"%{IncludeDirs.spdlog}",
+		"%{IncludeDirs.Vulkan}",
 		"%{IncludeDirs.ImGui}",
 	}
 
