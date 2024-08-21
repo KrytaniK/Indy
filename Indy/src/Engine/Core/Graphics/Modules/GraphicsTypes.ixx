@@ -98,13 +98,6 @@ export
 			DepthStencilState depthStencilState{};
 		};
 
-		struct RenderPass
-		{
-			uint32_t id = UINT32_MAX;
-			std::string debugName = "New Render Pass";
-			PipelineState pipelineState{};
-		};
-
 		struct Viewport
 		{
 			uint32_t id;

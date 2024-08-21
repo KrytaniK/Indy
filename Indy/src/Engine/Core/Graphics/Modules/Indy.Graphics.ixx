@@ -1,8 +1,9 @@
 export module Indy.Graphics;
 
 export import :Driver;
-export import :Renderer;
 export import :RenderContext;
+export import :RenderPass;
+export import :Renderer;
 export import :Camera;
 export import :Texture;
 
