@@ -11,20 +11,15 @@ namespace Indy::Graphics
 {
 	VulkanRenderPass::VulkanRenderPass(const std::string& alias, const uint32_t& id)
 	{
-
+		INDY_CORE_INFO("Creating a Vulkan Render Pass!");
 	}
 
 	VulkanRenderPass::~VulkanRenderPass()
 	{
-		
+		INDY_CORE_INFO("Destroying a Vulkan Render Pass!");
 	}
 
-	const VulkanRenderPass& VulkanRenderPass::Begin(const std::string& alias)
-	{
-		return *this;
-	}
-
-	const VulkanRenderPass& VulkanRenderPass::Begin(const uint32_t& id)
+	VulkanRenderPass& VulkanRenderPass::Begin()
 	{
 		return *this;
 	}
@@ -34,62 +29,67 @@ namespace Indy::Graphics
 
 	}
 
-	const VulkanRenderPass& VulkanRenderPass::AddPreProcessShader(const std::string& shaderPath)
+	VulkanRenderPass& VulkanRenderPass::AddPreProcessShader(const std::string& shaderPath)
 	{
 		return *this;
 	}
 
-	const VulkanRenderPass& VulkanRenderPass::BindVertexShader(const std::string& shaderPath)
+	VulkanRenderPass& VulkanRenderPass::BindVertexShader(const std::string& shaderPath)
 	{
 		return *this;
 	}
 
-	const VulkanRenderPass& VulkanRenderPass::BindTessellationControlShader(const std::string& shaderPath)
+	VulkanRenderPass& VulkanRenderPass::BindTessellationControlShader(const std::string& shaderPath)
 	{
 		return *this;
 	}
 
-	const VulkanRenderPass& VulkanRenderPass::BindTessellationEvalShader(const std::string& shaderPath)
+	VulkanRenderPass& VulkanRenderPass::BindTessellationEvalShader(const std::string& shaderPath)
 	{
 		return *this;
 	}
 
-	const VulkanRenderPass& VulkanRenderPass::BindGeometryShader(const std::string& shaderPath)
+	VulkanRenderPass& VulkanRenderPass::BindGeometryShader(const std::string& shaderPath)
 	{
 		return *this;
 	}
 
-	const VulkanRenderPass& VulkanRenderPass::BindFragmentShader(const std::string& shaderPath)
+	VulkanRenderPass& VulkanRenderPass::BindFragmentShader(const std::string& shaderPath)
 	{
 		return *this;
 	}
 
-	const VulkanRenderPass& VulkanRenderPass::AddPostProcessShader(const std::string& shaderPath)
+	VulkanRenderPass& VulkanRenderPass::AddPostProcessShader(const std::string& shaderPath)
 	{
 		return *this;
 	}
 
-	const VulkanRenderPass& VulkanRenderPass::SetTopology(const PrimitiveTopology& topology)
+	VulkanRenderPass& VulkanRenderPass::SetTopology(const PrimitiveTopology& topology)
 	{
 		return *this;
 	}
-	const VulkanRenderPass& VulkanRenderPass::SetPolygonMode(const PolygonMode& mode)
+
+	VulkanRenderPass& VulkanRenderPass::SetPolygonMode(const PolygonMode& mode)
 	{
 		return *this;
 	}
-	const VulkanRenderPass& VulkanRenderPass::SetFrontFace(const FrontFace& frontFace)
+
+	VulkanRenderPass& VulkanRenderPass::SetFrontFace(const FrontFace& frontFace)
 	{
 		return *this;
 	}
-	const VulkanRenderPass& VulkanRenderPass::SetBlendState(const bool enabled, const std::vector<ColorComponent>& masks)
+
+	VulkanRenderPass& VulkanRenderPass::SetBlendState(const bool enabled, const std::vector<ColorComponent>& masks)
 	{
 		return *this;
 	}
-	const VulkanRenderPass& VulkanRenderPass::EnableDepthTesting(const bool enabled)
+
+	VulkanRenderPass& VulkanRenderPass::EnableDepthTesting(const bool enabled)
 	{
 		return *this;
 	}
-	const VulkanRenderPass& VulkanRenderPass::EnableDepthWriting(const bool enabled)
+	
+	VulkanRenderPass& VulkanRenderPass::EnableDepthWriting(const bool enabled)
 	{
 		return *this;
 	}

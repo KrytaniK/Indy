@@ -35,19 +35,13 @@ namespace Indy
 
 	void Sandbox::Start()
 	{
-		const Graphics::RenderContext& context = Graphics::CreateRenderContext("Scene Example");
-		//Graphics::SetActiveRenderContext(context.GetID());
+		Graphics::RenderContext& context = Graphics::CreateRenderContext("Scene Example");
+		Graphics::SetActiveRenderContext(context);
 
-		//// Basic example of deferred rendering
-		//context.BeginRenderPass("Opaque");
-		//context.BeginRenderPass("Opaque")
-		//	.EndRenderPass();
-
-		//context.BeginRenderPass("Transparent")
-		//	.EndRenderPass();
-
-		//context.BeginRenderPass("Post Process")
-		//	.EndRenderPass();
+		context.AddRenderPass("Main").Begin()
+			.BindVertexShader("shaders/vertex.glsl.vert")
+			.BindFragmentShader("shaders/fragment.glsl.frag")
+			.End();
 	}
 
 	void Sandbox::Update()

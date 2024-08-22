@@ -1,6 +1,7 @@
 #include <Engine/Core/LogMacros.h>
 
 #include <memory>
+#include <vector>
 
 #include <vulkan/vulkan.h>
 
@@ -18,12 +19,15 @@ namespace Indy::Graphics
 			return;
 		}
 
+		INDY_CORE_INFO("Creating Vulkan Context!");
+
 		// Create Vulkan Device
 	}
 
 	VulkanContext::VulkanContext(RenderContext* context, const VkInstance& instance)
 		: m_Instance(instance)
 	{
+		INDY_CORE_INFO("Creating Vulkan Context!");
 		VulkanContext* tempCtx = static_cast<VulkanContext*>(context);
 
 		// Copy basic info
@@ -39,17 +43,33 @@ namespace Indy::Graphics
 
 	VulkanContext::~VulkanContext()
 	{
+		// Clear render passes BEFORE destroying this context
+		m_RenderPasses.clear();
 
+		INDY_CORE_INFO("Destroying Vulkan Context!");
 	}
 
-	bool VulkanContext::AddRenderPass(const RenderPass* renderPass)
+	VulkanRenderPass& VulkanContext::AddRenderPass(const std::string& alias)
 	{
-		return false;
+		size_t id = m_RenderPasses.size();
+
+		m_RenderPasses.emplace_back(alias, static_cast<uint32_t>(id));
+
+		return m_RenderPasses[id];
 	}
 
-	const VulkanRenderPass& VulkanContext::GetRenderPass(const uint32_t& id)
+	VulkanRenderPass& VulkanContext::AddRenderPass(const RenderPass* renderPass)
 	{
-		for (auto& pass : m_RenderPasses)
+		size_t id = m_RenderPasses.size();
+
+		//m_RenderPasses.emplace_back(*static_cast<VulkanRenderPass*>(renderPass));
+
+		return m_RenderPasses[id];
+	}
+
+	VulkanRenderPass& VulkanContext::GetRenderPass(const uint32_t& id)
+	{
+		for (VulkanRenderPass& pass : m_RenderPasses)
 		{
 			if (pass.GetID() == id)
 				return pass;
@@ -58,12 +78,12 @@ namespace Indy::Graphics
 		throw std::runtime_error("Failed to get Render Pass: Invalid Render Pass ID!");
 	}
 
-	bool VulkanContext::SetActiveViewport(const uint32_t& id) const
+	bool VulkanContext::SetActiveViewport(const uint32_t& id)
 	{
 		return false;
 	}
 
-	bool VulkanContext::SetActiveViewport(const std::string& alias) const
+	bool VulkanContext::SetActiveViewport(const std::string& alias)
 	{
 		return false;
 	}

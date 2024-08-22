@@ -29,14 +29,14 @@ export
 
 			// ---------- Render Context ----------
 
-			virtual const RenderContext& CreateContext(const std::string& alias) override;
+			virtual RenderContext& CreateContext(const std::string& alias) override;
 
-			virtual const RenderContext& AddContext(RenderContext* context, const std::string& alias) override;
+			virtual RenderContext& AddContext(RenderContext* context, const std::string& alias) override;
 
 			virtual bool RemoveContext(const uint32_t& id) override;
 
-			virtual const RenderContext& GetContext(const uint32_t& id) override;
-			virtual const RenderContext& GetContext(const std::string& alias) override;
+			virtual RenderContext& GetContext(const uint32_t& id) override;
+			virtual RenderContext& GetContext(const std::string& alias) override;
 
 			virtual bool SetActiveContext(const uint32_t& id) override;
 			virtual bool SetActiveContext(const RenderContext& context) override;

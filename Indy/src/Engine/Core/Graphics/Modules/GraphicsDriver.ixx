@@ -26,14 +26,14 @@ export
 
 			// ---------- Render Context ----------
 
-			virtual const RenderContext& CreateContext(const std::string& alias) = 0;
+			virtual RenderContext& CreateContext(const std::string& alias) = 0;
 
-			virtual const RenderContext& AddContext(RenderContext* context, const std::string& alias) = 0;
+			virtual RenderContext& AddContext(RenderContext* context, const std::string& alias) = 0;
 
 			virtual bool RemoveContext(const uint32_t& id) = 0;
 
-			virtual const RenderContext& GetContext(const uint32_t& id) = 0;
-			virtual const RenderContext& GetContext(const std::string& alias) = 0;
+			virtual RenderContext& GetContext(const uint32_t& id) = 0;
+			virtual RenderContext& GetContext(const std::string& alias) = 0;
 
 			virtual bool SetActiveContext(const uint32_t& id) = 0;
 			virtual bool SetActiveContext(const RenderContext& context) = 0;

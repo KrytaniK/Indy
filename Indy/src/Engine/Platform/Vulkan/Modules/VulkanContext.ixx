@@ -24,15 +24,17 @@ export
 
 			virtual ~VulkanContext() override;
 
-			virtual const std::string& GetAlias() const override { return m_Alias; };
-			virtual uint32_t GetID() const override { return m_ID; };
+			virtual const std::string& GetAlias() override { return m_Alias; };
+			virtual const uint32_t& GetID() override { return m_ID; };
 
-			virtual bool AddRenderPass(const RenderPass* renderPass) override;
+			virtual VulkanRenderPass& AddRenderPass(const std::string& alias) override;
 
-			virtual const VulkanRenderPass& GetRenderPass(const uint32_t& id) override;
+			virtual VulkanRenderPass& AddRenderPass(const RenderPass* renderPass) override;
 
-			virtual bool SetActiveViewport(const uint32_t& id) const override;
-			virtual bool SetActiveViewport(const std::string& alias) const override;
+			virtual VulkanRenderPass& GetRenderPass(const uint32_t& id) override;
+
+			virtual bool SetActiveViewport(const uint32_t& id) override;
+			virtual bool SetActiveViewport(const std::string& alias) override;
 
 		private:
 			uint32_t m_ID;

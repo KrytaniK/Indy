@@ -29,7 +29,7 @@ namespace Indy::Graphics
 		return Driver::Type::Vulkan;
 	}
 
-	const RenderContext& VulkanDriver::CreateContext(const std::string& alias)
+	RenderContext& VulkanDriver::CreateContext(const std::string& alias)
 	{
 		uint32_t id = static_cast<uint32_t>(m_Contexts.size());
 
@@ -38,7 +38,7 @@ namespace Indy::Graphics
 		return *m_Contexts[id];
 	}
 
-	const RenderContext& VulkanDriver::AddContext(RenderContext* context, const std::string& alias)
+	RenderContext& VulkanDriver::AddContext(RenderContext* context, const std::string& alias)
 	{
 		uint32_t id = static_cast<uint32_t>(m_Contexts.size());
 
@@ -64,7 +64,7 @@ namespace Indy::Graphics
 		return true;
 	}
 
-	const RenderContext& VulkanDriver::GetContext(const uint32_t& id)
+	RenderContext& VulkanDriver::GetContext(const uint32_t& id)
 	{
 		auto it = m_Contexts.find(id);
 
@@ -78,7 +78,7 @@ namespace Indy::Graphics
 		return *it->second;
 	}
 
-	const RenderContext& VulkanDriver::GetContext(const std::string& alias)
+	RenderContext& VulkanDriver::GetContext(const std::string& alias)
 	{
 		for (auto& context : m_Contexts)
 			if (context.second->GetAlias() == alias)

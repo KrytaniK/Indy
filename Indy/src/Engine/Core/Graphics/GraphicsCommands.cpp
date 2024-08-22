@@ -60,7 +60,7 @@ namespace Indy::Graphics
 		g_GraphicsDriver = nullptr;
 	}
 
-	const RenderContext& CreateRenderContext(const std::string& alias)
+	RenderContext& CreateRenderContext(const std::string& alias)
 	{
 		if (!g_GraphicsDriver)
 		{
@@ -70,7 +70,7 @@ namespace Indy::Graphics
 		return g_GraphicsDriver->CreateContext(alias);
 	}
 
-	const RenderContext& AddRenderContext(RenderContext* context, const std::string& alias)
+	RenderContext& AddRenderContext(RenderContext* context, const std::string& alias)
 	{
 		if (!g_GraphicsDriver)
 		{
@@ -91,7 +91,7 @@ namespace Indy::Graphics
 		return g_GraphicsDriver->RemoveContext(id);
 	}
 
-	const RenderContext& GetRenderContext(const uint32_t& key)
+	RenderContext& GetRenderContext(const uint32_t& key)
 	{
 		if (!g_GraphicsDriver)
 		{
@@ -101,7 +101,7 @@ namespace Indy::Graphics
 		return g_GraphicsDriver->GetContext(key);
 	}
 
-	const RenderContext& GetRenderContext(const std::string& alias)
+	RenderContext& GetRenderContext(const std::string& alias)
 	{
 		if (alias.empty())
 			throw std::runtime_error("Invalid alias passed to Indy::Graphics::GetRenderContext(const std::string& alias)");
