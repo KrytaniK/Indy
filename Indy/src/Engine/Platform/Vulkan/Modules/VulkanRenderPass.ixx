@@ -23,21 +23,11 @@ export
 
 			virtual VulkanRenderPass& Begin() override;
 
+			virtual RenderPass& AddProcess(const ProcessType& type) override;
+
+			virtual RenderPass& BindShader(const PipelineShaderStage& shaderStage, const std::string& path) override;
+
 			virtual void End() override;
-
-			virtual VulkanRenderPass& AddPreProcessShader(const std::string& shaderPath) override;
-
-			virtual VulkanRenderPass& BindVertexShader(const std::string& shaderPath) override;
-
-			virtual VulkanRenderPass& BindTessellationControlShader(const std::string& shaderPath) override;
-
-			virtual VulkanRenderPass& BindTessellationEvalShader(const std::string& shaderPath) override;
-
-			virtual VulkanRenderPass& BindGeometryShader(const std::string& shaderPath) override;
-
-			virtual VulkanRenderPass& BindFragmentShader(const std::string& shaderPath) override;
-
-			virtual VulkanRenderPass& AddPostProcessShader(const std::string& shaderPath) override;
 
 			virtual VulkanRenderPass& SetTopology(const PrimitiveTopology& topology) override;
 

@@ -24,44 +24,19 @@ namespace Indy::Graphics
 		return *this;
 	}
 
+	RenderPass& VulkanRenderPass::AddProcess(const ProcessType& type)
+	{
+		return *this;
+	}
+
+	RenderPass& VulkanRenderPass::BindShader(const PipelineShaderStage& shaderStage, const std::string& path)
+	{
+		return *this;
+	}
+
 	void VulkanRenderPass::End()
 	{
 
-	}
-
-	VulkanRenderPass& VulkanRenderPass::AddPreProcessShader(const std::string& shaderPath)
-	{
-		return *this;
-	}
-
-	VulkanRenderPass& VulkanRenderPass::BindVertexShader(const std::string& shaderPath)
-	{
-		return *this;
-	}
-
-	VulkanRenderPass& VulkanRenderPass::BindTessellationControlShader(const std::string& shaderPath)
-	{
-		return *this;
-	}
-
-	VulkanRenderPass& VulkanRenderPass::BindTessellationEvalShader(const std::string& shaderPath)
-	{
-		return *this;
-	}
-
-	VulkanRenderPass& VulkanRenderPass::BindGeometryShader(const std::string& shaderPath)
-	{
-		return *this;
-	}
-
-	VulkanRenderPass& VulkanRenderPass::BindFragmentShader(const std::string& shaderPath)
-	{
-		return *this;
-	}
-
-	VulkanRenderPass& VulkanRenderPass::AddPostProcessShader(const std::string& shaderPath)
-	{
-		return *this;
 	}
 
 	VulkanRenderPass& VulkanRenderPass::SetTopology(const PrimitiveTopology& topology)

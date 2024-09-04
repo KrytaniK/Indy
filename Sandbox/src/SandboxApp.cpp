@@ -39,8 +39,11 @@ namespace Indy
 		Graphics::SetActiveContext(context.GetID());
 
 		context.AddRenderPass("Main").Begin()
-			.BindVertexShader("shaders/vertex.glsl.vert")
-			.BindFragmentShader("shaders/fragment.glsl.frag")
+			.AddProcess(Indy::Graphics::RenderPass::MainProcess)
+			.BindShader(Indy::Graphics::PIPELINE_SHADER_STAGE_VERTEX, "shaders/vertex.glsl.vert")
+			.BindShader(Indy::Graphics::PIPELINE_SHADER_STAGE_FRAGMENT, "shaders/fragment.glsl.frag")
+			.AddProcess(Indy::Graphics::RenderPass::PreProcess)
+			.BindShader(Indy::Graphics::PIPELINE_SHADER_STAGE_COMPUTE, "shaders/compute.glsl.comp")
 			.End();
 	}
 
