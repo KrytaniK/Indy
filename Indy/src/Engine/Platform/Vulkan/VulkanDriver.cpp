@@ -21,7 +21,11 @@ namespace Indy::Graphics
 
 	VulkanDriver::~VulkanDriver()
 	{
-		// Cleanup Core Resources
+		/* ----------------------------------------
+
+					  TODO: IMPLEMENT
+
+		---------------------------------------- */
 	}
 
 	Driver::Type VulkanDriver::GetType()
@@ -29,20 +33,11 @@ namespace Indy::Graphics
 		return Driver::Type::Vulkan;
 	}
 
-	RenderContext& VulkanDriver::CreateContext(const std::string& alias)
+	Context& VulkanDriver::CreateContext(const std::string& alias)
 	{
 		uint32_t id = static_cast<uint32_t>(m_Contexts.size());
 
-		m_Contexts.emplace(id, std::make_unique<VulkanContext>(m_Instance, id, alias));
-
-		return *m_Contexts[id];
-	}
-
-	RenderContext& VulkanDriver::AddContext(RenderContext* context, const std::string& alias)
-	{
-		uint32_t id = static_cast<uint32_t>(m_Contexts.size());
-
-		m_Contexts.emplace(id, std::make_unique<VulkanContext>(context, m_Instance));
+		m_Contexts.emplace(id, std::make_unique<VulkanContext>(m_Instance, id, alias, m_DeviceConfig));
 
 		return *m_Contexts[id];
 	}
@@ -64,52 +59,94 @@ namespace Indy::Graphics
 		return true;
 	}
 
-	RenderContext& VulkanDriver::GetContext(const uint32_t& id)
+	Context& VulkanDriver::GetContext(const uint32_t& id)
 	{
+		if (m_Contexts.size() == 0)
+			throw std::runtime_error("Failed to get graphics context: No Vulkan Contexts Exist!");
+
 		auto it = m_Contexts.find(id);
 
 		// Error if no context with that id was found
 		if (it == m_Contexts.end())
 		{
 			INDY_CORE_ERROR("Could not find a Vulkan Render Context with ID: {0}", id);
-			return *m_Contexts.begin()->second;
+			return *m_Contexts[0];
 		}
 
 		return *it->second;
 	}
 
-	RenderContext& VulkanDriver::GetContext(const std::string& alias)
+	Context& VulkanDriver::GetContext(const std::string& alias)
 	{
+		uint32_t id = UINT32_MAX;
+
 		for (auto& context : m_Contexts)
+		{
 			if (context.second->GetAlias() == alias)
-				return *context.second;
+			{
+				// Check against duplicate aliases
+				if (id != UINT32_MAX)
+				{
+					INDY_CORE_WARN("Duplicate Vulkan Context with alias: '{0}' found [ID of {1}]. Returning only the first instance!", alias, context.second->GetID());
+					continue;
+				}
+
+				id = context.second->GetID();
+			}
+		}
 
 		// Always return default context
-		return *m_Contexts.begin()->second;
+		if (id == UINT32_MAX)
+			return *m_Contexts.begin()->second;
+
+		return *m_Contexts[id];
 	}
 
 	bool VulkanDriver::SetActiveContext(const uint32_t& id)
 	{
-		return false;
-	}
+		auto it = m_Contexts.find(id);
 
-	bool VulkanDriver::SetActiveContext(const RenderContext& context)
-	{
-		return false;
+		if (it == m_Contexts.end())
+		{
+			INDY_CORE_ERROR("Failed to set the active Vulkan context. Invalid Context ID!");
+			return false;
+		}
+
+		m_ActiveContext = id;
+
+		return true;
 	}
 
 	bool VulkanDriver::SetActiveViewport(const uint32_t& id)
 	{
-		return false;
+		if (m_ActiveContext == UINT32_MAX)
+		{
+			INDY_CORE_ERROR("Cannot set the active viewport when no graphics context is active!");
+			return false;
+		}
+
+		return m_Contexts[m_ActiveContext]->SetActiveViewport(id);
 	}
 
 	bool VulkanDriver::SetActiveViewport(const std::string& alias)
 	{
-		return false;
+		if (m_ActiveContext == UINT32_MAX)
+		{
+			INDY_CORE_ERROR("Cannot set the active viewport when no graphics context is active!");
+			return false;
+		}
+
+		return m_Contexts[m_ActiveContext]->SetActiveViewport(alias);
 	}
 
 	bool VulkanDriver::Render(const Camera& camera)
 	{
+		/* ----------------------------------------
+		
+					  TODO: IMPLEMENT
+
+		---------------------------------------- */
+
 		return false;
 	}
 
@@ -118,7 +155,7 @@ namespace Indy::Graphics
 		// Vulkan Application Info
 		VkApplicationInfo appInfo{};
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		appInfo.apiVersion = VK_MAKE_API_VERSION(0, 1, 3, 261);
+		appInfo.apiVersion = VK_MAKE_API_VERSION(0, 1, 3, 283);
 
 		// Vulkan Instance Create Info
 		VkInstanceCreateInfo instanceCreateInfo{};
@@ -240,42 +277,59 @@ namespace Indy::Graphics
 
 	void VulkanDriver::ConfigureVulkanLogicalDevices()
 	{
-		const std::vector<const char*> deviceExtensions = {
+		// Enumerate and store all physical devices
+		uint32_t deviceCount = 0;
+		if (vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr) != VK_SUCCESS)
+		{
+			INDY_CORE_ERROR("Failed to enumerate physical devices...");
+			return;
+		}
+
+		// Ensure a valid device actually exists
+		if (deviceCount == 0)
+		{
+			INDY_CORE_ERROR("Could not find any GPUs with Vulkan support!");
+			return;
+		}
+
+		// Resize the container and pull all devices
+		m_PhysicalDevices.resize(deviceCount);
+		if (vkEnumeratePhysicalDevices(m_Instance, &deviceCount, m_PhysicalDevices.data()) != VK_SUCCESS)
+		{
+			INDY_CORE_ERROR("Failed to enumerate physical devices...");
+			return;
+		}
+
+		// Vulkan 1.2 features
+		m_DeviceConfig.features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+		m_DeviceConfig.features12.bufferDeviceAddress = VK_TRUE;
+		m_DeviceConfig.features12.descriptorIndexing = VK_TRUE;
+
+		// Vulkan 1.3 features
+		m_DeviceConfig.features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+		m_DeviceConfig.features13.dynamicRendering = VK_TRUE;
+		m_DeviceConfig.features13.synchronization2 = VK_TRUE;
+		m_DeviceConfig.features13.pNext = &m_DeviceConfig.features12;
+
+		// Package core and new features
+		m_DeviceConfig.features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		m_DeviceConfig.features.features = m_DeviceConfig.coreFeatures;
+		m_DeviceConfig.features.pNext = &m_DeviceConfig.features13;
+
+		// Attach physical device list
+		m_DeviceConfig.physicalDeviceCount = deviceCount;
+		m_DeviceConfig.physicalDevices = m_PhysicalDevices.data();
+
+		// Attach required device extensions
+		m_DeviceConfig.extensions = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 			VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME,
 			VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
 		};
 
-		// Core Vulkan Features
-		VkPhysicalDeviceFeatures features{};
-
-		// Vulkan 1.2 features
-		VkPhysicalDeviceVulkan12Features features12{};
-		features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-		features12.bufferDeviceAddress = VK_TRUE;
-		features12.descriptorIndexing = VK_TRUE;
-
-		// Vulkan 1.3 features
-		VkPhysicalDeviceVulkan13Features features13{};
-		features13.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
-		features13.dynamicRendering = VK_TRUE;
-		features13.synchronization2 = VK_TRUE;
-		features13.pNext = &features12;
-
-		// Package core and new features
-		VkPhysicalDeviceFeatures2 deviceFeatures2{};
-		deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-		deviceFeatures2.features = features;
-		deviceFeatures2.pNext = &features13;
-
-		/*
-		
-		m_DeviceConfig.features = deviceFeatures2;
-		m_DeviceConfig.extensionCount = static_cast<uint32_t>(deviceExtensions.size());
-		m_DeviceConfig.extensions = deviceExtensions.data();
-		m_DeviceConfig.layerCount = static_cast<uint32_t>(g_Vulkan_Validation_Layers.size());
-		m_DeviceConfig.layers = g_Vulkan_Validation_Layers.data();
-
-		*/
+#ifdef ENGINE_DEBUG
+		// Attatch debug layers
+		m_DeviceConfig.debugLayers = g_Vulkan_Validation_Layers;
+#endif
 	}
 }

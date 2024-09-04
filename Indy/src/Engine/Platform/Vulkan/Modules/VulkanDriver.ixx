@@ -13,7 +13,7 @@ export module Indy.VulkanGraphics:Driver;
 import Indy.Graphics;
 
 import :Context;
-//import :Device;
+import :Device;
 
 export
 {
@@ -29,17 +29,14 @@ export
 
 			// ---------- Render Context ----------
 
-			virtual RenderContext& CreateContext(const std::string& alias) override;
-
-			virtual RenderContext& AddContext(RenderContext* context, const std::string& alias) override;
+			virtual Context& CreateContext(const std::string& alias) override;
 
 			virtual bool RemoveContext(const uint32_t& id) override;
 
-			virtual RenderContext& GetContext(const uint32_t& id) override;
-			virtual RenderContext& GetContext(const std::string& alias) override;
+			virtual Context& GetContext(const uint32_t& id) override;
+			virtual Context& GetContext(const std::string& alias) override;
 
 			virtual bool SetActiveContext(const uint32_t& id) override;
-			virtual bool SetActiveContext(const RenderContext& context) override;
 
 			// ---------- Data Submission ----------
 
@@ -62,13 +59,13 @@ export
 		private:
 			VkInstance m_Instance;
 			VkDebugUtilsMessengerEXT m_DebugMessenger;
-			// VulkanDeviceConfig m_DeviceConfig;
-
-			// std::unique_ptr<VulkanRenderer> m_Renderer;
 
 			std::map<uint32_t, std::unique_ptr<VulkanContext>> m_Contexts;
 			uint32_t m_ActiveContext;
-			uint32_t m_ActiveViewport;
+
+			std::vector<VkPhysicalDevice> m_PhysicalDevices;
+
+			VulkanDeviceConfig m_DeviceConfig;
 		};
 	}
 }

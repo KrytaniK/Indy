@@ -10,7 +10,7 @@ import Indy.VulkanGraphics;
 
 namespace Indy::Graphics
 {
-	VulkanContext::VulkanContext(const VkInstance& instance, const uint32_t& id, const std::string& alias)
+	VulkanContext::VulkanContext(const VkInstance& instance, const uint32_t& id, const std::string& alias, const VulkanDeviceConfig& deviceConfig)
 		: m_ID(id), m_Alias(alias), m_Instance(instance)
 	{
 		if (instance == VK_NULL_HANDLE)
@@ -21,24 +21,7 @@ namespace Indy::Graphics
 
 		INDY_CORE_INFO("Creating Vulkan Context!");
 
-		// Create Vulkan Device
-	}
-
-	VulkanContext::VulkanContext(RenderContext* context, const VkInstance& instance)
-		: m_Instance(instance)
-	{
-		INDY_CORE_INFO("Creating Vulkan Context!");
-		VulkanContext* tempCtx = static_cast<VulkanContext*>(context);
-
-		// Copy basic info
-		m_Alias = tempCtx->m_Alias;
-		m_ID = tempCtx->m_ID;
-
-		// Copy Viewport and Render Pass info
-		m_Viewports = tempCtx->m_Viewports;
-		m_RenderPasses = tempCtx->m_RenderPasses;
-
-		// Create Vulkan Device
+		m_Device = std::make_unique<VulkanDevice>(deviceConfig, m_Instance);
 	}
 
 	VulkanContext::~VulkanContext()
@@ -58,15 +41,6 @@ namespace Indy::Graphics
 		return m_RenderPasses[id];
 	}
 
-	VulkanRenderPass& VulkanContext::AddRenderPass(const RenderPass* renderPass)
-	{
-		size_t id = m_RenderPasses.size();
-
-		//m_RenderPasses.emplace_back(*static_cast<VulkanRenderPass*>(renderPass));
-
-		return m_RenderPasses[id];
-	}
-
 	VulkanRenderPass& VulkanContext::GetRenderPass(const uint32_t& id)
 	{
 		for (VulkanRenderPass& pass : m_RenderPasses)
@@ -80,11 +54,25 @@ namespace Indy::Graphics
 
 	bool VulkanContext::SetActiveViewport(const uint32_t& id)
 	{
-		return false;
+		if (id >= m_Viewports.size())
+			return false;
+
+		m_ActiveViewportID = id;
+
+		return true;
 	}
 
 	bool VulkanContext::SetActiveViewport(const std::string& alias)
 	{
+		for (const auto& viewport : m_Viewports)
+		{
+			if (viewport.alias == alias)
+			{
+				m_ActiveViewportID = viewport.id;
+				return true;
+			}
+		}
+
 		return false;
 	}
 }

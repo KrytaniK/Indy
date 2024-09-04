@@ -6,7 +6,7 @@ module;
 
 export module Indy.Graphics:Driver;
 
-import :RenderContext;
+import :Context;
 import :Camera;
 import :Types;
 
@@ -26,17 +26,14 @@ export
 
 			// ---------- Render Context ----------
 
-			virtual RenderContext& CreateContext(const std::string& alias) = 0;
-
-			virtual RenderContext& AddContext(RenderContext* context, const std::string& alias) = 0;
+			virtual Context& CreateContext(const std::string& alias) = 0;
 
 			virtual bool RemoveContext(const uint32_t& id) = 0;
 
-			virtual RenderContext& GetContext(const uint32_t& id) = 0;
-			virtual RenderContext& GetContext(const std::string& alias) = 0;
+			virtual Context& GetContext(const uint32_t& id) = 0;
+			virtual Context& GetContext(const std::string& alias) = 0;
 
 			virtual bool SetActiveContext(const uint32_t& id) = 0;
-			virtual bool SetActiveContext(const RenderContext& context) = 0;
 
 			// ---------- Data Submission ----------
 

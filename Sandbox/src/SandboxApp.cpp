@@ -35,8 +35,8 @@ namespace Indy
 
 	void Sandbox::Start()
 	{
-		Graphics::RenderContext& context = Graphics::CreateRenderContext("Scene Example");
-		Graphics::SetActiveRenderContext(context);
+		Graphics::Context& context = Graphics::CreateContext("Scene Example");
+		Graphics::SetActiveContext(context.GetID());
 
 		context.AddRenderPass("Main").Begin()
 			.BindVertexShader("shaders/vertex.glsl.vert")

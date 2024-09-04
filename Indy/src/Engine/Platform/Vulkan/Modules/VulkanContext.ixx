@@ -3,6 +3,7 @@ module;
 #include <cstdint>
 #include <string>
 #include <vector>
+#include <memory>
 
 #include <vulkan/vulkan.h>
 
@@ -11,16 +12,16 @@ export module Indy.VulkanGraphics:Context;
 import Indy.Graphics;
 
 import :RenderPass;
+import :Device;
 
 export
 {
 	namespace Indy::Graphics
 	{
-		class VulkanContext : public RenderContext
+		class VulkanContext : public Context
 		{
 		public:
-			VulkanContext(const VkInstance& instance, const uint32_t& id, const std::string& alias);
-			VulkanContext(RenderContext* context, const VkInstance& instance);
+			VulkanContext(const VkInstance& instance, const uint32_t& id, const std::string& alias, const VulkanDeviceConfig& deviceConfig);
 
 			virtual ~VulkanContext() override;
 
@@ -28,8 +29,6 @@ export
 			virtual const uint32_t& GetID() override { return m_ID; };
 
 			virtual VulkanRenderPass& AddRenderPass(const std::string& alias) override;
-
-			virtual VulkanRenderPass& AddRenderPass(const RenderPass* renderPass) override;
 
 			virtual VulkanRenderPass& GetRenderPass(const uint32_t& id) override;
 
@@ -40,9 +39,12 @@ export
 			uint32_t m_ID;
 			std::string m_Alias;
 			VkInstance m_Instance;
-			// Vulkan Device
+			
+			std::unique_ptr<VulkanDevice> m_Device;
 
 			std::vector<Viewport> m_Viewports;
+			uint32_t m_ActiveViewportID;
+
 			std::vector<VulkanRenderPass> m_RenderPasses;
 		};
 	}

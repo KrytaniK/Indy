@@ -15,16 +15,19 @@ namespace Indy::Graphics
 {
 	bool Init(const Driver::Type& driverType)
 	{
-		// Initialize the GLFW utility library
-		if (glfwInit() == GLFW_FALSE)
-			return false;
+		// GLFW Initialization
+		{
+			// Initialize the GLFW utility library
+			if (glfwInit() == GLFW_FALSE)
+				return false;
 
-		// Set GLFW's error callback
-		glfwSetErrorCallback([](int error, const char* description)
-			{
-				INDY_CORE_ERROR("GLFW Error ({0}): {1}", error, description);
-			}
-		);
+			// Set GLFW's error callback
+			glfwSetErrorCallback([](int error, const char* description)
+				{
+					INDY_CORE_ERROR("GLFW Error ({0}): {1}", error, description);
+				}
+			);
+		}
 
 		// Initialize the graphics driver of choice
 		switch (driverType)
@@ -60,7 +63,7 @@ namespace Indy::Graphics
 		g_GraphicsDriver = nullptr;
 	}
 
-	RenderContext& CreateRenderContext(const std::string& alias)
+	Context& CreateContext(const std::string& alias)
 	{
 		if (!g_GraphicsDriver)
 		{
@@ -68,16 +71,6 @@ namespace Indy::Graphics
 		}
 
 		return g_GraphicsDriver->CreateContext(alias);
-	}
-
-	RenderContext& AddRenderContext(RenderContext* context, const std::string& alias)
-	{
-		if (!g_GraphicsDriver)
-		{
-			throw std::runtime_error("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
-		}
-
-		return g_GraphicsDriver->AddContext(context, alias);
 	}
 
 	bool RemoveContext(const uint32_t& id)
@@ -91,7 +84,7 @@ namespace Indy::Graphics
 		return g_GraphicsDriver->RemoveContext(id);
 	}
 
-	RenderContext& GetRenderContext(const uint32_t& key)
+	Context& GetContext(const uint32_t& key)
 	{
 		if (!g_GraphicsDriver)
 		{
@@ -101,15 +94,15 @@ namespace Indy::Graphics
 		return g_GraphicsDriver->GetContext(key);
 	}
 
-	RenderContext& GetRenderContext(const std::string& alias)
+	Context& GetContext(const std::string& alias)
 	{
 		if (alias.empty())
-			throw std::runtime_error("Invalid alias passed to Indy::Graphics::GetRenderContext(const std::string& alias)");
+			throw std::runtime_error("Invalid alias passed to Indy::Graphics::GetContext(const std::string& alias)");
 
 		return g_GraphicsDriver->GetContext(alias);
 	}
 
-	bool SetActiveRenderContext(const uint32_t& id, const uint32_t& defaultViewportID)
+	bool SetActiveContext(const uint32_t& id, const uint32_t& defaultViewportID)
 	{
 		if (!g_GraphicsDriver)
 		{
@@ -118,17 +111,6 @@ namespace Indy::Graphics
 		}
 
 		return g_GraphicsDriver->SetActiveContext(id) && g_GraphicsDriver->SetActiveViewport(defaultViewportID);
-	}
-
-	bool SetActiveRenderContext(const RenderContext& context, const uint32_t& defaultViewportID)
-	{
-		if (!g_GraphicsDriver)
-		{
-			throw std::runtime_error("Graphics Driver Is Not Initialized! Initialize A Driver With Graphics::Init()!!!");
-		}
-
-		// Set driver active context and default viewport
-		return g_GraphicsDriver->SetActiveContext(context) && g_GraphicsDriver->SetActiveViewport(defaultViewportID);
 	}
 
 	bool SetActiveViewport(const uint32_t& id)
