@@ -4,6 +4,8 @@ module;
 #include <string>
 #include <vector>
 
+#include <vulkan/vulkan.h>
+
 export module Indy.VulkanGraphics:RenderPass;
 
 import Indy.Graphics;
@@ -12,8 +14,24 @@ export
 {
 	namespace Indy::Graphics
 	{
+		struct VulkanPipeline
+		{
+			VkPipeline handle;
+			VkPipelineLayout layout;
+			VkDescriptorSetLayout descriptorSetLayout;
+			VkDescriptorPool descriptorPool;
+		};
+
 		class VulkanRenderPass : public RenderPass
 		{
+		private:
+			struct Process
+			{
+				ProcessType type;
+				PipelineType pipelineType;
+				PipelineState pipelineState{};
+			};
+
 		public:
 			VulkanRenderPass(const std::string& alias, const uint32_t& id);
 			virtual ~VulkanRenderPass() override;
@@ -23,9 +41,9 @@ export
 
 			virtual VulkanRenderPass& Begin() override;
 
-			virtual RenderPass& AddProcess(const ProcessType& type) override;
+			virtual VulkanRenderPass& AddProcess(const ProcessType& type) override;
 
-			virtual RenderPass& BindShader(const PipelineShaderStage& shaderStage, const std::string& path) override;
+			virtual VulkanRenderPass& BindShader(const PipelineShaderStage& shaderStage, const std::string& path) override;
 
 			virtual void End() override;
 
@@ -45,7 +63,13 @@ export
 			std::string m_Alias;
 			uint32_t m_ID;
 
-			// Pipeline State
+			bool m_IsConfigurable;
+
+			std::vector<PipelineState> m_PreProcessState;
+			PipelineState m_MainProcessState;
+			std::vector<PipelineState> m_PostProcessState;
+
+			std::vector<VulkanPipeline> m_Pipelines;
 		};
 	}
 }

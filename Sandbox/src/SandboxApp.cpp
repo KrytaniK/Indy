@@ -1,14 +1,23 @@
 #include <Engine/Core/LogMacros.h>
 
 #include <memory>
+#include <condition_variable>
+#include <atomic>
+#include <vector>
 
 import Sandbox;
 
 import Indy.Window;
 import Indy.Graphics;
+import Indy.Multithreading;
 
 namespace Indy
 {
+	struct SharedState
+	{
+		int val1;
+	};
+
 	std::unique_ptr<Indy::Application> CreateApplication()
 	{
 		Indy::ApplicationCreateInfo createInfo;
@@ -39,11 +48,13 @@ namespace Indy
 		Graphics::SetActiveContext(context.GetID());
 
 		context.AddRenderPass("Main").Begin()
-			.AddProcess(Indy::Graphics::RenderPass::MainProcess)
-			.BindShader(Indy::Graphics::PIPELINE_SHADER_STAGE_VERTEX, "shaders/vertex.glsl.vert")
-			.BindShader(Indy::Graphics::PIPELINE_SHADER_STAGE_FRAGMENT, "shaders/fragment.glsl.frag")
-			.AddProcess(Indy::Graphics::RenderPass::PreProcess)
-			.BindShader(Indy::Graphics::PIPELINE_SHADER_STAGE_COMPUTE, "shaders/compute.glsl.comp")
+			.AddProcess(Graphics::RenderPass::MainProcess)
+			.BindShader(Graphics::PIPELINE_SHADER_STAGE_VERTEX, "shaders/vertex.glsl.vert")
+			.BindShader(Graphics::PIPELINE_SHADER_STAGE_FRAGMENT, "shaders/fragment.glsl.frag")
+			.AddProcess(Graphics::RenderPass::PreProcess)
+			.BindShader(Graphics::PIPELINE_SHADER_STAGE_COMPUTE, "shaders/compute.glsl.comp")
+			.EnableDepthTesting(true)
+			.EnableDepthWriting(true)
 			.End();
 	}
 
