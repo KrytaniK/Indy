@@ -20,7 +20,7 @@ export
 		public:
 			inline static uint8_t s_ThreadCount = 0;
 
-			enum Status : uint8_t { Idle = 0, Running, Stopped };
+			enum Status { Idle = 0, Running, Joined, Detached };
 
 			struct State
 			{
@@ -30,20 +30,41 @@ export
 
 			typedef std::function<void(const State&)> StartFun;
 
+			static unsigned int HardwareConcurrency();
+
 		public:
 			Thread(const StartFun& startFun, IAtomic* sharedState = nullptr);
 			~Thread();
 
+			// Observation Functions
+
 			const std::thread::id& GetID();
 
 			Status GetStatus();
+
+			bool IsJoinable();
+
+			std::thread::native_handle_type GetNativeHandle();
+
+			// Operations
+
+			void Join();
+
+			void Detach();
+
+			void Swap(Thread& other);
+
+		private:
+			Thread(const Thread&) = delete; // No copies
+			Thread& operator=(const Thread&) = delete; // No explicit assignments
 
 		private:
 			std::thread::id m_ID;
 			std::thread m_Thread;
 
 			Atomic<Status> m_Status;
-			State m_State;
+
+			State m_State; // Managed state for this thread.
 		};
 	}
 }
