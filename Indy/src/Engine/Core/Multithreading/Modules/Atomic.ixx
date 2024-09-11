@@ -33,7 +33,63 @@ export
 
 			const std::atomic<T>& Get() { return m_Value; };
 
-			// Potential TODO: Implement remaining std::atomic functions
+			T Exchange(const T& desired, std::memory_order order = std::memory_order_seq_cst)
+			{
+				return m_Value.exchange(desired, order);
+			}
+
+			bool CompareExchangeWeak(
+				const T& expected,
+				const T& desired,
+				std::memory_order success,
+				std::memory_order failure
+			) {
+				return m_Value.compare_exchange_weak(expected, desired, success, failure);
+			}
+
+			bool CompareExchangeWeak(
+				const T& expected,
+				const T& desired,
+				std::memory_order order = std::memory_order_seq_cst
+			) {
+				return m_Value.compare_exchange_weak(expected, desired, order);
+			}
+
+			bool CompareExchangeStong(
+				const T& expected,
+				const T& desired,
+				std::memory_order success,
+				std::memory_order failure
+			) {
+				return m_Value.compare_exchange_strong(expected, desired, success, failure);
+			}
+
+			bool CompareExchangeStrong(
+				const T& expected,
+				const T& desired,
+				std::memory_order order = std::memory_order_seq_cst
+			) {
+				return m_Value.compare_exchange_strong(expected, desired, order);
+			}
+
+			void Wait(const T& old, std::memory_order order = std::memory_order_seq_cst)
+			{
+				m_Value.wait(old, order);
+			}
+
+			void NotifyOne()
+			{
+				m_Value.notify_one();
+			}
+
+			void NotifyAll()
+			{
+				m_Value.notify_all();
+			}
+
+		private:
+			Atomic<T>(const Atomic<T>&) = delete; // No copies
+			Atomic<T>& operator=(const Atomic<T>&) = delete; // No explicit assignments
 
 		private:
 			std::atomic<T> m_Value;
