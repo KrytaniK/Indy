@@ -25,9 +25,7 @@ namespace Indy
 		m_Status.Store(Status::Running);
 		m_State.status = &m_Status;
 
-		Thread::State initialState;
-
-		m_Thread = std::thread(startFun, &m_State);
+		m_Thread = std::thread(startFun, m_State);
 		m_ID = m_Thread.get_id();
 
 		// Increase Global Thread Count
@@ -47,7 +45,7 @@ namespace Indy
 
 	Thread::Status Thread::GetStatus()
 	{
-		return m_Status->Load();
+		return m_Status.Load();
 	}
 
 	bool Thread::IsJoinable()
@@ -66,12 +64,12 @@ namespace Indy
 			return;
 
 		m_Thread.join();
-		m_Status.Load(Thread::Joined);
+		m_Status.Store(Thread::Joined);
 	}
 
 	void Thread::Detach()
 	{
 		m_Thread.detach();
-		m_Status.Load(Thread::Detached);
+		m_Status.Store(Thread::Detached);
 	}
 }

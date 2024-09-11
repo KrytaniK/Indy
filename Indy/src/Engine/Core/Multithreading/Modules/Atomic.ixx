@@ -12,11 +12,6 @@ export
 		{
 		public:
 			virtual ~IAtomic() = default;
-
-			virtual bool IsLockFree() = 0;
-
-		private:
-			IAtomic& operator=(IAtomic&) = delete;
 		};
 
 		template<typename T>
@@ -25,7 +20,7 @@ export
 		public:
 			virtual ~Atomic() override = default;
 
-			virtual bool IsLockFree() { return m_Value.is_lock_free(); };
+			bool IsLockFree() { return m_Value.is_lock_free(); };
 
 			void Store(const T& value) { m_Value.store(value); };
 
@@ -88,7 +83,6 @@ export
 			}
 
 		private:
-			Atomic<T>(const Atomic<T>&) = delete; // No copies
 			Atomic<T>& operator=(const Atomic<T>&) = delete; // No explicit assignments
 
 		private:

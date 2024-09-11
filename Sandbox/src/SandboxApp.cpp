@@ -33,7 +33,7 @@ namespace Indy
 	{
 		Graphics::Init(Graphics::Driver::Vulkan);
 
-		Thread thread([](Atomic<Thread::State>* state) {  });
+		Thread thread([](const Thread::State& state) {  });
 	}
 
 	void Sandbox::Start()

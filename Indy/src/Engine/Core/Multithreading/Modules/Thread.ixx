@@ -28,7 +28,7 @@ export
 				IAtomic* shared;
 			};
 
-			typedef std::function<void(Atomic<State>*)> StartFun;
+			typedef std::function<void(const State&)> StartFun;
 
 			static unsigned int HardwareConcurrency();
 
