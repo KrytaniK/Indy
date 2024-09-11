@@ -14,6 +14,9 @@ export
 			virtual ~IAtomic() = default;
 
 			virtual bool IsLockFree() = 0;
+
+		private:
+			IAtomic& operator=(IAtomic&) = delete;
 		};
 
 		template<typename T>

@@ -1,9 +1,6 @@
 #include <Engine/Core/LogMacros.h>
 
 #include <memory>
-#include <condition_variable>
-#include <atomic>
-#include <vector>
 
 import Sandbox;
 
@@ -13,11 +10,6 @@ import Indy.Multithreading;
 
 namespace Indy
 {
-	struct SharedState
-	{
-		int val1;
-	};
-
 	std::unique_ptr<Indy::Application> CreateApplication()
 	{
 		Indy::ApplicationCreateInfo createInfo;
@@ -40,6 +32,8 @@ namespace Indy
 	void Sandbox::Load()
 	{
 		Graphics::Init(Graphics::Driver::Vulkan);
+
+		Thread thread([](Atomic<Thread::State>* state) {  });
 	}
 
 	void Sandbox::Start()

@@ -24,11 +24,11 @@ export
 
 			struct State
 			{
-				Atomic<Status>* local;
+				Atomic<Status>* status;
 				IAtomic* shared;
 			};
 
-			typedef std::function<void(const State&)> StartFun;
+			typedef std::function<void(Atomic<State>*)> StartFun;
 
 			static unsigned int HardwareConcurrency();
 
@@ -52,8 +52,6 @@ export
 
 			void Detach();
 
-			void Swap(Thread& other);
-
 		private:
 			Thread(const Thread&) = delete; // No copies
 			Thread& operator=(const Thread&) = delete; // No explicit assignments
@@ -63,8 +61,7 @@ export
 			std::thread m_Thread;
 
 			Atomic<Status> m_Status;
-
-			State m_State; // Managed state for this thread.
+			State m_State;
 		};
 	}
 }
