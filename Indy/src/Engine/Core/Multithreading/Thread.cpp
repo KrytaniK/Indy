@@ -4,6 +4,8 @@
 #include <thread>
 #include <atomic>
 
+#include <sstream>
+
 import Indy.Multithreading;
 
 namespace Indy
@@ -15,21 +17,17 @@ namespace Indy
 
 	Thread::Thread(const Thread::StartFun& startFun, IAtomic* sharedState)
 	{
-		// Ensure we aren't creating more threads than are available.
-		const int maxThreadCount = HardwareConcurrency();
-		if (s_ThreadCount + 1 == maxThreadCount)
-		{
-			INDY_CORE_WARN("The number of threads has reached the hardware limit of {0}. Creating more than this may result in performance issues!", maxThreadCount);
-		}
-
 		m_Status.Store(Status::Running);
 		m_State.status = &m_Status;
 
 		m_Thread = std::thread(startFun, m_State);
 		m_ID = m_Thread.get_id();
 
-		// Increase Global Thread Count
+		std::stringstream s;
+		s << m_ID;
+
 		s_ThreadCount++;
+		INDY_CORE_INFO("Thread Created With ID: {0}", s.str());
 	}
 
 	Thread::~Thread()
@@ -71,5 +69,22 @@ namespace Indy
 	{
 		m_Thread.detach();
 		m_Status.Store(Thread::Detached);
+	}
+
+	void Thread::Restart(const Thread::StartFun& startFun, IAtomic* sharedState)
+	{
+		if (!IsJoinable())
+			return; // Maybe do something useful here
+
+		// Finish any work
+		Join();
+
+		// Attach potentially new shared state
+		m_State.shared = sharedState;
+
+		// "Restart" the thread
+		m_Status.Store(Thread::Running);
+		m_Thread = std::thread(startFun, m_State);
+		m_ID = m_Thread.get_id();
 	}
 }

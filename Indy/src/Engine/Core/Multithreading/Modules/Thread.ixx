@@ -18,7 +18,7 @@ export
 		class Thread
 		{
 		public:
-			inline static uint8_t s_ThreadCount = 0;
+			inline static int s_ThreadCount = 0;
 
 			enum Status { Idle = 0, Running, Joined, Detached };
 
@@ -36,8 +36,6 @@ export
 			Thread(const StartFun& startFun, IAtomic* sharedState = nullptr);
 			~Thread();
 
-			// Observation Functions
-
 			const std::thread::id& GetID();
 
 			Status GetStatus();
@@ -46,11 +44,10 @@ export
 
 			std::thread::native_handle_type GetNativeHandle();
 
-			// Operations
-
 			void Join();
-
 			void Detach();
+
+			void Restart(const StartFun& startFun, IAtomic* sharedState);
 
 		private:
 			Thread(const Thread&) = delete; // No copies
