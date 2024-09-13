@@ -17,16 +17,16 @@ export
 		class ThreadPool
 		{
 		public:
-			ThreadPool(const Thread::StartFun& threadFun, const uint8_t& threadCount = Thread::HardwareConcurrency(), IAtomic* sharedState = nullptr);
+			ThreadPool(const Thread::StartFun& threadFun, const size_t& threadCount = Thread::HardwareConcurrency(), IAtomic* sharedState = nullptr);
 			~ThreadPool();
 
-			const uint8_t& GetThreadCount();
+			size_t GetThreadCount();
 
-			const std::thread::id& GetNativeThreadID(const uint8_t& index);
-			const Thread::Status& GetThreadStatus(const uint8_t& index);
+			const std::thread::id& GetNativeThreadID(const size_t& index);
+			const Thread::Status& GetThreadStatus(const size_t& index);
 
 			void Restart();
-			void RestartThread(const uint8_t& index);
+			void RestartThread(const size_t& index);
 
 		private:
 			Thread::StartFun m_ThreadFun;

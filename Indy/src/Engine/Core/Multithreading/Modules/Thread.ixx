@@ -20,7 +20,7 @@ export
 		public:
 			inline static int s_ThreadCount = 0;
 
-			enum Status { Idle = 0, Running, Joined, Detached };
+			enum Status { Idle = 0, Running, Joined, Detached, Max_Enum };
 
 			struct State
 			{
