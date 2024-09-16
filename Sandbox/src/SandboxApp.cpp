@@ -7,6 +7,7 @@ import Sandbox;
 import Indy.Window;
 import Indy.Graphics;
 import Indy.Multithreading;
+import Indy.Utility;
 
 namespace Indy
 {
