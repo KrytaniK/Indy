@@ -35,10 +35,6 @@ export
 			void Pop();
 			void PopBack();
 
-			T Dequeue();
-
-			T DequeueBack();
-
 		private:
 			std::vector<std::unique_ptr<T>> m_Array;
 			size_t m_Head;

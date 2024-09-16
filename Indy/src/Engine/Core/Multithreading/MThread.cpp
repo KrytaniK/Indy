@@ -19,6 +19,7 @@ namespace Indy
 	{
 		m_Status.Store(Status::Running);
 		m_State.status = &m_Status;
+		m_State.shared = sharedState;
 
 		m_Thread = std::thread(startFun, m_State);
 		m_ID = m_Thread.get_id();

@@ -18,15 +18,20 @@ export
 		class Atomic : public IAtomic
 		{
 		public:
+			Atomic() {};
+			Atomic(T initialValue) : m_Value(std::atomic<T>(initialValue)) {};
 			virtual ~Atomic() override = default;
 
 			bool IsLockFree() { return m_Value.is_lock_free(); };
 
 			void Store(const T& value) { m_Value.store(value); };
 
-			T Load() { return m_Value.load(); };
+			T Load(std::memory_order order = std::memory_order_seq_cst) 
+			{ 
+				return m_Value.load(order); 
+			};
 
-			const std::atomic<T>& Get() { return m_Value; };
+			std::atomic<T>& Get() { return m_Value; };
 
 			T Exchange(const T& desired, std::memory_order order = std::memory_order_seq_cst)
 			{
