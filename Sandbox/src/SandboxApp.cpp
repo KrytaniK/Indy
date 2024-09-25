@@ -33,6 +33,11 @@ namespace Indy
 	void Sandbox::Load()
 	{
 		Graphics::Init(Graphics::Driver::Vulkan);
+
+		ThreadStartFun fun = [](ThreadState* state) {};
+
+		ThreadPool<Thread> threadThreadPool(8, fun, nullptr);
+
 	}
 
 	void Sandbox::Start()

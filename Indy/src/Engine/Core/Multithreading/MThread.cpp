@@ -10,18 +10,13 @@ import Indy.Multithreading;
 
 namespace Indy
 {
-	unsigned int Thread::HardwareConcurrency()
+	Thread::Thread(const ThreadStartFun& startFun, IAtomic* sharedState)
 	{
-		return std::thread::hardware_concurrency();
-	}
-
-	Thread::Thread(const Thread::StartFun& startFun, IAtomic* sharedState)
-	{
-		m_Status.Store(Status::Running);
+		m_Status.Store(THREAD_STATUS_RUNNING);
 		m_State.status = &m_Status;
 		m_State.shared = sharedState;
 
-		m_Thread = std::thread(startFun, m_State);
+		m_Thread = std::thread(startFun, &m_State);
 		m_ID = m_Thread.get_id();
 
 		std::stringstream s;
@@ -37,12 +32,12 @@ namespace Indy
 		s_ThreadCount--;
 	}
 
-	const std::thread::id& Thread::GetID()
+	const std::thread::id& Thread::GetNativeID()
 	{
 		return m_ID;
 	}
 
-	Thread::Status Thread::GetStatus()
+	ThreadStatus Thread::GetStatus()
 	{
 		return m_Status.Load();
 	}
@@ -63,16 +58,16 @@ namespace Indy
 			return;
 
 		m_Thread.join();
-		m_Status.Store(Thread::Joined);
+		m_Status.Store(THREAD_STATUS_JOINED);
 	}
 
 	void Thread::Detach()
 	{
 		m_Thread.detach();
-		m_Status.Store(Thread::Detached);
+		m_Status.Store(THREAD_STATUS_DETACHED);
 	}
 
-	void Thread::Restart(const Thread::StartFun& startFun, IAtomic* sharedState)
+	void Thread::Restart(const ThreadStartFun& startFun, IAtomic* sharedState)
 	{
 		if (!IsJoinable())
 			return; // Maybe do something useful here
@@ -80,12 +75,20 @@ namespace Indy
 		// Finish any work
 		Join();
 
-		// Attach potentially new shared state
+		// Attach potentially new shared state and usageFlags
 		m_State.shared = sharedState;
 
+		std::stringstream s;
+		s << m_ID;
+
+		INDY_CORE_INFO("Restarting Thread! Old thread [{0}] will be deleted!", s.str());
+
 		// "Restart" the thread
-		m_Status.Store(Thread::Running);
-		m_Thread = std::thread(startFun, m_State);
+		m_Status.Store(THREAD_STATUS_RUNNING);
+		m_Thread = std::thread(startFun, &m_State);
 		m_ID = m_Thread.get_id();
+
+		s << m_ID;
+		INDY_CORE_INFO("Thread Restarted! New Thread ID: {0}", s.str());
 	}
 }

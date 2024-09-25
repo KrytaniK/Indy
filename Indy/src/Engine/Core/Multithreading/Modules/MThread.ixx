@@ -15,50 +15,68 @@ export
 {
 	namespace Indy
 	{
-		class Thread
+		typedef enum ThreadStatus
+		{
+			THREAD_STATUS_IDLE = 0,
+			THREAD_STATUS_RUNNING = 1,
+			THREAD_STATUS_JOINED = 2,
+			THREAD_STATUS_DETACHED = 3,
+			THREAD_STATUS_MAX_ENUM = 4,
+		} ThreadStatus;
+
+		struct ThreadState
+		{
+			Atomic<ThreadStatus>* status = nullptr;
+			IAtomic* shared = nullptr;
+		};
+
+		typedef std::function<void(ThreadState*)> ThreadStartFun;
+
+		unsigned int HardwareConcurrency() { return std::thread::hardware_concurrency(); };
+
+		class IThread
 		{
 		public:
-			inline static int s_ThreadCount = 0;
+			virtual ~IThread() = default;
 
-			enum Status { Idle = 0, Running, Joined, Detached, Max_Enum };
+			virtual const std::thread::id& GetNativeID() = 0;
+			virtual std::thread::native_handle_type GetNativeHandle() = 0;
 
-			struct State
-			{
-				Atomic<Status>* status;
-				IAtomic* shared;
-			};
+			virtual ThreadStatus GetStatus() = 0;
 
-			typedef std::function<void(const State&)> StartFun;
+			virtual bool IsJoinable() = 0;
 
-			static unsigned int HardwareConcurrency();
+			virtual void Join() = 0;
+			virtual void Detach() = 0;
+		};
+
+		class Thread : public IThread
+		{
+		public:
+			inline static unsigned int s_ThreadCount = 0;
 
 		public:
-			Thread(const StartFun& startFun, IAtomic* sharedState = nullptr);
-			~Thread();
+			Thread(const ThreadStartFun& startFun, IAtomic* sharedState = nullptr);
+			virtual ~Thread() override;
 
-			const std::thread::id& GetID();
+			virtual const std::thread::id& GetNativeID() override;
+			virtual std::thread::native_handle_type GetNativeHandle() override;
 
-			Status GetStatus();
+			virtual ThreadStatus GetStatus() override;
 
-			bool IsJoinable();
+			virtual bool IsJoinable() override;
 
-			std::thread::native_handle_type GetNativeHandle();
+			virtual void Join() override;
+			virtual void Detach() override;
 
-			void Join();
-			void Detach();
-
-			void Restart(const StartFun& startFun, IAtomic* sharedState);
-
-		private:
-			Thread(const Thread&) = delete; // No copies
-			Thread& operator=(const Thread&) = delete; // No explicit assignments
+			void Restart(const ThreadStartFun& startFun, IAtomic* sharedState);
 
 		private:
 			std::thread::id m_ID;
 			std::thread m_Thread;
 
-			Atomic<Status> m_Status;
-			State m_State;
+			Atomic<ThreadStatus> m_Status;
+			ThreadState m_State;
 		};
 	}
 }
