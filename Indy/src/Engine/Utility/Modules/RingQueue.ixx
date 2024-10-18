@@ -19,34 +19,38 @@ export
 			RingQueue(const size_t& capacity);
 			~RingQueue();
 
+			size_t Size();
+			void Resize(const size_t& newCapacity);
+
 			bool IsEmpty();
 			bool IsFull();
 
-			void Push(std::unique_ptr<T> element); // Explicit Move
-			void Push(const T& element); // Copy
-			void Push(T&& element); // Move
+			bool Enqueue(T& element);
+			bool Enqueue(T&& element);
+			bool Enqueue(const std::shared_ptr<T>& element);
+			bool Enqueue(std::shared_ptr<T>&& element);
 
-			template<typename... Args>
-			void Emplace(Args&&... args);
+			bool Enqueue_Back(T& element);
+			bool Enqueue_Back(T&& element);
+			bool Enqueue_Back(const std::shared_ptr<T>& element);
+			bool Enqueue_Back(std::shared_ptr<T>&& element);
 
-			T Front();
-			T Back();
-
-			void Pop();
-			void PopBack();
+			std::shared_ptr<T> Dequeue();
+			std::shared_ptr<T> Dequeue_Back();
 
 		private:
-			std::vector<std::unique_ptr<T>> m_Array;
+			std::vector<std::shared_ptr<T>> m_Array;
 			size_t m_Head;
 			size_t m_Tail;
 			size_t m_Capacity;
+			size_t m_Size;
 		};
 
 		template<typename T>
 		RingQueue<T>::RingQueue(const size_t& capacity)
-			: m_Capacity(capacity), m_Head(0), m_Tail(0)
+			: m_Capacity(capacity), m_Head(0), m_Tail(0), m_Size(0)
 		{
-			m_Array = std::vector<std::unique_ptr<T>>(capacity);
+			m_Array = std::vector<std::shared_ptr<T>>(capacity);
 		}
 
 		template<typename T>
@@ -56,124 +60,194 @@ export
 		}
 
 		template<typename T>
+		void RingQueue<T>::Resize(const size_t& newCapacity)
+		{
+			m_Array.resize(newCapacity);
+			m_Capacity = newCapacity;
+		}
+
+		template<typename T>
 		bool RingQueue<T>::IsEmpty()
 		{
-			return (m_Array[m_Head] == nullptr) && (m_Head == m_Tail);
+			return (m_Head == m_Tail) && (m_Array[m_Head] == nullptr);
 		}
 
 		template<typename T>
 		bool RingQueue<T>::IsFull()
 		{
-			return (m_Array[m_Head] != nullptr) && (m_Head == m_Tail);
+			return (m_Head == m_Tail) && (m_Array[m_Head] != nullptr);
 		}
 
 		template<typename T>
-		void RingQueue<T>::Push(std::unique_ptr<T> element)
+		size_t RingQueue<T>::Size()
+		{
+			return m_Size;
+		}
+
+		template<typename T>
+		bool RingQueue<T>::Enqueue(T& element)
 		{
 			if (IsFull())
-			{
-				INDY_CORE_ERROR("Failed to push element of type {0}: Queue is full.", typeid(T).name());
-				return;
-			}
+				return false;
 
+			// Enqueue at head
+			m_Array[m_Head] = std::make_shared<T>(std::move(element));
+
+			// Increment head
+			m_Head = (m_Head + 1) % m_Capacity;
+
+			m_Size++;
+			return true;
+		}
+
+		template<typename T>
+		bool RingQueue<T>::Enqueue(T&& element)
+		{
+			if (IsFull())
+				return false;
+
+			// Enqueue at head
+			m_Array[m_Head] = std::make_shared<T>(std::move(element));
+
+			// Increment head
+			m_Head = (m_Head + 1) % m_Capacity;
+
+			m_Size++;
+			return true;
+		}
+
+		template<typename T>
+		bool RingQueue<T>::Enqueue(const std::shared_ptr<T>& element)
+		{
+			if (IsFull())
+				return false;
+
+			// Enqueue at head
 			m_Array[m_Head] = std::move(element);
 
+			// Increment head
 			m_Head = (m_Head + 1) % m_Capacity;
+
+			m_Size++;
+			return true;
 		}
 
 		template<typename T>
-		void RingQueue<T>::Push(const T& element)
+		bool RingQueue<T>::Enqueue(std::shared_ptr<T>&& element)
 		{
 			if (IsFull())
-			{
-				INDY_CORE_ERROR("Failed to push element of type {0}: Queue is full.", typeid(T).name());
-				return;
-			}
+				return false;
 
-			m_Array[m_Head] = std::make_unique<T>(element);
+			// Enqueue at head
+			m_Array[m_Head] = std::move(element);
+
+			// Increment head
 			m_Head = (m_Head + 1) % m_Capacity;
+
+			m_Size++;
+			return true;
 		}
 
 		template<typename T>
-		void RingQueue<T>::Push(T&& element)
+		bool RingQueue<T>::Enqueue_Back(T& element)
 		{
 			if (IsFull())
-			{
-				INDY_CORE_ERROR("Failed to push element of type {0}: Queue is full.", typeid(T).name());
-				return;
-			}
+				return false;
 
-			m_Array[m_Head] = std::make_unique<T>(std::forward<T>(element));
+			// Decrement the tail by 1
+			m_Tail = (m_Tail + m_Capacity - 1) % m_Capacity;
 
-			m_Head = (m_Head + 1) % m_Capacity;
+			// Enqueue at tail
+			m_Array[m_Tail] = std::make_shared<T>(std::move(element));
+
+			m_Size++;
+			return true;
 		}
 
 		template<typename T>
-		template<typename... Args>
-		void RingQueue<T>::Emplace(Args && ...args)
+		bool RingQueue<T>::Enqueue_Back(T&& element)
 		{
 			if (IsFull())
-			{
-				INDY_CORE_ERROR("Failed to emplace element of type {0}: Queue is full.", typeid(T).name());
-				return;
-			}
+				return false;
 
-			m_Array[m_Head] = std::make_unique<T>(std::forward<Args>(args)...);
+			// Decrement the tail by 1
+			m_Tail = (m_Tail + m_Capacity - 1) % m_Capacity;
 
-			m_Head = (m_Head + 1) % m_Capacity;
+			// Enqueue at tail
+			m_Array[m_Tail] = std::make_shared<T>(std::move(element));
+
+			m_Size++;
+			return true;
 		}
 
 		template<typename T>
-		T RingQueue<T>::Front()
+		bool RingQueue<T>::Enqueue_Back(const std::shared_ptr<T>& element)
 		{
-			if (IsEmpty())
-			{
-				INDY_CORE_ERROR("Failed to Pop() from queue: Queue is empty.");
-				return T();
-			}
+			if (IsFull())
+				return false;
 
-			size_t frontIndex = (m_Head == 0) ? (m_Capacity - 1) : (m_Head - 1);
-			return std::move(*std::move(m_Array[frontIndex]));
+			// Decrement the tail by 1
+			m_Tail = (m_Tail + m_Capacity - 1) % m_Capacity;
+
+			// Enqueue at tail
+			m_Array[m_Tail] = std::move(element);
+
+			m_Size++;
+			return true;
 		}
 
 		template<typename T>
-		T RingQueue<T>::Back()
+		bool RingQueue<T>::Enqueue_Back(std::shared_ptr<T>&& element)
 		{
-			if (IsEmpty())
-			{
-				INDY_CORE_ERROR("Failed to Pop() from queue: Queue is empty.");
-				return T();
-			}
+			if (IsFull())
+				return false;
 
-			return std::move(*std::move(m_Array[m_Tail]));
+			// Decrement the tail by 1
+			m_Tail = (m_Tail + m_Capacity - 1) % m_Capacity;
+
+			// Enqueue at tail
+			m_Array[m_Tail] = std::move(element);
+
+			m_Size++;
+			return true;
 		}
 
 		template<typename T>
-		void RingQueue<T>::Pop()
+		std::shared_ptr<T> RingQueue<T>::Dequeue()
 		{
 			if (IsEmpty())
-			{
-				INDY_CORE_ERROR("Failed to Pop() from queue: Queue is empty.");
-				return;
-			}
+				return nullptr;
 
-			size_t popIndex = (m_Head == 0) ? (m_Capacity - 1) : (m_Head - 1);
+			// Decrement the head
+			m_Head = (m_Head + m_Capacity - 1) % m_Capacity;
 
-			m_Array[popIndex] = nullptr;
-			m_Head = popIndex;
+			// Dequeue from head
+			std::shared_ptr<T> element = std::move(m_Array[m_Head]);
+
+			// Reset array value for safety
+			m_Array[m_Head] = nullptr;
+
+			m_Size--;
+			return std::move(element);
 		}
 
 		template<typename T>
-		void RingQueue<T>::PopBack()
+		std::shared_ptr<T> RingQueue<T>::Dequeue_Back()
 		{
 			if (IsEmpty())
-			{
-				INDY_CORE_ERROR("Failed to Pop() from queue: Queue is empty.");
-				return;
-			}
+				return nullptr;
 
-			m_Array[m_Tail] = nullptr;
+			// Dequeue from tail
+			std::shared_ptr<T> element = std::move(m_Array[m_Head]);
+
+			// Reset array value for safety
+			m_Array[m_Head] = nullptr;
+
+			// Increment the tail
 			m_Tail = (m_Tail + 1) % m_Capacity;
+
+			m_Size--;
+			return std::move(element);
 		}
 	}
 }
